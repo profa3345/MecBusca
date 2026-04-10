@@ -1,0 +1,2707 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MecBusca v3 — Sistema Completo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+
+<!-- ══════════════════════════════════════════════════════════
+     styles/tokens.css — Design tokens & CSS variables
+════════════════════════════════════════════════════════════ -->
+<style id="css-tokens">
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  /* brand */
+  --g:#00D084;--gd:#00A868;--gdark:#007A4C;
+  --gg:rgba(0,208,132,0.15);--gg2:rgba(0,208,132,0.08);
+
+  /* backgrounds */
+  --bg:#0A0D0B;--bg2:#0F1410;--bg3:#141A15;--bg4:#1A2119;
+
+  /* surfaces */
+  --s:#1E2820;--s2:#232E24;
+
+  /* borders */
+  --b:rgba(0,208,132,0.12);--b2:rgba(0,208,132,0.22);
+
+  /* text */
+  --t:#E8F0E9;--t2:#9DB89E;--t3:#5E7A5F;
+
+  /* semantics */
+  --am:#FFB347;--re:#FF6B6B;--bl:#5B9CF6;--pu:#A78BFA;
+
+  /* radii */
+  --r:10px;--rl:16px;--rxl:22px;
+
+  /* social */
+  --wpp:#25D366;
+
+  /* transitions */
+  --transition:0.18s ease;
+  --transition-med:0.25s cubic-bezier(.25,.8,.25,1);
+}
+html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     styles/base.css — Layout, screens, shared components
+════════════════════════════════════════════════════════════ -->
+<style id="css-base">
+/* ── SCREENS ── */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:block;}
+
+/* ── TYPOGRAPHY ── */
+.font-display{font-family:'Syne',sans-serif;}
+.brand em{color:var(--g);font-style:normal;}
+
+/* ── BUTTONS ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px 20px;border-radius:var(--r);font-size:14px;font-weight:500;
+  cursor:pointer;transition:all var(--transition);border:none;
+  font-family:'DM Sans',sans-serif;position:relative;overflow:hidden;
+}
+.btn:disabled{opacity:0.5;cursor:not-allowed;pointer-events:none;}
+.btn-loading::after{
+  content:'';position:absolute;inset:0;background:inherit;
+  display:flex;align-items:center;justify-content:center;
+}
+.btn-primary{background:var(--g);color:#0A0D0B;font-weight:600;width:100%;}
+.btn-primary:hover:not(:disabled){background:#1DE898;transform:translateY(-1px);}
+.btn-primary:active{transform:translateY(0);}
+.btn-ghost{background:var(--s);color:var(--t2);border:1px solid var(--b);width:100%;}
+.btn-ghost:hover:not(:disabled){background:var(--s2);color:var(--t);}
+.btn-wpp{background:var(--wpp);color:#fff;font-weight:600;}
+.btn-wpp:hover:not(:disabled){background:#1ECB5C;}
+.btn-sm{padding:8px 14px;font-size:13px;}
+.btn-icon{width:36px;height:36px;padding:0;border-radius:9px;}
+.spinner{
+  display:inline-block;width:16px;height:16px;border:2px solid rgba(10,13,11,0.3);
+  border-top-color:#0A0D0B;border-radius:50%;animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── FORMS ── */
+.form-group{margin-bottom:16px;position:relative;}
+.form-label{font-size:11px;color:var(--t3);display:block;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.07em;}
+.form-input{
+  width:100%;padding:11px 14px;background:var(--s);border:1.5px solid var(--b);
+  border-radius:var(--r);color:var(--t);font-size:14px;font-family:'DM Sans',sans-serif;
+  outline:none;transition:border var(--transition);
+}
+.form-input:focus{border-color:var(--g);}
+.form-input:focus + .field-error{display:none;}
+.form-input::placeholder{color:var(--t3);}
+.form-input.has-error{border-color:var(--re);}
+.field-error{font-size:11px;color:var(--re);margin-top:4px;display:none;}
+.form-input.has-error ~ .field-error{display:block;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+select.form-input option{background:var(--bg3);}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;right:24px;background:var(--s);
+  border:1px solid var(--b2);border-radius:var(--rl);padding:14px 20px;
+  display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--t);
+  transform:translateX(120%);transition:transform var(--transition-med);
+  z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:340px;
+}
+.toast.show{transform:translateX(0);}
+.toast-icon{font-size:18px;}
+.toast.success .toast-icon{color:var(--g);}
+.toast.error .toast-icon{color:var(--re);}
+.toast.warning .toast-icon{color:var(--am);}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity var(--transition);
+}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal{
+  background:var(--bg2);border:1px solid var(--b2);border-radius:var(--rxl);
+  padding:28px;width:480px;max-width:95vw;
+  transform:translateY(20px);transition:transform var(--transition-med);
+  position:relative;max-height:90vh;overflow-y:auto;
+}
+.modal-overlay.open .modal{transform:translateY(0);}
+.modal-close{
+  position:absolute;top:18px;right:18px;background:var(--s);border:1px solid var(--b);
+  color:var(--t2);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all var(--transition);
+}
+.modal-close:hover{color:var(--t);border-color:var(--b2);}
+.modal-title{font-family:'Syne',sans-serif;font-size:19px;font-weight:800;color:var(--t);margin-bottom:4px;}
+.modal-sub{font-size:13px;color:var(--t3);margin-bottom:20px;}
+
+/* ── SVG ICONS ── */
+svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+
+/* ── LOADING SCREEN ── */
+#scLoader{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);flex-direction:column;gap:16px;}
+.loader-logo{font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:var(--t);}
+.loader-logo em{color:var(--g);font-style:normal;}
+.loader-bar{width:180px;height:3px;background:var(--s);border-radius:2px;overflow:hidden;}
+.loader-fill{height:100%;width:0;background:var(--g);border-radius:2px;animation:lfill 1.2s ease forwards;}
+@keyframes lfill{to{width:100%;}}
+.loader-sub{font-size:13px;color:var(--t3);}
+
+/* ── AUTH SCREEN ── */
+#scAuth{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.auth-wrap{max-width:400px;width:100%;padding:40px 24px;}
+.auth-logo{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;text-align:center;margin-bottom:6px;}
+.auth-logo em{color:var(--g);font-style:normal;}
+.auth-tagline{font-size:14px;color:var(--t2);text-align:center;margin-bottom:40px;}
+.auth-tabs{display:flex;background:var(--s);border-radius:var(--r);padding:3px;margin-bottom:28px;}
+.auth-tab{flex:1;padding:9px;text-align:center;border-radius:7px;font-size:13px;cursor:pointer;transition:all var(--transition);color:var(--t2);}
+.auth-tab.active{background:var(--bg2);color:var(--t);box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--t3);font-size:12px;}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--b);}
+.auth-footer{text-align:center;font-size:12px;color:var(--t3);margin-top:20px;}
+.auth-footer a{color:var(--g);cursor:pointer;}
+
+/* ── HOME ── */
+#scHome{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;}
+.home-wrap{text-align:center;max-width:480px;padding:40px 24px;}
+.home-logo{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;margin-bottom:8px;}
+.home-logo em{color:var(--g);font-style:normal;}
+.home-tagline{font-size:16px;color:var(--t2);margin-bottom:48px;line-height:1.6;}
+.portal-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;}
+.portal-card{
+  background:var(--s);border:1px solid var(--b);border-radius:var(--rxl);
+  padding:28px 20px;cursor:pointer;transition:all 0.2s;text-align:center;
+}
+.portal-card:hover{border-color:var(--b2);transform:translateY(-3px);background:var(--s2);}
+.portal-card.featured{border-color:var(--b2);background:linear-gradient(135deg,var(--s),var(--gg2));}
+.pc-icon{font-size:32px;margin-bottom:12px;}
+.pc-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--t);margin-bottom:4px;}
+.pc-sub{font-size:12px;color:var(--t3);}
+.home-note{font-size:11px;color:var(--t3);}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     styles/onboarding.css
+════════════════════════════════════════════════════════════ -->
+<style id="css-onboarding">
+#scOnboarding{background:var(--bg);min-height:100vh;}
+.onb-wrap{max-width:560px;margin:0 auto;padding:40px 24px;}
+.onb-header{display:flex;align-items:center;gap:12px;margin-bottom:40px;}
+.onb-back{width:36px;height:36px;border-radius:9px;background:var(--s);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);font-size:18px;transition:all var(--transition);}
+.onb-back:hover{color:var(--t);border-color:var(--b2);}
+.onb-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+.onb-logo em{color:var(--g);font-style:normal;}
+
+.steps-bar{display:flex;gap:6px;margin-bottom:40px;}
+.step-seg{flex:1;height:3px;border-radius:2px;background:var(--s);transition:background 0.4s;}
+.step-seg.done{background:var(--g);}
+.step-seg.active{background:var(--gd);}
+
+.onb-step{display:none;}
+.onb-step.active{display:block;animation:fadeUp 0.35s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+
+.step-num{font-size:12px;color:var(--g);font-weight:500;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
+.step-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--t);margin-bottom:6px;line-height:1.2;}
+.step-sub{font-size:14px;color:var(--t2);margin-bottom:28px;line-height:1.6;}
+
+/* SERVICE BUILDER */
+.svc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+.svc-item{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s);border:1px solid var(--b);border-radius:var(--r);}
+.svc-name{flex:1;font-size:13.5px;color:var(--t);}
+.svc-price{font-size:13px;color:var(--g);font-weight:500;min-width:90px;text-align:right;}
+.svc-del{width:28px;height:28px;border-radius:7px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.2);color:var(--re);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all var(--transition);flex-shrink:0;}
+.svc-del:hover{background:rgba(255,107,107,0.2);}
+.add-svc-row{display:grid;grid-template-columns:1fr 80px 80px 36px;gap:8px;align-items:end;}
+.add-btn-sm{width:36px;height:41px;background:var(--g);border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#0A0D0B;font-weight:700;transition:all var(--transition);border:none;}
+.add-btn-sm:hover{background:#1DE898;}
+
+/* PLAN SELECTOR */
+.plan-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+.plan-opt{background:var(--s);border:2px solid var(--b);border-radius:var(--rxl);padding:20px;cursor:pointer;transition:all 0.2s;text-align:center;position:relative;}
+.plan-opt:hover{border-color:var(--b2);}
+.plan-opt.selected{border-color:var(--g);background:var(--gg2);}
+.popular-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--g);color:#0A0D0B;font-size:10px;font-weight:700;padding:2px 12px;border-radius:10px;}
+.plan-price-big{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--g);}
+.plan-price-big span{font-size:12px;color:var(--t3);font-family:'DM Sans',sans-serif;font-weight:400;}
+.plan-name{font-size:13px;font-weight:500;color:var(--t);margin-bottom:4px;}
+.plan-feats{font-size:11px;color:var(--t3);margin-top:8px;line-height:1.8;}
+
+/* SUCCESS */
+.success-wrap{text-align:center;padding:60px 20px;}
+.success-icon{width:72px;height:72px;border-radius:50%;background:var(--gg);border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px;}
+.success-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--t);margin-bottom:8px;}
+.success-sub{font-size:14px;color:var(--t2);margin-bottom:32px;line-height:1.6;}
+
+/* HOURS */
+.hora-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b);}
+.hora-row:last-child{border:none;}
+.hora-day{font-size:12px;color:var(--t2);width:36px;}
+.hora-range{font-size:12.5px;color:var(--t);flex:1;}
+.hora-toggle{width:36px;height:20px;background:var(--g);border-radius:10px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
+.hora-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#0A0D0B;transition:left 0.2s;}
+.hora-toggle.off{background:var(--s2);}
+.hora-toggle.off::after{left:18px;background:var(--t3);}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     styles/cliente.css — Client search app
+════════════════════════════════════════════════════════════ -->
+<style id="css-cliente">
+#scCliente{background:var(--bg);min-height:100vh;}
+.cli-header{background:var(--bg2);border-bottom:1px solid var(--b);padding:16px 20px;}
+.cli-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.cli-logo{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;}
+.cli-logo em{color:var(--g);font-style:normal;}
+.cli-loc{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);margin-left:auto;cursor:pointer;padding:5px 10px;border-radius:8px;border:1px solid var(--b);background:var(--s);transition:all var(--transition);}
+.cli-loc:hover{border-color:var(--b2);}
+
+/* SEARCH */
+.search-bar{display:flex;align-items:center;gap:10px;background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);padding:10px 14px;transition:border var(--transition);}
+.search-bar:focus-within{border-color:var(--g);}
+.search-bar input{background:transparent;border:none;color:var(--t);font-size:14px;outline:none;flex:1;font-family:'DM Sans',sans-serif;}
+.search-bar input::placeholder{color:var(--t3);}
+
+/* ADVANCED FILTERS PANEL */
+.filters-panel{background:var(--bg2);border-bottom:1px solid var(--b);padding:0;max-height:0;overflow:hidden;transition:max-height 0.3s ease, padding 0.3s ease;}
+.filters-panel.open{max-height:300px;padding:14px 20px;}
+.filters-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;}
+.filter-group{display:flex;flex-direction:column;gap:5px;}
+.filter-label{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;}
+.filter-select{background:var(--s);border:1px solid var(--b);border-radius:8px;color:var(--t);padding:7px 10px;font-size:12.5px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;}
+.filter-select:focus{border-color:var(--g);}
+.filter-checkrow{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--t2);cursor:pointer;}
+.filter-checkrow input[type=checkbox]{accent-color:var(--g);}
+.filter-range{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);}
+.filter-range input[type=range]{flex:1;accent-color:var(--g);}
+.active-filters{display:flex;gap:6px;flex-wrap:wrap;padding:10px 20px;background:var(--bg2);}
+.active-filter-tag{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11.5px;background:var(--gg);border:1px solid var(--b2);color:var(--g);}
+.active-filter-tag button{background:none;border:none;color:var(--g);cursor:pointer;font-size:13px;padding:0;line-height:1;}
+
+/* MODE BUTTONS */
+.search-modes{display:flex;gap:0;background:var(--s);border:1px solid var(--b);border-radius:var(--r);overflow:hidden;margin-top:12px;}
+.mode-btn{flex:1;padding:9px 6px;font-size:12.5px;font-weight:500;color:var(--t2);cursor:pointer;transition:all var(--transition);border:none;background:transparent;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:5px;}
+.mode-btn.active{background:var(--gg);color:var(--g);}
+.mode-btn:hover:not(.active){background:var(--s2);color:var(--t);}
+.filter-toggle-btn{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:8px;border:1px solid var(--b);background:var(--s);color:var(--t2);cursor:pointer;font-size:12px;transition:all var(--transition);}
+.filter-toggle-btn.active{border-color:var(--b2);color:var(--g);background:var(--gg2);}
+
+/* CHIPS */
+.cli-filters{display:flex;gap:8px;padding:12px 20px;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--b);align-items:center;}
+.cli-filters::-webkit-scrollbar{display:none;}
+.chip{flex-shrink:0;padding:6px 14px;border-radius:20px;font-size:12.5px;border:1px solid var(--b);background:var(--s);color:var(--t2);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.chip.active{background:var(--gg);border-color:var(--b2);color:var(--g);}
+.chip:hover{background:var(--s2);}
+
+.cli-body{padding:16px 20px;max-width:720px;margin:0 auto;}
+.results-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.results-count{font-size:13px;color:var(--t2);}
+.results-count strong{color:var(--t);}
+
+/* OFICINA CARD */
+.of-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:18px;margin-bottom:12px;transition:all 0.2s;cursor:pointer;}
+.of-card:hover{border-color:var(--b2);transform:translateY(-2px);}
+.of-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;}
+.of-avatar{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--gdark),var(--g));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#0A0D0B;flex-shrink:0;}
+.of-info{flex:1;}
+.of-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--t);margin-bottom:2px;}
+.of-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.of-dist{font-size:11.5px;color:var(--t3);}
+.of-stars{font-size:12px;color:var(--am);}
+.of-stars span{color:var(--t3);}
+.of-status-open{font-size:11.5px;color:var(--g);}
+.of-status-closed{font-size:11.5px;color:var(--re);}
+.of-price-badge{background:var(--gg2);border:1px solid var(--b2);color:var(--g);font-size:12px;font-weight:600;padding:4px 12px;border-radius:8px;margin-left:auto;white-space:nowrap;}
+.of-services{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;}
+.svc-tag{font-size:11px;padding:3px 9px;border-radius:6px;background:var(--bg3);border:1px solid var(--b);color:var(--t2);}
+.svc-tag.match{background:var(--gg2);color:var(--g);border-color:var(--b2);}
+.of-actions{display:flex;gap:8px;}
+
+/* PEÇA CARD */
+.peca-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:16px;margin-bottom:10px;transition:all 0.2s;cursor:pointer;display:flex;gap:14px;align-items:flex-start;}
+.peca-card:hover{border-color:var(--b2);transform:translateY(-1px);}
+.peca-icon{width:48px;height:48px;border-radius:10px;background:var(--bg3);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;}
+.peca-info{flex:1;}
+.peca-nome{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--t);margin-bottom:2px;}
+.peca-desc{font-size:12px;color:var(--t3);margin-bottom:8px;}
+.peca-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.peca-preco{font-size:14px;font-weight:600;color:var(--g);}
+.peca-compat{font-size:11px;color:var(--t3);background:var(--bg3);border:1px solid var(--b);padding:2px 8px;border-radius:6px;}
+.peca-loja{font-size:11.5px;color:var(--bl);}
+.peca-actions{display:flex;gap:6px;margin-top:10px;}
+
+/* SERVIÇO CARD */
+.svc-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:16px;margin-bottom:10px;transition:all 0.2s;}
+.svc-card:hover{border-color:var(--b2);transform:translateY(-1px);}
+.svc-card-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.svc-card-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.svc-card-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--t);}
+.svc-card-cat{font-size:11px;color:var(--t3);margin-top:2px;}
+.svc-card-price{font-size:14px;font-weight:600;color:var(--g);margin-left:auto;white-space:nowrap;}
+.svc-oficinas{display:flex;flex-direction:column;gap:6px;}
+.svc-of-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border:1px solid var(--b);border-radius:8px;cursor:pointer;transition:all var(--transition);}
+.svc-of-row:hover{border-color:var(--b2);}
+.svc-of-av{width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--gdark),var(--g));display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#0A0D0B;flex-shrink:0;}
+.svc-of-name{font-size:12.5px;color:var(--t);flex:1;}
+.svc-of-price{font-size:12.5px;font-weight:600;color:var(--g);}
+.svc-of-dist{font-size:11px;color:var(--t3);}
+
+/* BUDGET MODAL */
+.budget-table{width:100%;border-collapse:collapse;margin-bottom:16px;}
+.budget-table td{padding:9px 0;font-size:13.5px;border-bottom:1px solid var(--b);}
+.budget-table td:last-child{text-align:right;color:var(--t);}
+.budget-table tr:last-child td{border:none;font-weight:600;font-size:15px;}
+.budget-table tr:last-child td:last-child{color:var(--g);}
+.budget-note{font-size:11px;color:var(--t3);margin-bottom:20px;}
+.lead-form .form-group{margin-bottom:12px;}
+.phone-mask-wrap{position:relative;}
+.phone-mask-wrap input{padding-left:40px;}
+.phone-flag{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;}
+
+/* EMPTY STATE */
+.empty-state{text-align:center;padding:60px 20px;color:var(--t3);}
+.empty-icon{font-size:40px;margin-bottom:12px;}
+.empty-title{font-size:14px;color:var(--t2);margin-bottom:4px;}
+.empty-sub{font-size:12px;}
+
+/* TIPOS / CATEGORIAS */
+.cat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:6px;}
+@media(min-width:480px){.cat-grid{grid-template-columns:repeat(4,1fr);}}
+.cat-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:16px 12px;cursor:pointer;transition:all 0.2s;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;}
+.cat-card:hover{border-color:var(--b2);transform:translateY(-2px);background:var(--s2);}
+.cat-icon{font-size:28px;line-height:1;}
+.cat-label{font-size:12px;font-weight:600;color:var(--t);line-height:1.3;}
+.cat-count{font-size:11px;color:var(--t3);}
+.tipo-badge{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;padding:2px 8px;border-radius:6px;background:var(--bg3);border:1px solid var(--b);color:var(--t2);margin-left:6px;flex-shrink:0;}
+.secao-titulo{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;margin:16px 0 8px;}
+@keyframes skpulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     styles/painel.css — Workshop dashboard
+════════════════════════════════════════════════════════════ -->
+<style id="css-painel">
+#scPainel{display:none;min-height:100vh;}
+#scPainel.active{display:flex;}
+
+/* SIDEBAR */
+.sidebar{width:240px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--b);display:flex;flex-direction:column;position:relative;overflow:hidden;}
+.sidebar::before{content:'';position:absolute;top:-60px;left:-60px;width:200px;height:200px;background:radial-gradient(circle,var(--gg) 0%,transparent 70%);pointer-events:none;}
+.logo-area{padding:22px 20px 18px;border-bottom:1px solid var(--b);}
+.logo{display:flex;align-items:center;gap:10px;}
+.logo-mark{width:36px;height:36px;background:var(--g);border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.logo-mark svg{width:20px;height:20px;fill:#0A0D0B;}
+.logo-name{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--t);letter-spacing:-0.5px;}
+.logo-name em{color:var(--g);font-style:normal;}
+.plan-badge{margin-top:10px;background:var(--gg2);border:1px solid var(--b2);border-radius:6px;padding:5px 10px;font-size:11px;color:var(--g);display:flex;align-items:center;gap:6px;}
+.plan-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+.nav{padding:16px 10px;flex:1;overflow-y:auto;}
+.nav-label{font-size:10px;color:var(--t3);letter-spacing:0.1em;text-transform:uppercase;padding:0 10px;margin-bottom:6px;margin-top:12px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13.5px;color:var(--t2);transition:all var(--transition);margin-bottom:2px;position:relative;}
+.nav-item:hover{background:var(--s);color:var(--t);}
+.nav-item.active{background:var(--gg);color:var(--g);font-weight:500;}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;border-radius:0 2px 2px 0;background:var(--g);}
+.nav-badge{margin-left:auto;background:var(--g);color:#0A0D0B;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;}
+.sidebar-footer{padding:14px 10px;border-top:1px solid var(--b);}
+.of-info-bar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background var(--transition);}
+.of-info-bar:hover{background:var(--s);}
+.of-avatar-sm{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--gdark),var(--gd));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:#0A0D0B;flex-shrink:0;}
+
+/* MAIN PANEL */
+.main-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg3);}
+.topbar{height:60px;background:var(--bg2);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 28px;gap:16px;flex-shrink:0;}
+.topbar-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:var(--t);flex:1;}
+.page-content{flex:1;overflow-y:auto;padding:24px 28px;}
+.page-content::-webkit-scrollbar{width:4px;}
+.page-content::-webkit-scrollbar-thumb{background:var(--b2);border-radius:4px;}
+
+/* METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+@media(max-width:1000px){.metrics-grid{grid-template-columns:repeat(2,1fr);}}
+.metric-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;transition:all 0.2s;cursor:default;}
+.metric-card:hover{border-color:var(--b2);transform:translateY(-2px);}
+.metric-card::after{content:'';position:absolute;top:0;right:0;width:80px;height:80px;background:radial-gradient(circle,var(--gg2) 0%,transparent 70%);}
+.metric-label{font-size:11.5px;color:var(--t3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.06em;}
+.metric-value{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--t);}
+.metric-delta{font-size:11.5px;margin-top:4px;}
+.delta-up{color:var(--g);}
+.delta-down{color:var(--re);}
+.delta-neutral{color:var(--t3);}
+
+/* CARDS */
+.card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:20px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--t);}
+.card-sub{font-size:12px;color:var(--t3);margin-top:2px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+@media(max-width:900px){.grid2{grid-template-columns:1fr;}}
+
+/* LEADS PANEL */
+.lead-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg3);border:1px solid var(--b);border-radius:var(--r);margin-bottom:8px;transition:all var(--transition);cursor:pointer;}
+.lead-row:hover{border-color:var(--b2);background:var(--bg4);}
+.lead-av{width:36px;height:36px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0A0D0B;}
+.lead-info{flex:1;min-width:0;}
+.lead-name{font-size:13px;font-weight:500;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lead-svc{font-size:11.5px;color:var(--t3);}
+.lead-price{font-size:13px;font-weight:600;color:var(--g);flex-shrink:0;}
+.lead-st{font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:6px;flex-shrink:0;text-transform:uppercase;letter-spacing:0.05em;}
+.st-new{background:var(--gg);color:var(--g);border:1px solid var(--b2);}
+.st-pend{background:rgba(255,179,71,0.1);color:var(--am);border:1px solid rgba(255,179,71,0.25);}
+.st-done{background:rgba(91,156,246,0.1);color:var(--bl);border:1px solid rgba(91,156,246,0.25);}
+.lead-time{font-size:11px;color:var(--t3);flex-shrink:0;}
+
+/* SERVICES PANEL */
+.svc-panel-row{display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--bg3);border:1px solid var(--b);border-radius:var(--r);margin-bottom:8px;transition:all var(--transition);}
+.svc-panel-row:hover{border-color:var(--b2);}
+.svc-toggle{width:36px;height:20px;background:var(--g);border-radius:10px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
+.svc-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#0A0D0B;transition:left 0.2s;}
+.svc-toggle.off{background:var(--s2);}
+.svc-toggle.off::after{left:18px;background:var(--t3);}
+.edit-btn{width:28px;height:28px;border-radius:6px;background:var(--s2);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3);font-size:12px;transition:all var(--transition);flex-shrink:0;}
+.edit-btn:hover{color:var(--g);border-color:var(--b2);}
+
+/* BAR CHART */
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:90px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.bar{width:100%;border-radius:5px 5px 0 0;background:var(--gg);border:1px solid var(--b2);cursor:pointer;transition:height 0.6s cubic-bezier(.25,.8,.25,1);}
+.bar:hover{background:rgba(0,208,132,0.25);}
+.bar.hi{background:var(--g);border-color:var(--g);}
+
+/* CONVERSION MINI-CHART */
+.conv-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:12.5px;}
+.conv-bar-bg{flex:1;height:6px;background:var(--s2);border-radius:3px;overflow:hidden;}
+.conv-bar-fill{height:100%;background:var(--g);border-radius:3px;transition:width 0.8s cubic-bezier(.25,.8,.25,1);}
+
+/* MOBILE SIDEBAR TOGGLE */
+.sidebar-toggle{display:none;background:var(--s);border:1px solid var(--b);border-radius:8px;padding:8px;cursor:pointer;color:var(--t2);}
+@media(max-width:768px){
+  #scPainel.active{flex-direction:column;}
+  .sidebar{width:100%;max-height:60px;overflow:hidden;transition:max-height 0.3s;}
+  .sidebar.open{max-height:600px;}
+  .sidebar-toggle{display:flex;align-items:center;justify-content:center;}
+  .main-panel{flex:1;}
+  .topbar{padding:0 16px;}
+  .page-content{padding:16px;}
+}
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     styles/responsive.css — Mobile-first fixes
+════════════════════════════════════════════════════════════ -->
+<style id="css-responsive">
+@media(max-width:600px){
+  .home-wrap{padding:30px 20px;}
+  .home-logo{font-size:36px;}
+  .portal-cards{grid-template-columns:1fr;}
+  .metrics-grid{grid-template-columns:1fr 1fr;}
+  .of-top{flex-wrap:wrap;}
+  .form-row{grid-template-columns:1fr;}
+  .modal{padding:20px;max-height:95vh;}
+  .filters-grid{grid-template-columns:1fr 1fr;}
+  .plan-opts{grid-template-columns:1fr;}
+}
+/* Focus visible for keyboard nav */
+:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
+button:focus-visible,a:focus-visible{outline:2px solid var(--g);outline-offset:2px;}
+/* Minimum touch target */
+button,a,[role=button]{min-height:44px;}
+.chip,.nav-item,.modal-close,.edit-btn,.svc-del{min-height:36px;}
+/* High contrast secondary text */
+.improved-contrast{color:#7A9B7B;} /* was --t3 which was too light */
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: LOADER
+════════════════════════════════════════════════════════════ -->
+<div id="scLoader" class="screen active" role="status" aria-label="Carregando MecBusca">
+  <div class="loader-logo" aria-hidden="true">Mec<em>Busca</em></div>
+  <div class="loader-bar" role="progressbar" aria-label="Inicializando"><div class="loader-fill"></div></div>
+  <div class="loader-sub" id="loaderMsg">Inicializando...</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: AUTH (Login / Register workshop)
+════════════════════════════════════════════════════════════ -->
+<div id="scAuth" class="screen">
+  <div class="auth-wrap">
+    <div class="auth-logo">Mec<em>Busca</em></div>
+    <div class="auth-tagline">Painel exclusivo para oficinas cadastradas</div>
+    <div class="auth-tabs" role="tablist">
+      <div class="auth-tab active" role="tab" aria-selected="true" onclick="switchAuthTab('login')">Entrar</div>
+      <div class="auth-tab" role="tab" aria-selected="false" onclick="switchAuthTab('register')">Criar conta</div>
+    </div>
+    <!-- LOGIN -->
+    <div id="authLogin">
+      <div class="form-group">
+        <label class="form-label" for="authEmail">Email</label>
+        <input class="form-input" id="authEmail" type="email" placeholder="contato@suaoficina.com" autocomplete="email">
+        <span class="field-error" id="authEmailErr">Email inválido</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="authPass">Senha</label>
+        <input class="form-input" id="authPass" type="password" placeholder="••••••••" autocomplete="current-password">
+        <span class="field-error" id="authPassErr">Senha incorreta</span>
+      </div>
+      <button class="btn btn-primary" id="btnLogin" onclick="doLogin()">
+        <span id="loginBtnText">Entrar no painel</span>
+        <span id="loginBtnSpinner" style="display:none;"><span class="spinner"></span></span>
+      </button>
+      <div class="auth-divider">ou</div>
+      <button class="btn btn-ghost" onclick="demoLogin()">🚀 Entrar como demo (sem cadastro)</button>
+    </div>
+    <!-- REGISTER -->
+    <div id="authRegister" style="display:none">
+      <div class="form-group">
+        <label class="form-label" for="regNome">Nome da oficina</label>
+        <input class="form-input" id="regNome" placeholder="Auto Center Vitória">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="regEmail">Email</label>
+        <input class="form-input" id="regEmail" type="email" placeholder="contato@suaoficina.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="regPass">Senha (mín. 6 caracteres)</label>
+        <input class="form-input" id="regPass" type="password" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary" id="btnRegister" onclick="doRegister()">
+        <span id="regBtnText">Criar conta</span>
+        <span id="regBtnSpinner" style="display:none;"><span class="spinner"></span></span>
+      </button>
+    </div>
+    <div class="auth-footer">
+      <a onclick="goTo('scHome')">← Voltar ao início</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: HOME
+════════════════════════════════════════════════════════════ -->
+<div id="scHome" class="screen">
+  <div class="home-wrap">
+    <div class="home-logo">Mec<em>Busca</em></div>
+    <div class="home-tagline">O marketplace de oficinas mecânicas.<br>Orçamento instantâneo. WhatsApp direto.</div>
+    <div class="portal-cards" role="list">
+      <div class="portal-card" role="listitem" onclick="goTo('scCliente')" tabindex="0" aria-label="Sou cliente — encontrar oficinas" onkeypress="if(event.key==='Enter')goTo('scCliente')">
+        <div class="pc-icon" aria-hidden="true">🔍</div>
+        <div class="pc-title">Sou cliente</div>
+        <div class="pc-sub">Quero encontrar oficinas e orçamentos</div>
+      </div>
+      <div class="portal-card featured" role="listitem" onclick="goTo('scOnboarding')" tabindex="0" aria-label="Sou oficina — receber mais clientes" onkeypress="if(event.key==='Enter')goTo('scOnboarding')">
+        <div class="pc-icon" aria-hidden="true">🔧</div>
+        <div class="pc-title">Sou oficina</div>
+        <div class="pc-sub">Quero receber mais clientes</div>
+      </div>
+    </div>
+    <div class="home-note">Já tem cadastro? <span style="color:var(--g);cursor:pointer;" tabindex="0" role="link" onclick="goTo('scAuth')" onkeypress="if(event.key==='Enter')goTo('scAuth')">Acessar painel →</span></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: ONBOARDING
+════════════════════════════════════════════════════════════ -->
+<div id="scOnboarding" class="screen">
+  <div class="onb-wrap">
+    <div class="onb-header">
+      <div class="onb-back" onclick="goTo('scHome')" tabindex="0" aria-label="Voltar" onkeypress="if(event.key==='Enter')goTo('scHome')">←</div>
+      <div class="onb-logo">Mec<em>Busca</em></div>
+    </div>
+    <div class="steps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1">
+      <div class="step-seg active" id="seg0"></div>
+      <div class="step-seg" id="seg1"></div>
+      <div class="step-seg" id="seg2"></div>
+      <div class="step-seg" id="seg3"></div>
+    </div>
+
+    <!-- STEP 0: Dados básicos -->
+    <div class="onb-step active" id="step0" role="form" aria-label="Passo 1: Dados da oficina">
+      <div class="step-num">Passo 1 de 4</div>
+      <div class="step-title">Dados da oficina</div>
+      <div class="step-sub">Essas informações aparecem para os clientes na busca.</div>
+      <div class="form-group">
+        <label class="form-label" for="onbNome">Nome da oficina *</label>
+        <input class="form-input" id="onbNome" placeholder="Ex: Auto Center Vitória" aria-required="true">
+        <span class="field-error" id="onbNomeErr">Nome é obrigatório</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="onbCidade">Cidade</label>
+          <input class="form-input" id="onbCidade" placeholder="Cariacica">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="onbBairro">Bairro</label>
+          <input class="form-input" id="onbBairro" placeholder="Campo Grande">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="onbEndereco">Endereço completo</label>
+        <input class="form-input" id="onbEndereco" placeholder="Rua das Flores, 142">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="onbWpp">WhatsApp (com DDD) *</label>
+        <div class="phone-mask-wrap">
+          <span class="phone-flag" aria-hidden="true">🇧🇷</span>
+          <input class="form-input" id="onbWpp" placeholder="(27) 9 9999-0000" type="tel" autocomplete="tel" oninput="phoneMask(this)" aria-required="true">
+        </div>
+        <span class="field-error" id="onbWppErr">WhatsApp inválido (precisa de 11 dígitos)</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="onbEmail">Email</label>
+        <input class="form-input" id="onbEmail" placeholder="contato@suaoficina.com" type="email" autocomplete="email">
+        <span class="field-error" id="onbEmailErr">Email inválido</span>
+      </div>
+      <button class="btn btn-primary" onclick="nextStep(1)">Continuar →</button>
+    </div>
+
+    <!-- STEP 1: Serviços -->
+    <div class="onb-step" id="step1">
+      <div class="step-num">Passo 2 de 4</div>
+      <div class="step-title">Serviços & preços</div>
+      <div class="step-sub">Adicione os serviços que você oferece. Os preços são exibidos direto para o cliente.</div>
+      <div class="svc-list" id="onbSvcList" aria-live="polite"></div>
+      <div class="add-svc-row">
+        <div class="form-group" style="margin:0"><input class="form-input" id="nsvcNome" placeholder="Serviço (ex: Troca de óleo)" aria-label="Nome do serviço"></div>
+        <div class="form-group" style="margin:0"><input class="form-input" id="nsvcMin" type="number" placeholder="Mín R$" aria-label="Preço mínimo"></div>
+        <div class="form-group" style="margin:0"><input class="form-input" id="nsvcMax" type="number" placeholder="Máx R$" aria-label="Preço máximo"></div>
+        <button class="add-btn-sm" onclick="addOnbSvc()" aria-label="Adicionar serviço">+</button>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:10px;">
+        <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 20px;" onclick="nextStep(0)">← Voltar</button>
+        <button class="btn btn-primary" onclick="nextStep(2)">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- STEP 2: Horários -->
+    <div class="onb-step" id="step2">
+      <div class="step-num">Passo 3 de 4</div>
+      <div class="step-title">Horários de funcionamento</div>
+      <div class="step-sub">Clientes veem se você está aberto agora.</div>
+      <div id="onbHorarios" aria-label="Horários por dia da semana"></div>
+      <div style="margin-top:24px;display:flex;gap:10px;">
+        <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 20px;" onclick="nextStep(1)">← Voltar</button>
+        <button class="btn btn-primary" onclick="nextStep(3)">Continuar →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: Plano -->
+    <div class="onb-step" id="step3">
+      <div class="step-num">Passo 4 de 4</div>
+      <div class="step-title">Escolha seu plano</div>
+      <div class="step-sub">Cancele quando quiser. Sem contrato de fidelidade.</div>
+      <div class="plan-opts" role="radiogroup" aria-label="Planos disponíveis">
+        <div class="plan-opt" id="planBasico" onclick="selectPlan('basico')" role="radio" aria-checked="false" tabindex="0">
+          <div class="plan-name">Básico</div>
+          <div class="plan-price-big">R$ 47<span>/mês</span></div>
+          <div class="plan-feats">✓ Perfil no app<br>✓ Até 20 leads/mês<br>✓ WhatsApp direto<br>✗ Orçamento automático<br>✗ Destaque na busca</div>
+        </div>
+        <div class="plan-opt popular selected" id="planPro" onclick="selectPlan('pro')" role="radio" aria-checked="true" tabindex="0">
+          <div class="popular-tag">Mais popular</div>
+          <div class="plan-name">Pro</div>
+          <div class="plan-price-big">R$ 97<span>/mês</span></div>
+          <div class="plan-feats">✓ Perfil em destaque<br>✓ Leads ilimitados<br>✓ WhatsApp direto<br>✓ Orçamento automático<br>✓ Dashboard completo</div>
+        </div>
+      </div>
+      <div style="background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--t2);">
+        💡 <strong style="color:var(--g);">ROI médio:</strong> oficinas no plano Pro recebem R$ 3.800–6.200 extras por mês.
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 20px;" onclick="nextStep(2)">← Voltar</button>
+        <button class="btn btn-primary" id="btnFinalizarCad" onclick="finalizarCadastro()">
+          <span id="finalizarText">🚀 Ativar minha conta</span>
+          <span id="finalizarSpinner" style="display:none;"><span class="spinner"></span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="onb-step" id="stepSuccess">
+      <div class="success-wrap">
+        <div class="success-icon" aria-hidden="true">✅</div>
+        <div class="success-title">Oficina cadastrada!</div>
+        <div class="success-sub">Seu perfil já está visível no MecBusca.<br>Clientes podem te encontrar agora mesmo.</div>
+        <button class="btn btn-primary" style="margin-bottom:12px;" onclick="loadPainel()">Acessar meu painel →</button>
+        <button class="btn btn-ghost" onclick="goTo('scCliente')">Ver como cliente vê</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: CLIENTE — busca unificada
+════════════════════════════════════════════════════════════ -->
+<div id="scCliente" class="screen" role="main">
+  <header class="cli-header">
+    <div class="cli-top">
+      <div class="cli-logo" aria-label="MecBusca">Mec<em>Busca</em></div>
+      <div class="cli-loc" id="cliLoc" tabindex="0" aria-label="Localização atual: Cariacica, ES">📍 Cariacica, ES</div>
+      <button class="btn btn-ghost btn-sm" onclick="goTo('scHome')" style="margin-left:8px;width:auto;" aria-label="Voltar ao início">↩</button>
+    </div>
+    <div class="search-bar" role="search">
+      <svg class="ico" style="width:15px;height:15px;color:var(--t3)" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="search" id="cliSearch" placeholder="Buscar oficina, serviço ou peça..." oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
+      <span id="searchClear" style="font-size:16px;color:var(--t3);cursor:pointer;display:none;" onclick="clearSearch()" aria-label="Limpar busca" role="button" tabindex="0">×</span>
+      <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()" aria-expanded="false" aria-controls="filtersPanel" style="min-height:auto;">
+        ⚙ Filtros
+      </button>
+    </div>
+    <div class="search-modes" role="tablist" aria-label="Tipo de busca">
+      <button class="mode-btn active" id="mode-oficinas" onclick="setMode('oficinas')" role="tab" aria-selected="true">🔧 Oficinas</button>
+      <button class="mode-btn" id="mode-tipos" onclick="setMode('tipos')" role="tab" aria-selected="false">🏪 Tipos</button>
+      <button class="mode-btn" id="mode-servicos" onclick="setMode('servicos')" role="tab" aria-selected="false">⚙️ Serviços</button>
+      <button class="mode-btn" id="mode-pecas" onclick="setMode('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
+    </div>
+  </header>
+
+  <!-- ADVANCED FILTERS PANEL -->
+  <div class="filters-panel" id="filtersPanel" role="region" aria-label="Filtros avançados">
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label class="filter-label" for="fCidade">Cidade</label>
+        <select class="filter-select" id="fCidade" onchange="applyAdvFilters()" aria-label="Filtrar por cidade">
+          <option value="">Todas</option>
+          <option value="Cariacica">Cariacica</option>
+          <option value="Vitória">Vitória</option>
+          <option value="Serra">Serra</option>
+          <option value="Vila Velha">Vila Velha</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="fBairro">Bairro</label>
+        <select class="filter-select" id="fBairro" onchange="applyAdvFilters()" aria-label="Filtrar por bairro">
+          <option value="">Todos</option>
+          <option value="Campo Grande">Campo Grande</option>
+          <option value="Padre Gabriel">Padre Gabriel</option>
+          <option value="Nova Rosa da Penha">Nova Rosa da Penha</option>
+          <option value="Itaquari">Itaquari</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="fVeiculo">Tipo de veículo</label>
+        <select class="filter-select" id="fVeiculo" onchange="applyAdvFilters()" aria-label="Filtrar por tipo de veículo">
+          <option value="">Todos</option>
+          <option value="carro">🚗 Carro</option>
+          <option value="moto">🏍️ Moto</option>
+          <option value="caminhao">🚛 Caminhão</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="fUrgencia">Urgência</label>
+        <select class="filter-select" id="fUrgencia" onchange="applyAdvFilters()" aria-label="Filtrar por urgência">
+          <option value="">Normal</option>
+          <option value="urgente">🔴 Urgente (agendamento hoje)</option>
+          <option value="programado">📅 Programado</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Avaliação mínima</label>
+        <div class="filter-range">
+          <span>1★</span>
+          <input type="range" id="fAvaliacao" min="1" max="5" step="0.5" value="1" onchange="applyAdvFilters()" oninput="document.getElementById('fAvaliacaoVal').textContent=this.value+'★'" aria-label="Avaliação mínima">
+          <span id="fAvaliacaoVal">1★</span>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Faixa de preço</label>
+        <div class="filter-range">
+          <span>R$</span>
+          <input type="range" id="fPrecoMax" min="50" max="2000" step="50" value="2000" onchange="applyAdvFilters()" oninput="document.getElementById('fPrecoMaxVal').textContent='até R$'+this.value" aria-label="Preço máximo">
+          <span id="fPrecoMaxVal">até R$2000</span>
+        </div>
+      </div>
+      <div class="filter-group" style="justify-content:flex-end;">
+        <label class="filter-checkrow">
+          <input type="checkbox" id="fAbertaAgora" onchange="applyAdvFilters()" aria-label="Apenas oficinas abertas agora">
+          Aberta agora
+        </label>
+      </div>
+    </div>
+  </div>
+  <!-- Active filter tags -->
+  <div class="active-filters" id="activeFilters" style="display:none;"></div>
+
+  <!-- CHIPS -->
+  <nav class="cli-filters" id="cliFilters" aria-label="Filtros rápidos"></nav>
+
+  <div class="cli-body">
+    <div class="results-header">
+      <div class="results-count" id="resultsCount" aria-live="polite" aria-atomic="true"></div>
+    </div>
+    <div id="resultsList" aria-live="polite"></div>
+  </div>
+</div>
+
+<!-- MODAL: ORÇAMENTO / LEAD -->
+<div class="modal-overlay" id="budgetModal" role="dialog" aria-modal="true" aria-labelledby="bm-nome" onclick="closeModal('budgetModal',event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('budgetModal')" aria-label="Fechar modal">×</button>
+    <div class="modal-title" id="bm-nome"></div>
+    <div class="modal-sub" id="bm-sub"></div>
+    <div id="bm-body"></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: PAINEL DA OFICINA
+════════════════════════════════════════════════════════════ -->
+<div id="scPainel" role="main">
+  <nav class="sidebar" id="painelSidebar" aria-label="Menu do painel">
+    <div class="logo-area">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <div class="logo">
+          <div class="logo-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3-3a1 1 0 000-1.4l-1.6-1.6a1 1 0 00-1.4 0l-3 3zM3 17a1 1 0 001 1h3l9.5-9.5-4-4L3 14v3z"/></svg>
+          </div>
+          <span class="logo-name">Mec<em>Busca</em></span>
+        </div>
+        <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Abrir menu">☰</button>
+      </div>
+      <div class="plan-badge" aria-label="Plano ativo: Pro"><div class="plan-dot" aria-hidden="true"></div>Plano Pro · ativo</div>
+    </div>
+    <div class="nav">
+      <div class="nav-label" aria-hidden="true">Painel</div>
+      <div class="nav-item active" onclick="painelPage('dashboard',this)" role="button" tabindex="0" aria-label="Dashboard">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="nav-item" onclick="painelPage('leads',this)" role="button" tabindex="0" aria-label="Leads">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Leads
+        <span class="nav-badge" id="leadsNavBadge" aria-label="leads novos">0</span>
+      </div>
+      <div class="nav-item" onclick="painelPage('servicos',this)" role="button" tabindex="0">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+        Serviços & Preços
+      </div>
+      <div class="nav-label" aria-hidden="true">Gestão</div>
+      <div class="nav-item" onclick="painelPage('horarios',this)" role="button" tabindex="0">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Horários
+      </div>
+      <div class="nav-item" onclick="painelPage('metricas',this)" role="button" tabindex="0">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Métricas
+      </div>
+      <div class="nav-item" onclick="goTo('scCliente')" role="button" tabindex="0">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Ver como cliente
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="of-info-bar" onclick="doLogout()" title="Sair" role="button" tabindex="0" aria-label="Logout">
+        <div class="of-avatar-sm" id="painelAvatar" aria-hidden="true">AC</div>
+        <div>
+          <div style="font-size:12.5px;font-weight:500;color:var(--t);" id="painelNome">Auto Center Vitória</div>
+          <div style="font-size:11px;color:var(--t3);" id="painelEmail">—</div>
+        </div>
+        <span style="margin-left:auto;font-size:11px;color:var(--t3);">Sair</span>
+      </div>
+    </div>
+  </nav>
+
+  <div class="main-panel">
+    <div class="topbar">
+      <div class="topbar-title" id="painelTitle">Dashboard</div>
+      <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openAddSvcModal()" aria-label="Adicionar serviço">+ Serviço</button>
+    </div>
+    <div class="page-content" id="painelContent"></div>
+  </div>
+</div>
+
+<!-- MODAL: ADD/EDIT SERVIÇO PAINEL -->
+<div class="modal-overlay" id="addSvcModal" role="dialog" aria-modal="true" aria-labelledby="addSvcTitle" onclick="closeModal('addSvcModal',event)">
+  <div class="modal" style="max-width:400px;">
+    <button class="modal-close" onclick="closeModal('addSvcModal')" aria-label="Fechar modal">×</button>
+    <div class="modal-title" id="addSvcTitle">Novo Serviço</div>
+    <div class="modal-sub">Será exibido para clientes com orçamento automático</div>
+    <div class="form-group">
+      <label class="form-label" for="asvNome">Nome do serviço *</label>
+      <input class="form-input" id="asvNome" placeholder="Ex: Troca de óleo" aria-required="true">
+      <span class="field-error" id="asvNomeErr">Nome é obrigatório</span>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="asvMin">Preço mín (R$)</label>
+        <input class="form-input" id="asvMin" type="number" placeholder="89" min="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="asvMax">Preço máx (R$)</label>
+        <input class="form-input" id="asvMax" type="number" placeholder="120" min="0">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeModal('addSvcModal')">Cancelar</button>
+      <button class="btn btn-primary" style="flex:1" id="btnSalvarSvc" onclick="salvarNovoSvc()">
+        <span id="salvarSvcText">Salvar</span>
+        <span id="salvarSvcSpinner" style="display:none;"><span class="spinner"></span></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast" role="alert" aria-live="assertive">
+  <span class="toast-icon" id="toastIcon" aria-hidden="true">✓</span>
+  <span id="toastMsg">Salvo!</span>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     firebase.js — Firebase init & API
+════════════════════════════════════════════════════════════ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, getDocs, query, where,
+  orderBy, serverTimestamp, onSnapshot, doc, updateDoc, getDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import {
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ── Configure Firebase ────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+// ─────────────────────────────────────────────────────────────────
+
+let app, db, auth, isFirebaseReady = false;
+try {
+  app = initializeApp(firebaseConfig);
+  db = getFirestore(app);
+  auth = getAuth(app);
+  if (!firebaseConfig.apiKey.includes("YOUR_")) {
+    isFirebaseReady = true;
+    console.log("✅ Firebase conectado");
+  } else {
+    console.warn("⚠️ Firebase em modo DEMO — configure firebaseConfig");
+  }
+} catch(e) {
+  console.warn("Firebase não inicializado:", e);
+}
+
+// ── Firebase Public API ───────────────────────────────────────────
+window.FB = {
+  ready: () => isFirebaseReady,
+
+  // AUTH
+  async login(email, password) {
+    if (!isFirebaseReady) throw new Error("Firebase não configurado");
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    return cred.user;
+  },
+
+  async register(email, password) {
+    if (!isFirebaseReady) throw new Error("Firebase não configurado");
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    return cred.user;
+  },
+
+  async logout() {
+    if (auth) await signOut(auth);
+  },
+
+  onAuthChange(cb) {
+    if (!auth) return () => {};
+    return onAuthStateChanged(auth, cb);
+  },
+
+  getCurrentUser() {
+    return auth?.currentUser || null;
+  },
+
+  // OFICINAS — scoped to authenticated user
+  async cadastrarOficina(data) {
+    if (!isFirebaseReady) return demoSave("oficina", data);
+    const user = auth.currentUser;
+    const ref = await addDoc(collection(db, "oficinas"), {
+      ...data, ativo: true, uid: user?.uid || null,
+      criadoEm: serverTimestamp()
+    });
+    return ref.id;
+  },
+
+  async getMinhaOficina(uid) {
+    if (!isFirebaseReady) return null;
+    const q = query(collection(db, "oficinas"), where("uid", "==", uid));
+    const snap = await getDocs(q);
+    if (snap.empty) return null;
+    const d = snap.docs[0];
+    return { id: d.id, ...d.data() };
+  },
+
+  async listarOficinas(filtros = {}) {
+    if (!isFirebaseReady) return demoOficinas(filtros);
+    const snap = await getDocs(collection(db, "oficinas"));
+    let oficinas = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.ativo);
+    if (filtros.servico) {
+      oficinas = oficinas.filter(o =>
+        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(filtros.servico.toLowerCase()) && s.ativo)
+      );
+    }
+    if (filtros.cidade) {
+      oficinas = oficinas.filter(o =>
+        (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase())
+      );
+    }
+    if (filtros.bairro) {
+      oficinas = oficinas.filter(o =>
+        (o.bairro||'').toLowerCase().includes(filtros.bairro.toLowerCase())
+      );
+    }
+    if (filtros.avaliacaoMin) {
+      oficinas = oficinas.filter(o => (o.avaliacao||0) >= filtros.avaliacaoMin);
+    }
+    if (filtros.precoMax) {
+      oficinas = oficinas.filter(o =>
+        (o.servicos||[]).some(s => s.min <= filtros.precoMax)
+      );
+    }
+    if (filtros.apenasAberta) {
+      oficinas = oficinas.filter(o => o.aberto === true);
+    }
+    return oficinas;
+  },
+
+  // LEADS — scoped to workshop
+  async enviarLead(data) {
+    if (!isFirebaseReady) return demoSave("lead", data);
+    const ref = await addDoc(collection(db, "leads"), {
+      ...data, status: "novo", criadoEm: serverTimestamp()
+    });
+    return ref.id;
+  },
+
+  async listarLeadsDaOficina(oficinaId) {
+    if (!isFirebaseReady) return demoLeads(oficinaId);
+    const q = query(
+      collection(db, "leads"),
+      where("oficinaId", "==", oficinaId),
+      orderBy("criadoEm", "desc")
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  async atualizarLead(leadId, data) {
+    if (!isFirebaseReady) return true;
+    await updateDoc(doc(db, "leads", leadId), { ...data, atualizadoEm: serverTimestamp() });
+    return true;
+  },
+
+  onLeadsSnapshot(oficinaId, cb) {
+    if (!isFirebaseReady) return () => {};
+    const q = query(collection(db, "leads"), where("oficinaId", "==", oficinaId), orderBy("criadoEm", "desc"));
+    return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+  },
+
+  // MÉTRICAS
+  async getMetricas(oficinaId) {
+    if (!isFirebaseReady) return demoMetricas(oficinaId);
+    const leads = await this.listarLeadsDaOficina(oficinaId);
+    return calcMetricas(leads);
+  }
+};
+
+// ── Demo Data ─────────────────────────────────────────────────────
+let _demoId = 1000;
+const demoStore = { oficinas: [], leads: [] };
+
+function demoSave(col, data) {
+  const id = "demo_" + (++_demoId);
+  demoStore[col + "s"].push({ id, ...data });
+  return id;
+}
+
+function demoOficinas(filtros = {}) {
+  const now = new Date();
+  const hour = now.getHours();
+  const base = [
+    {
+      id:"of001", nome:"Auto Center Vitória", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999990001", avaliacao:4.8, avaliacoes:47, distancia:"0,8 km",
+      aberto: hour >= 7 && hour < 18, horario:"até 18h", tipoVeiculo:['carro'],
+      servicos:[
+        {nome:"Troca de óleo",min:89,max:120,ativo:true},
+        {nome:"Freios dianteiros",min:220,max:350,ativo:true},
+        {nome:"Alinhamento",min:60,max:80,ativo:true},
+        {nome:"Suspensão",min:180,max:320,ativo:true},
+      ]
+    },
+    {
+      id:"of002", nome:"Oficina do Zé", cidade:"Cariacica", bairro:"Padre Gabriel",
+      whatsapp:"27999990002", avaliacao:4.3, avaliacoes:23, distancia:"1,2 km",
+      aberto: hour >= 7 && hour < 17, horario:"até 17h", tipoVeiculo:['carro','moto'],
+      servicos:[
+        {nome:"Troca de óleo",min:75,max:95,ativo:true},
+        {nome:"Elétrica automotiva",min:80,max:200,ativo:true},
+      ]
+    },
+    {
+      id:"of003", nome:"MasterCar Revisões", cidade:"Cariacica", bairro:"Nova Rosa da Penha",
+      whatsapp:"27999990003", avaliacao:4.9, avaliacoes:89, distancia:"2,1 km",
+      aberto: hour >= 8 && hour < 18, horario:"abre 8h", tipoVeiculo:['carro'],
+      servicos:[
+        {nome:"Troca de óleo",min:110,max:150,ativo:true},
+        {nome:"Revisão completa",min:450,max:750,ativo:true},
+        {nome:"Ar-condicionado",min:120,max:200,ativo:true},
+        {nome:"Suspensão",min:200,max:400,ativo:true},
+      ]
+    },
+    {
+      id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
+      whatsapp:"27999990004", avaliacao:3.9, avaliacoes:11, distancia:"3,0 km",
+      aberto: hour >= 7 && hour < 19, horario:"até 19h", tipoVeiculo:['carro','caminhao'],
+      servicos:[
+        {nome:"Freios dianteiros",min:180,max:300,ativo:true},
+        {nome:"Alinhamento",min:55,max:75,ativo:true},
+      ]
+    }
+  ];
+  let r = [...base];
+  if (filtros.servico) r = r.filter(o => o.servicos.some(s => s.nome.toLowerCase().includes(filtros.servico.toLowerCase()) && s.ativo));
+  if (filtros.cidade) r = r.filter(o => o.cidade.toLowerCase().includes(filtros.cidade.toLowerCase()));
+  if (filtros.bairro) r = r.filter(o => o.bairro.toLowerCase().includes(filtros.bairro.toLowerCase()));
+  if (filtros.avaliacaoMin) r = r.filter(o => o.avaliacao >= filtros.avaliacaoMin);
+  if (filtros.precoMax) r = r.filter(o => o.servicos.some(s => s.min <= filtros.precoMax));
+  if (filtros.apenasAberta) r = r.filter(o => o.aberto);
+  if (filtros.tipoVeiculo) r = r.filter(o => (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
+  return r;
+}
+
+function demoLeads(id) {
+  const now = Date.now() / 1000;
+  return [
+    {id:"l1",nomeCliente:"Marcos Silva",servico:"Troca de óleo",carro:"Gol 1.0",whatsapp:"27911110001",status:"novo",valor:114,criadoEm:{seconds:now-120},origem:"busca"},
+    {id:"l2",nomeCliente:"Ana Oliveira",servico:"Freios dianteiros",carro:"HB20",whatsapp:"27911110002",status:"aguardando",valor:280,criadoEm:{seconds:now-1080},origem:"whatsapp"},
+    {id:"l3",nomeCliente:"Rodrigo Costa",servico:"Alinhamento",carro:"Civic",whatsapp:"27911110003",status:"confirmado",valor:90,criadoEm:{seconds:now-3600},origem:"busca"},
+    {id:"l4",nomeCliente:"Paula Ferreira",servico:"Revisão completa",carro:"Onix 2022",whatsapp:"27911110004",status:"novo",valor:520,criadoEm:{seconds:now-7200},origem:"google"},
+    {id:"l5",nomeCliente:"Bruno Almeida",servico:"Ar-condicionado",carro:"Corolla 2021",whatsapp:"27911110005",status:"confirmado",valor:165,criadoEm:{seconds:now-86400},origem:"busca"},
+    {id:"l6",nomeCliente:"Carla Santos",servico:"Suspensão",carro:"Polo 2020",whatsapp:"27911110006",status:"aguardando",valor:320,criadoEm:{seconds:now-172800},origem:"whatsapp"},
+  ];
+}
+
+function demoMetricas(id) {
+  const leads = demoLeads(id);
+  return calcMetricas(leads);
+}
+
+function calcMetricas(leads) {
+  const total = leads.length;
+  const confirmados = leads.filter(l => l.status === 'confirmado').length;
+  const receita = leads.reduce((s, l) => s + (l.valor || 0), 0);
+  const ticket = total > 0 ? Math.round(receita / total) : 0;
+  const conversao = total > 0 ? Math.round((confirmados / total) * 100) : 0;
+  const origens = leads.reduce((acc, l) => {
+    const o = l.origem || 'busca';
+    acc[o] = (acc[o] || 0) + 1;
+    return acc;
+  }, {});
+  const servicosMais = leads.reduce((acc, l) => {
+    const s = l.servico || 'Outro';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+  return { total, confirmados, receita, ticket, conversao, origens, servicosMais };
+}
+
+window.demoOficinas = demoOficinas;
+window.dispatchEvent(new Event("fbready"));
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     state.js — Application state management
+════════════════════════════════════════════════════════════ -->
+<script>
+const STATE = {
+  // Auth
+  user: null,
+  // Onboarding
+  step: 0,
+  onbData: { nome:'', cidade:'', bairro:'', endereco:'', wpp:'', email:'', servicos:[], horarios:[], plano:'pro' },
+  selectedPlan: 'pro',
+  // Panel
+  oficinaAtual: null,
+  leads: [],
+  painelSvcs: [
+    {nome:'Troca de óleo',min:89,max:120,ativo:true},
+    {nome:'Freios dianteiros',min:220,max:350,ativo:true},
+    {nome:'Alinhamento',min:60,max:80,ativo:true},
+    {nome:'Revisão completa',min:450,max:750,ativo:true},
+    {nome:'Ar-condicionado',min:120,max:200,ativo:false}
+  ],
+  // Client search
+  oficinas: [],
+  modo: 'oficinas',
+  filtroChip: '',
+  filtroServico: '',
+  tipoSelecionado: '',
+  // Advanced filters
+  advFilters: {
+    cidade: '', bairro: '', tipoVeiculo: '', urgencia: '',
+    avaliacaoMin: 1, precoMax: 2000, apenasAberta: false
+  },
+  // Submit dedup guard
+  _submitting: false,
+};
+
+const HORARIOS_PADRAO = [
+  {dia:'Seg',range:'07:30 – 18:00',on:true},{dia:'Ter',range:'07:30 – 18:00',on:true},
+  {dia:'Qua',range:'07:30 – 18:00',on:true},{dia:'Qui',range:'07:30 – 18:00',on:true},
+  {dia:'Sex',range:'07:30 – 18:00',on:true},{dia:'Sáb',range:'08:00 – 13:00',on:true},
+  {dia:'Dom',range:'Fechado',on:false}
+];
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     utils.js — Utilities, toast, modal, formatting
+════════════════════════════════════════════════════════════ -->
+<script>
+// ── NAVIGATION ───────────────────────────────────────────────────
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => {
+    s.classList.remove('active');
+    s.style.display = '';
+  });
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = '';
+  el.classList.add('active');
+  if (id === 'scCliente') { renderFilters(); runSearch(); }
+  // Close mobile sidebar when navigating
+  document.getElementById('painelSidebar')?.classList.remove('open');
+}
+
+// ── TOAST ────────────────────────────────────────────────────────
+let _toastTimer;
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  const icon = document.getElementById('toastIcon');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast ${type}`;
+  icon.textContent = type === 'success' ? '✓' : type === 'error' ? '✕' : '⚠';
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── MODAL ────────────────────────────────────────────────────────
+let _lastFocused = null;
+function openModal(id) {
+  _lastFocused = document.activeElement;
+  const el = document.getElementById(id);
+  el.classList.add('open');
+  setTimeout(() => trapFocus(el), 100);
+}
+function closeModal(id, e) {
+  if (!e || e.target === document.getElementById(id)) {
+    const el = document.getElementById(id);
+    el.classList.remove('open');
+    releaseFocus(el);
+    if (_lastFocused) { _lastFocused.focus(); _lastFocused = null; }
+  }
+}
+
+// ── KEYBOARD ACCESSIBILITY ───────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    // Close filters panel
+    document.getElementById('filtersPanel')?.classList.remove('open');
+    document.getElementById('filterToggleBtn')?.setAttribute('aria-expanded','false');
+    document.getElementById('filterToggleBtn')?.classList.remove('active');
+  }
+});
+
+// ── TIME FORMATTING ──────────────────────────────────────────────
+function timeAgo(sec) {
+  const d = Math.floor(Date.now() / 1000 - sec);
+  if (d < 60) return 'agora';
+  if (d < 3600) return Math.floor(d / 60) + 'min';
+  if (d < 86400) return Math.floor(d / 3600) + 'h';
+  return Math.floor(d / 86400) + 'd';
+}
+
+function formatCurrency(v) {
+  return 'R$ ' + Number(v).toLocaleString('pt-BR');
+}
+
+// ── XSS PROTECTION — use on ALL data from Firestore before inserting into HTML ──
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+const esc = escapeHtml; // alias for brevity
+
+// ── DEBOUNCE — prevent Firebase read on every keystroke ──────────
+function debounce(fn, ms) {
+  let t;
+  return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
+}
+const debouncedSearch = debounce(() => runSearch(), 300);
+
+// ── PHONE MASK ───────────────────────────────────────────────────
+function phoneMask(input) {
+  let v = input.value.replace(/\D/g, '').slice(0, 11);
+  if (v.length === 0) { input.value = ''; return; }
+  if (v.length <= 2) {
+    v = '(' + v;
+  } else if (v.length <= 6) {
+    v = '(' + v.slice(0,2) + ') ' + v.slice(2);
+  } else if (v.length <= 10) {
+    v = '(' + v.slice(0,2) + ') ' + v.slice(2,6) + '-' + v.slice(6);
+  } else {
+    v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
+  }
+  input.value = v;
+}
+
+// ── PHONE VALIDATION ─────────────────────────────────────────────
+function validatePhone(val) {
+  const digits = val.replace(/\D/g, '');
+  return digits.length === 10 || digits.length === 11;
+}
+
+// ── EMAIL VALIDATION ─────────────────────────────────────────────
+function validateEmail(val) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+}
+
+// ── FIELD ERROR HELPERS ──────────────────────────────────────────
+function showFieldError(fieldId, errId) {
+  const f = document.getElementById(fieldId);
+  const e = document.getElementById(errId);
+  if (f) f.classList.add('has-error');
+  if (e) e.style.display = 'block';
+}
+function clearFieldError(fieldId, errId) {
+  const f = document.getElementById(fieldId);
+  const e = document.getElementById(errId);
+  if (f) f.classList.remove('has-error');
+  if (e) e.style.display = 'none';
+}
+function clearAllErrors() {
+  document.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+  document.querySelectorAll('.field-error').forEach(el => el.style.display = 'none');
+}
+
+// ── BUTTON LOADING STATE ─────────────────────────────────────────
+function setBtnLoading(btnId, textId, spinnerId, loading) {
+  const btn = document.getElementById(btnId);
+  const txt = document.getElementById(textId);
+  const spin = document.getElementById(spinnerId);
+  if (!btn) return;
+  btn.disabled = loading;
+  if (txt) txt.style.display = loading ? 'none' : '';
+  if (spin) spin.style.display = loading ? 'inline-flex' : 'none';
+}
+
+// ── MOBILE SIDEBAR ───────────────────────────────────────────────
+function toggleSidebar() {
+  document.getElementById('painelSidebar')?.classList.toggle('open');
+}
+
+// ── FOCUS TRAP for modals ─────────────────────────────────────────
+function trapFocus(modalEl) {
+  const focusable = modalEl.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  );
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  modalEl._trapHandler = e => {
+    if (e.key !== 'Tab') return;
+    if (e.shiftKey) {
+      if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+    } else {
+      if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+    }
+  };
+  modalEl.addEventListener('keydown', modalEl._trapHandler);
+  first.focus();
+}
+function releaseFocus(modalEl) {
+  if (modalEl._trapHandler) {
+    modalEl.removeEventListener('keydown', modalEl._trapHandler);
+    delete modalEl._trapHandler;
+  }
+}
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     auth.js — Authentication module
+════════════════════════════════════════════════════════════ -->
+<script>
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach((t, i) => {
+    t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+    t.setAttribute('aria-selected', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+  });
+  document.getElementById('authLogin').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('authRegister').style.display = tab === 'register' ? '' : 'none';
+  clearAllErrors();
+}
+
+async function doLogin() {
+  if (STATE._submitting) return;
+  clearAllErrors();
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  let valid = true;
+  if (!validateEmail(email)) { showFieldError('authEmail', 'authEmailErr'); valid = false; }
+  if (!pass || pass.length < 6) { showFieldError('authPass', 'authPassErr'); valid = false; }
+  if (!valid) return;
+  STATE._submitting = true;
+  setBtnLoading('btnLogin', 'loginBtnText', 'loginBtnSpinner', true);
+  let usedDemo = false;
+  try {
+    if (!window.FB.ready()) { usedDemo = true; await demoLogin(); return; }
+    const user = await window.FB.login(email, pass);
+    STATE.user = user;
+    const oficina = await window.FB.getMinhaOficina(user.uid);
+    STATE.oficinaAtual = oficina || { id: 'of001', nome: 'Minha Oficina', email };
+    loadPainel();
+  } catch(e) {
+    const msg = e.code === 'auth/invalid-credential' ? 'Email ou senha incorretos' : 'Erro ao entrar. Tente novamente.';
+    showFieldError('authPass', 'authPassErr');
+    document.getElementById('authPassErr').textContent = msg;
+    toast(msg, 'error');
+  } finally {
+    // demoLogin already reset state — skip to avoid double-reset
+    if (!usedDemo) {
+      STATE._submitting = false;
+      setBtnLoading('btnLogin', 'loginBtnText', 'loginBtnSpinner', false);
+    }
+  }
+}
+
+async function demoLogin() {
+  STATE.user = { uid: 'demo', email: 'demo@mecbusca.com', isDemo: true };
+  STATE.oficinaAtual = {
+    id: 'of001', nome: 'Auto Center Vitória',
+    email: 'admin@autocenter.com', cidade: 'Cariacica'
+  };
+  // Reset state BEFORE loadPainel to avoid finally-block race
+  STATE._submitting = false;
+  setBtnLoading('btnLogin', 'loginBtnText', 'loginBtnSpinner', false);
+  loadPainel();
+}
+
+async function doRegister() {
+  if (STATE._submitting) return;
+  clearAllErrors();
+  const nome = document.getElementById('regNome').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass = document.getElementById('regPass').value;
+  let valid = true;
+  if (!nome) { toast('Informe o nome da oficina', 'warning'); valid = false; }
+  if (!validateEmail(email)) { showFieldError('regEmail', null); toast('Email inválido', 'warning'); valid = false; }
+  if (!pass || pass.length < 6) { toast('Senha mínima: 6 caracteres', 'warning'); valid = false; }
+  if (!valid) return;
+  STATE._submitting = true;
+  setBtnLoading('btnRegister', 'regBtnText', 'regBtnSpinner', true);
+  try {
+    if (!window.FB.ready()) {
+      // Demo fallback
+      STATE.onbData.nome = nome;
+      STATE.onbData.email = email;
+      goTo('scOnboarding');
+      return;
+    }
+    const user = await window.FB.register(email, pass);
+    STATE.user = user;
+    STATE.onbData.nome = nome;
+    STATE.onbData.email = email;
+    goTo('scOnboarding');
+  } catch(e) {
+    toast('Erro ao criar conta: ' + (e.message || 'tente outro email'), 'error');
+  } finally {
+    STATE._submitting = false;
+    setBtnLoading('btnRegister', 'regBtnText', 'regBtnSpinner', false);
+  }
+}
+
+async function doLogout() {
+  // Confirm before destroying session
+  const confirmed = window.confirm('Deseja mesmo sair do painel?');
+  if (!confirmed) return;
+  try {
+    await window.FB.logout();
+  } catch(e) {}
+  STATE.user = null;
+  STATE.oficinaAtual = null;
+  STATE.leads = [];
+  goTo('scHome');
+  toast('Sessão encerrada');
+}
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     onboarding.js — Workshop registration flow
+════════════════════════════════════════════════════════════ -->
+<script>
+STATE.onbData.servicos = [];
+
+function nextStep(to) {
+  clearAllErrors();
+  if (to === 1) {
+    const nome = document.getElementById('onbNome').value.trim();
+    const wpp = document.getElementById('onbWpp').value.trim();
+    let valid = true;
+    if (!nome) { showFieldError('onbNome', 'onbNomeErr'); valid = false; }
+    if (!validatePhone(wpp)) { showFieldError('onbWpp', 'onbWppErr'); valid = false; }
+    if (!valid) return;
+    STATE.onbData.nome = nome;
+    STATE.onbData.cidade = document.getElementById('onbCidade').value.trim() || 'Cariacica';
+    STATE.onbData.bairro = document.getElementById('onbBairro').value.trim();
+    STATE.onbData.endereco = document.getElementById('onbEndereco').value.trim();
+    STATE.onbData.wpp = wpp.replace(/\D/g,'');
+    STATE.onbData.email = document.getElementById('onbEmail').value.trim();
+  }
+  if (to === 2) {
+    if (STATE.onbData.servicos.length === 0) {
+      STATE.onbData.servicos = [{nome:'Troca de óleo',min:89,max:120,ativo:true}];
+      renderOnbSvcList();
+    }
+    // renderOnbHorarios is called AFTER step activates (below)
+  }
+  if (to === 3) {
+    const toggles = document.querySelectorAll('#onbHorarios .hora-toggle');
+    STATE.onbData.horarios = HORARIOS_PADRAO.map((h, i) => ({
+      ...h, on: !toggles[i]?.classList.contains('off')
+    }));
+  }
+
+  // Activate the target step FIRST, then render into it
+  document.querySelectorAll('.onb-step').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.step-seg').forEach((s, i) => {
+    s.classList.remove('active','done');
+    if (i < to) s.classList.add('done');
+    if (i === to && to < 4) s.classList.add('active');
+  });
+  const stepEl = document.getElementById(to >= 4 ? 'stepSuccess' : 'step' + to);
+  stepEl.classList.add('active');
+  STATE.step = to;
+  document.querySelector('.steps-bar')?.setAttribute('aria-valuenow', to + 1);
+
+  // Render AFTER step is visible
+  if (to === 2) renderOnbHorarios();
+}
+
+function renderOnbSvcList() {
+  document.getElementById('onbSvcList').innerHTML = STATE.onbData.servicos.map((s, i) => `
+    <div class="svc-item">
+      <div class="svc-name">${s.nome}</div>
+      <div class="svc-price">R$ ${s.min}–${s.max}</div>
+      <button class="svc-del" onclick="removeOnbSvc(${i})" aria-label="Remover ${s.nome}">×</button>
+    </div>`).join('');
+}
+
+function addOnbSvc() {
+  const n = document.getElementById('nsvcNome').value.trim();
+  const mi = parseInt(document.getElementById('nsvcMin').value) || 0;
+  const ma = parseInt(document.getElementById('nsvcMax').value) || 0;
+  if (!n) { toast('Informe o nome do serviço', 'warning'); return; }
+  STATE.onbData.servicos.push({nome:n,min:mi,max:ma,ativo:true});
+  document.getElementById('nsvcNome').value = '';
+  document.getElementById('nsvcMin').value = '';
+  document.getElementById('nsvcMax').value = '';
+  document.getElementById('nsvcNome').focus();
+  renderOnbSvcList();
+}
+
+function removeOnbSvc(i) {
+  STATE.onbData.servicos.splice(i, 1);
+  renderOnbSvcList();
+}
+
+function renderOnbHorarios() {
+  document.getElementById('onbHorarios').innerHTML = HORARIOS_PADRAO.map((h, i) => `
+    <div class="hora-row">
+      <div class="hora-day">${h.dia}</div>
+      <div class="hora-range">${h.range}</div>
+      <div class="hora-toggle${h.on ? '' : ' off'}" onclick="this.classList.toggle('off')" role="switch" aria-checked="${h.on}" aria-label="Horário ${h.dia} ativo" tabindex="0"></div>
+    </div>`).join('');
+}
+
+function selectPlan(p) {
+  STATE.selectedPlan = p;
+  document.getElementById('planBasico').classList.toggle('selected', p === 'basico');
+  document.getElementById('planBasico').setAttribute('aria-checked', p === 'basico');
+  document.getElementById('planPro').classList.toggle('selected', p === 'pro');
+  document.getElementById('planPro').setAttribute('aria-checked', p === 'pro');
+}
+
+async function finalizarCadastro() {
+  if (STATE._submitting) return;
+  STATE._submitting = true;
+  STATE.onbData.plano = STATE.selectedPlan;
+  STATE.onbData.ativo = true;
+  setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
+  try {
+    const id = await window.FB.cadastrarOficina(STATE.onbData);
+    STATE.oficina = { id, ...STATE.onbData };
+    STATE.oficinaAtual = STATE.oficina;
+    toast('🎉 Oficina cadastrada com sucesso!');
+    nextStep(4);
+  } catch(e) {
+    toast('Erro ao salvar. Tente novamente.', 'error');
+  } finally {
+    STATE._submitting = false;
+    setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', false);
+  }
+}
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     cliente.js — Client-side search & filter logic
+════════════════════════════════════════════════════════════ -->
+<script>
+// ── DEMO DATA ─────────────────────────────────────────────────────
+const DEMO_PECAS = [
+  {id:'p001',nome:'Filtro de óleo',desc:'Filtro original para motores 1.0, 1.4 e 1.6 flex',preco:22,precoMax:38,compat:['Gol','HB20','Onix','Voyage'],loja:'Distribuidora Vitória',disponivel:true,icon:'🛢️'},
+  {id:'p002',nome:'Pastilha de freio dianteira',desc:'Kit com 4 pastilhas de alta performance',preco:89,precoMax:140,compat:['HB20','Corolla','Civic','Onix'],loja:'AutoPeças Cariacica',disponivel:true,icon:'🔴'},
+  {id:'p003',nome:'Amortecedor dianteiro',desc:'Par de amortecedores a gás com 2 anos de garantia',preco:280,precoMax:420,compat:['Gol','Voyage','Fox','Polo'],loja:'MasterPeças ES',disponivel:true,icon:'🔩'},
+  {id:'p004',nome:'Correia dentada kit',desc:'Kit correia dentada com tensor e correia d\'água',preco:190,precoMax:320,compat:['Gol','Palio','Siena','Uno'],loja:'Distribuidora Vitória',disponivel:true,icon:'⚙️'},
+  {id:'p005',nome:'Velas de ignição (jogo)',desc:'Jogo com 4 velas NGK para motores flex 1.0 e 1.4',preco:48,precoMax:85,compat:['Gol','HB20','Onix','Celta'],loja:'AutoPeças Cariacica',disponivel:true,icon:'⚡'},
+  {id:'p006',nome:'Filtro de ar',desc:'Filtro esportivo lavável, alta filtração e fluxo',preco:35,precoMax:65,compat:['Universal','Gol','HB20'],loja:'MasterPeças ES',disponivel:true,icon:'💨'},
+  {id:'p007',nome:'Bateria 60Ah',desc:'Bateria selada 60Ah 500A com 18 meses de garantia',preco:320,precoMax:420,compat:['Universal'],loja:'Baterias Vitória',disponivel:true,icon:'🔋'},
+  {id:'p008',nome:'Óleo motor 5W-30 sintético (4L)',desc:'Óleo sintético premium para motores modernos flex',preco:62,precoMax:90,compat:['Universal'],loja:'Distribuidora Vitória',disponivel:true,icon:'🛢️'},
+];
+
+const DEMO_SERVICOS_AGRUPADOS = [
+  {id:'sv001',nome:'Troca de óleo',cat:'Manutenção',icon:'🛢️',cor:'var(--gg)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:89,max:120,avaliacao:4.8},{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:75,max:95,avaliacao:4.3},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:110,max:150,avaliacao:4.9}]},
+  {id:'sv002',nome:'Freios dianteiros',cat:'Freios',icon:'🔴',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:220,max:350,avaliacao:4.8},{id:'of004',nome:'Top Mecânica',dist:'3,0 km',min:180,max:300,avaliacao:3.9}]},
+  {id:'sv003',nome:'Alinhamento e balanceamento',cat:'Suspensão',icon:'🎯',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:60,max:90,avaliacao:4.8},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:70,max:100,avaliacao:4.9},{id:'of004',nome:'Top Mecânica',dist:'3,0 km',min:55,max:80,avaliacao:3.9}]},
+  {id:'sv004',nome:'Revisão completa',cat:'Manutenção',icon:'✅',cor:'var(--gg)',oficinas:[{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:450,max:750,avaliacao:4.9}]},
+  {id:'sv005',nome:'Ar-condicionado (recarga)',cat:'Ar-condicionado',icon:'❄️',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:120,max:200,avaliacao:4.9},{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:130,max:190,avaliacao:4.8}]},
+  {id:'sv006',nome:'Suspensão (amortecedores)',cat:'Suspensão',icon:'🔩',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:280,max:450,avaliacao:4.8},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:300,max:500,avaliacao:4.9}]},
+  {id:'sv007',nome:'Elétrica automotiva',cat:'Elétrica',icon:'⚡',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:80,max:200,avaliacao:4.3}]},
+];
+
+const TIPOS_ESTABELECIMENTO = [
+  {id:'oficina',icon:'🔧',label:'Oficinas',count:4},
+  {id:'pneu',icon:'🔵',label:'Pneus',count:3},
+  {id:'eletrica',icon:'⚡',label:'Elétrica auto',count:2},
+  {id:'funilaria',icon:'🎨',label:'Funilaria',count:2},
+  {id:'som',icon:'🔊',label:'Som e acessórios',count:3},
+  {id:'gas',icon:'🔥',label:'Gás veicular',count:1},
+  {id:'vidros',icon:'🪟',label:'Vidros',count:2},
+  {id:'pecas',icon:'🔩',label:'Peças',count:4},
+];
+const TIPO_INFO = {
+  oficina:{icon:'🔧',label:'Oficina'},pneu:{icon:'🔵',label:'Pneus'},
+  eletrica:{icon:'⚡',label:'Elétrica'},funilaria:{icon:'🎨',label:'Funilaria'},
+  som:{icon:'🔊',label:'Som'},gas:{icon:'🔥',label:'GNV'},
+  vidros:{icon:'🪟',label:'Vidros'},pecas:{icon:'🔩',label:'Autopeças'},
+};
+const DEMO_ESTABELECIMENTOS = {
+  pneu:[{id:'pn001',nome:'Pneus Vitória Centro',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999991001',avaliacao:4.6,avaliacoes:34,distancia:'1,1 km',aberto:true,horario:'até 18h',tipo:'pneu',servicos:[{nome:'Troca de pneu',min:35,max:60,ativo:true},{nome:'Balanceamento',min:20,max:30,ativo:true}]}],
+  eletrica:[{id:'el001',nome:'AutoElétrica Souza',cidade:'Cariacica',bairro:'Padre Gabriel',whatsapp:'27999992001',avaliacao:4.7,avaliacoes:28,distancia:'1,4 km',aberto:true,horario:'até 17h',tipo:'eletrica',servicos:[{nome:'Diagnóstico elétrico',min:80,max:150,ativo:true}]}],
+  funilaria:[{id:'fu001',nome:'Funilaria Premium',cidade:'Cariacica',bairro:'Itaquari',whatsapp:'27999993001',avaliacao:4.5,avaliacoes:19,distancia:'2,8 km',aberto:false,horario:'abre 8h',tipo:'funilaria',servicos:[{nome:'Amassado simples',min:150,max:400,ativo:true}]}],
+};
+
+const FILTERS = {
+  oficinas:[
+    {label:'Todos',val:''},{label:'Troca de óleo',val:'óleo'},{label:'Freios',val:'freios'},
+    {label:'Suspensão',val:'suspensão'},{label:'Alinhamento',val:'alinhamento'},
+    {label:'Ar-condicionado',val:'ar-condicionado'},{label:'Revisão',val:'revisão'},{label:'Elétrica',val:'elétrica'},
+  ],
+  tipos:[],
+  servicos:[
+    {label:'Todos',val:''},{label:'Manutenção',val:'manutenção'},{label:'Freios',val:'freios'},
+    {label:'Suspensão',val:'suspensão'},{label:'Elétrica',val:'elétrica'},{label:'Ar-condicionado',val:'ar-condicionado'},
+  ],
+  pecas:[
+    {label:'Todas',val:''},{label:'Filtros',val:'filtro'},{label:'Freios',val:'freio'},
+    {label:'Motor',val:'motor'},{label:'Suspensão',val:'amortecedor'},{label:'Elétrica',val:'bateria'},{label:'Óleo',val:'óleo'},
+  ],
+};
+
+// ── ADVANCED FILTERS ────────────────────────────────────────────
+function toggleFilters() {
+  const panel = document.getElementById('filtersPanel');
+  const btn = document.getElementById('filterToggleBtn');
+  const isOpen = panel.classList.toggle('open');
+  btn.setAttribute('aria-expanded', isOpen);
+  btn.classList.toggle('active', isOpen);
+}
+
+function applyAdvFilters() {
+  // Sync bairro options dynamically when cidade changes
+  const cidadeSel = document.getElementById('fCidade')?.value || '';
+  const bairroSel = document.getElementById('fBairro');
+  if (bairroSel) {
+    const bairrosPorCidade = {
+      '': ['Campo Grande','Padre Gabriel','Nova Rosa da Penha','Itaquari','Jardim América','Porto de Santana'],
+      'Cariacica': ['Campo Grande','Padre Gabriel','Nova Rosa da Penha','Itaquari','Jardim América','Porto de Santana'],
+      'Vitória': ['Centro','Jardim Camburi','Jardim da Penha','Praia do Canto','Enseada do Suá'],
+      'Serra': ['Laranjeiras','Carapina','Novo Horizonte','Serra Sede','Bairro de Fátima'],
+      'Vila Velha': ['Centro','Itaparica','Praia de Itaparica','Coqueiral de Itaparica','Glória'],
+    };
+    const opts = bairrosPorCidade[cidadeSel] || bairrosPorCidade[''];
+    const currentVal = bairroSel.value;
+    bairroSel.innerHTML = `<option value="">Todos</option>` +
+      opts.map(b => `<option value="${b}"${b===currentVal?' selected':''}>${b}</option>`).join('');
+  }
+
+  STATE.advFilters = {
+    cidade: document.getElementById('fCidade')?.value || '',
+    bairro: document.getElementById('fBairro')?.value || '',
+    tipoVeiculo: document.getElementById('fVeiculo')?.value || '',
+    urgencia: document.getElementById('fUrgencia')?.value || '',
+    avaliacaoMin: parseFloat(document.getElementById('fAvaliacao')?.value || 1),
+    precoMax: parseInt(document.getElementById('fPrecoMax')?.value || 2000),
+    apenasAberta: document.getElementById('fAbertaAgora')?.checked || false,
+  };
+  renderActiveFilterTags();
+  runSearch();
+}
+
+function renderActiveFilterTags() {
+  const af = STATE.advFilters;
+  const tags = [];
+  if (af.cidade) tags.push({label: '📍 ' + af.cidade, key: 'cidade'});
+  if (af.bairro) tags.push({label: '🏘 ' + af.bairro, key: 'bairro'});
+  if (af.tipoVeiculo) tags.push({label: af.tipoVeiculo, key: 'tipoVeiculo'});
+  if (af.apenasAberta) tags.push({label: '🟢 Aberta agora', key: 'apenasAberta'});
+  if (af.avaliacaoMin > 1) tags.push({label: '★ ' + af.avaliacaoMin + '+', key: 'avaliacaoMin'});
+  if (af.precoMax < 2000) tags.push({label: '💰 até R$' + af.precoMax, key: 'precoMax'});
+
+  const container = document.getElementById('activeFilters');
+  container.style.display = tags.length ? 'flex' : 'none';
+  container.innerHTML = tags.map(t => `
+    <div class="active-filter-tag">
+      ${t.label}
+      <button onclick="removeAdvFilter('${t.key}')" aria-label="Remover filtro ${t.label}">×</button>
+    </div>`).join('');
+}
+
+function removeAdvFilter(key) {
+  if (key === 'apenasAberta') {
+    STATE.advFilters.apenasAberta = false;
+    const cb = document.getElementById('fAbertaAgora');
+    if (cb) cb.checked = false;
+  } else if (key === 'avaliacaoMin') {
+    STATE.advFilters.avaliacaoMin = 1;
+    const r = document.getElementById('fAvaliacao');
+    if (r) r.value = 1;
+    document.getElementById('fAvaliacaoVal').textContent = '1★';
+  } else if (key === 'precoMax') {
+    STATE.advFilters.precoMax = 2000;
+    const r = document.getElementById('fPrecoMax');
+    if (r) r.value = 2000;
+    document.getElementById('fPrecoMaxVal').textContent = 'até R$2000';
+  } else {
+    STATE.advFilters[key] = '';
+    const el = document.getElementById('f' + key.charAt(0).toUpperCase() + key.slice(1));
+    if (el) el.value = '';
+  }
+  renderActiveFilterTags();
+  runSearch();
+}
+
+// ── MODE & CHIPS ─────────────────────────────────────────────────
+function setMode(modo) {
+  STATE.modo = modo;
+  STATE.filtroChip = '';
+  STATE.tipoSelecionado = '';
+  document.getElementById('cliSearch').value = '';
+  document.querySelectorAll('.mode-btn').forEach(b => {
+    b.classList.remove('active');
+    b.setAttribute('aria-selected', 'false');
+  });
+  const btn = document.getElementById('mode-' + modo);
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected', 'true');
+  renderFilters();
+  runSearch();
+}
+
+function renderFilters() {
+  const chips = FILTERS[STATE.modo] || [];
+  document.getElementById('cliFilters').innerHTML = chips.map((c, i) =>
+    `<div class="chip${i===0?' active':''}" onclick="filterChip(this,'${c.val}')" role="button" tabindex="0" onkeypress="if(event.key==='Enter')filterChip(this,'${c.val}')">${c.label}</div>`
+  ).join('');
+}
+
+function filterChip(el, val) {
+  document.querySelectorAll('#cliFilters .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  STATE.filtroChip = val;
+  STATE.tipoSelecionado = '';
+  document.getElementById('cliSearch').value = val ? val : '';
+  document.getElementById('searchClear').style.display = val ? 'block' : 'none';
+  runSearch();
+}
+
+function onSearch() {
+  const v = document.getElementById('cliSearch').value;
+  document.getElementById('searchClear').style.display = v ? 'block' : 'none';
+  STATE.filtroChip = v;
+  debouncedSearch();
+}
+
+function clearSearch() {
+  document.getElementById('cliSearch').value = '';
+  document.getElementById('searchClear').style.display = 'none';
+  STATE.filtroChip = '';
+  STATE.tipoSelecionado = '';
+  renderFilters();
+  runSearch();
+}
+
+async function runSearch() {
+  if (STATE.modo === 'oficinas') await loadOficinas();
+  else if (STATE.modo === 'tipos') renderTipos();
+  else if (STATE.modo === 'servicos') renderServicosCliente();
+  else renderPecas();
+}
+
+// ── OFICINAS ────────────────────────────────────────────────────
+async function loadOficinas() {
+  // Show skeleton while loading
+  const list = document.getElementById('resultsList');
+  list.innerHTML = [1,2,3].map(() => `
+    <div class="of-card" style="pointer-events:none;">
+      <div class="of-top">
+        <div class="of-avatar" style="background:var(--s2);animation:skpulse 1.4s ease infinite;"></div>
+        <div class="of-info" style="width:100%;">
+          <div style="height:14px;width:60%;background:var(--s2);border-radius:6px;margin-bottom:8px;animation:skpulse 1.4s ease infinite;"></div>
+          <div style="height:11px;width:40%;background:var(--s2);border-radius:6px;animation:skpulse 1.4s ease infinite;"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        ${[1,2,3].map(()=>`<div style="height:20px;width:80px;background:var(--s2);border-radius:6px;animation:skpulse 1.4s ease infinite;"></div>`).join('')}
+      </div>
+      <div style="height:34px;background:var(--s2);border-radius:var(--r);animation:skpulse 1.4s ease infinite;"></div>
+    </div>`).join('');
+  document.getElementById('resultsCount').innerHTML = '';
+
+  const filtros = { servico: STATE.filtroChip, ...STATE.advFilters };
+  try {
+    STATE.oficinas = await window.FB.listarOficinas(filtros);
+    renderOficinas();
+  } catch(e) {
+    list.innerHTML = '<p style="color:var(--t3);font-size:13px;padding:20px 0;">Erro ao carregar oficinas. Tente recarregar a página.</p>';
+  }
+}
+
+function renderOficinas() {
+  const list = document.getElementById('resultsList');
+  const ofs = STATE.oficinas;
+  const q = (STATE.filtroChip||'').toLowerCase();
+  document.getElementById('resultsCount').innerHTML = `<strong>${ofs.length}</strong> oficina${ofs.length!==1?'s':''} encontrada${ofs.length!==1?'s':''}`;
+  if (!ofs.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhuma oficina encontrada</div><div class="empty-sub">Ajuste os filtros ou tente outro serviço</div></div>`;
+    return;
+  }
+  list.innerHTML = ofs.map(of => {
+    const svcMatch = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
+    const preco = svcMatch ? `R$ ${svcMatch.min} – ${svcMatch.max}` :
+      (of.servicos&&of.servicos.length ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
+    const svcs = (of.servicos||[]).slice(0, 4).map(s =>
+      `<span class="svc-tag${q&&s.nome.toLowerCase().includes(q)?' match':''}">${esc(s.nome)}</span>`).join('');
+    const ini = esc((of.nome||'OF').slice(0, 2).toUpperCase());
+    const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
+    const statusTxt = esc(of.aberto ? '● Aberto · ' + (of.horario||'') : '● Fechado · ' + (of.horario||''));
+    return `<article class="of-card" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
+      <div class="of-top">
+        <div class="of-avatar" aria-hidden="true">${ini}</div>
+        <div class="of-info">
+          <div class="of-name">${esc(of.nome)}</div>
+          <div class="of-meta">
+            <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade)}</span>
+            <span class="of-stars" aria-label="${esc(String(of.avaliacao))} estrelas">★ ${esc(String(of.avaliacao||'—'))} <span>(${esc(String(of.avaliacoes||0))})</span></span>
+            <span class="${statusClass}" aria-live="polite">${statusTxt}</span>
+          </div>
+        </div>
+        <div class="of-price-badge">${preco}</div>
+      </div>
+      <div class="of-services" aria-label="Serviços">${svcs}</div>
+      <div class="of-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
+        <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+// ── TIPOS ────────────────────────────────────────────────────────
+function renderTipos() {
+  const list = document.getElementById('resultsList');
+  const q = (STATE.filtroChip||'').toLowerCase();
+  if (STATE.tipoSelecionado && !q) { renderEstabelecimentosPorTipo(STATE.tipoSelecionado); return; }
+  if (q) {
+    let todos = window.demoOficinas({}).map(o => ({...o, tipo:'oficina'}));
+    Object.values(DEMO_ESTABELECIMENTOS).forEach(arr => { todos = todos.concat(arr); });
+    const filtrados = todos.filter(e => e.nome.toLowerCase().includes(q) || (e.bairro||'').toLowerCase().includes(q));
+    document.getElementById('resultsCount').innerHTML = `<strong>${filtrados.length}</strong> estabelecimento${filtrados.length!==1?'s':''} encontrado${filtrados.length!==1?'s':''}`;
+    list.innerHTML = filtrados.length
+      ? filtrados.map(e => renderCardEstabelecimento(e)).join('')
+      : `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhum encontrado</div></div>`;
+    return;
+  }
+  const total = 4 + Object.values(DEMO_ESTABELECIMENTOS).reduce((s,a)=>s+a.length, 0);
+  document.getElementById('resultsCount').innerHTML = `<strong>${total}</strong> estabelecimentos em Cariacica`;
+  list.innerHTML = `<div class="cat-grid" role="list">
+    ${TIPOS_ESTABELECIMENTO.map(t => `
+      <div class="cat-card" onclick="selecionarTipo('${t.id}')" role="listitem button" tabindex="0" onkeypress="if(event.key==='Enter')selecionarTipo('${t.id}')" aria-label="${t.label}">
+        <div class="cat-icon" aria-hidden="true">${t.icon}</div>
+        <div class="cat-label">${t.label}</div>
+        <div class="cat-count">${t.count} próximos</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function selecionarTipo(tipoId) {
+  STATE.tipoSelecionado = tipoId;
+  renderEstabelecimentosPorTipo(tipoId);
+}
+
+function renderEstabelecimentosPorTipo(tipoId) {
+  const list = document.getElementById('resultsList');
+  let estabelecimentos = tipoId === 'oficina'
+    ? window.demoOficinas({}).map(o => ({...o, tipo:'oficina'}))
+    : (DEMO_ESTABELECIMENTOS[tipoId] || []);
+  const info = TIPOS_ESTABELECIMENTO.find(t => t.id === tipoId);
+  document.getElementById('resultsCount').innerHTML = `${info?.icon||''} <strong>${estabelecimentos.length}</strong> ${info?.label||tipoId}`;
+  list.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="STATE.tipoSelecionado='';renderTipos()">← Voltar</button>
+    </div>
+    ${estabelecimentos.map(e => renderCardEstabelecimento(e)).join('')}`;
+}
+
+function renderCardEstabelecimento(of) {
+  const ti = TIPO_INFO[of.tipo||'oficina'] || TIPO_INFO.oficina;
+  const preco = (of.servicos||[]).length
+    ? (() => { const m = of.servicos[0]; return m.min ? `R$ ${m.min} – ${m.max}` : m.nome; })()
+    : 'Sob consulta';
+  const svcs = (of.servicos||[]).slice(0,3).map(s => `<span class="svc-tag">${s.nome}</span>`).join('');
+  const ini = (of.nome||'ES').slice(0,2).toUpperCase();
+  return `<article class="of-card" onclick="openBudgetEstab('${of.id}','${of.tipo||'oficina'}')" tabindex="0">
+    <div class="of-top">
+      <div class="of-avatar" aria-hidden="true">${ini}</div>
+      <div class="of-info">
+        <div class="of-name">${of.nome} <span class="tipo-badge">${ti.icon} ${ti.label}</span></div>
+        <div class="of-meta">
+          <span class="of-dist">📍 ${of.distancia||of.bairro||of.cidade}</span>
+          <span class="of-stars">★ ${of.avaliacao||'—'} <span>(${of.avaliacoes||0})</span></span>
+          <span class="${of.aberto?'of-status-open':'of-status-closed'}">${of.aberto?'● Aberto':'● Fechado'}</span>
+        </div>
+      </div>
+      <div class="of-price-badge">${preco}</div>
+    </div>
+    <div class="of-services">${svcs}</div>
+    <div class="of-actions">
+      <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudgetEstab('${of.id}','${of.tipo||'oficina'}')">💰 Ver orçamento</button>
+      ${of.whatsapp?`<button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();window.open('https://wa.me/55${(of.whatsapp||'').replace(/\D/g,'')}','_blank')">💬 WhatsApp</button>`:''}
+    </div>
+  </article>`;
+}
+
+function openBudgetEstab(id, tipo) {
+  if (tipo === 'oficina') { openBudget(id); return; }
+  const lista = DEMO_ESTABELECIMENTOS[tipo] || [];
+  const estab = lista.find(e => e.id === id);
+  if (!estab) return;
+  const ti = TIPO_INFO[tipo] || TIPO_INFO.oficina;
+  document.getElementById('bm-nome').textContent = estab.nome;
+  document.getElementById('bm-sub').textContent = `${ti.icon} ${ti.label} · 📍 ${estab.bairro||estab.cidade}`;
+  const svcs = (estab.servicos||[]).filter(s=>s.ativo&&s.min);
+  document.getElementById('bm-body').innerHTML = `
+    ${svcs.length ? `<table class="budget-table">
+      ${svcs.map(s=>`<tr><td>${s.nome}</td><td>R$ ${s.min} – ${s.max}</td></tr>`).join('')}
+    </table>` : '<p style="color:var(--t3);font-size:13px;margin-bottom:16px;">Consulte valores diretamente.</p>'}
+    <p class="budget-note">* Valores estimados. Confirme via WhatsApp.</p>
+    ${estab.whatsapp?`<a class="btn btn-wpp" href="https://wa.me/55${estab.whatsapp.replace(/\D/g,'')}?text=Olá! Vi o ${encodeURIComponent(estab.nome)} no MecBusca." target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;">💬 Chamar no WhatsApp</a>`:''}`;
+  openModal('budgetModal');
+}
+
+// ── SERVIÇOS ─────────────────────────────────────────────────────
+function renderServicosCliente() {
+  const q = (STATE.filtroChip||'').toLowerCase();
+  let svcs = DEMO_SERVICOS_AGRUPADOS;
+  if (q) svcs = svcs.filter(s => s.nome.toLowerCase().includes(q) || s.cat.toLowerCase().includes(q));
+  const list = document.getElementById('resultsList');
+  document.getElementById('resultsCount').innerHTML = `<strong>${svcs.length}</strong> serviço${svcs.length!==1?'s':''} disponíve${svcs.length!==1?'is':'l'}`;
+  if (!svcs.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">⚙️</div><div class="empty-title">Nenhum serviço encontrado</div></div>`;
+    return;
+  }
+  list.innerHTML = svcs.map(s => {
+    const minP = Math.min(...s.oficinas.map(o=>o.min));
+    const maxP = Math.max(...s.oficinas.map(o=>o.max));
+    const ofRows = s.oficinas.map(o => {
+      const ini = o.nome.slice(0,2).toUpperCase();
+      return `<div class="svc-of-row" onclick="openBudgetFromSvc('${o.id}','${s.nome}',${o.min},${o.max})" role="button" tabindex="0">
+        <div class="svc-of-av" aria-hidden="true">${ini}</div>
+        <div class="svc-of-name">${o.nome}</div>
+        <div class="svc-of-dist">${o.dist}</div>
+        <div style="color:var(--am);font-size:11px;" aria-label="${o.avaliacao} estrelas">★${o.avaliacao}</div>
+        <div class="svc-of-price">R$ ${o.min}–${o.max}</div>
+        <button class="btn btn-wpp" style="padding:4px 10px;font-size:11px;width:auto;flex-shrink:0;min-height:auto;" onclick="event.stopPropagation();wppOficinaDirecto('${o.id}','${s.nome}')">WhatsApp</button>
+      </div>`;
+    }).join('');
+    return `<article class="svc-card">
+      <div class="svc-card-top">
+        <div class="svc-card-icon" style="background:${s.cor};" aria-hidden="true">${s.icon}</div>
+        <div style="flex:1;">
+          <div class="svc-card-name">${s.nome}</div>
+          <div class="svc-card-cat">${s.cat} · ${s.oficinas.length} oficina${s.oficinas.length!==1?'s':''}</div>
+        </div>
+        <div class="svc-card-price">R$ ${minP} – ${maxP}</div>
+      </div>
+      <div class="svc-oficinas">${ofRows}</div>
+    </article>`;
+  }).join('');
+}
+
+function openBudgetFromSvc(ofId, svcNome, min, max) {
+  if (!STATE.oficinas.find(o => o.id === ofId)) STATE.oficinas = window.demoOficinas({});
+  STATE.filtroChip = svcNome;
+  const of = getOficina(ofId);
+  if (!of) { toast('Oficina não encontrada', 'warning'); return; }
+  openBudget(ofId);
+}
+
+function wppOficinaDirecto(ofId, svcNome) {
+  if (!STATE.oficinas.find(o => o.id === ofId)) STATE.oficinas = window.demoOficinas({});
+  STATE.filtroChip = svcNome;
+  wppOficina(ofId);
+}
+
+// ── PEÇAS ────────────────────────────────────────────────────────
+function renderPecas() {
+  const q = (STATE.filtroChip||'').toLowerCase();
+  let pecas = DEMO_PECAS;
+  if (q) pecas = pecas.filter(p =>
+    p.nome.toLowerCase().includes(q) || p.desc.toLowerCase().includes(q) ||
+    p.compat.some(c => c.toLowerCase().includes(q))
+  );
+  const list = document.getElementById('resultsList');
+  document.getElementById('resultsCount').innerHTML = `<strong>${pecas.length}</strong> peça${pecas.length!==1?'s':''} encontrada${pecas.length!==1?'s':''}`;
+  if (!pecas.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔩</div><div class="empty-title">Nenhuma peça encontrada</div></div>`;
+    return;
+  }
+  list.innerHTML = pecas.map(p => `
+    <article class="peca-card" onclick="openBudgetPeca('${p.id}')" tabindex="0">
+      <div class="peca-icon" aria-hidden="true">${p.icon}</div>
+      <div class="peca-info">
+        <div class="peca-nome">${p.nome}</div>
+        <div class="peca-desc">${p.desc}</div>
+        <div class="peca-meta">
+          <span class="peca-preco">R$ ${p.preco} – ${p.precoMax}</span>
+          <span class="peca-loja">🏬 ${p.loja}</span>
+        </div>
+        <div class="peca-meta" style="margin-top:4px;">
+          ${p.compat.slice(0,3).map(c=>`<span class="peca-compat">${c}</span>`).join('')}
+        </div>
+        <div class="peca-actions">
+          <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudgetPeca('${p.id}')">💰 Orçamento</button>
+          <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppPeca('${p.id}')">💬 WhatsApp</button>
+        </div>
+      </div>
+    </article>`).join('');
+}
+
+// ── BUDGET / LEAD MODAL ──────────────────────────────────────────
+function getOficina(id) { return STATE.oficinas.find(o => o.id === id); }
+
+function openBudget(id) {
+  const of = getOficina(id);
+  if (!of) return;
+  const q = (STATE.filtroChip||'').toLowerCase();
+  const svc = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
+
+  let body = '';
+  if (svc) {
+    const mao = Math.round((svc.min+svc.max)/2 * 0.25);
+    const peca = Math.round((svc.min+svc.max)/2 * 0.65);
+    body = `
+      <table class="budget-table">
+        <tr><td style="color:var(--t2)">Peças / insumos</td><td>R$ ${peca}</td></tr>
+        <tr><td style="color:var(--t2)">Mão de obra</td><td>R$ ${mao}</td></tr>
+        <tr><td>Total estimado</td><td>R$ ${mao+peca}</td></tr>
+      </table>
+      <div class="budget-note">Preço fixado pela oficina. Pode variar conforme modelo do veículo.</div>`;
+  } else {
+    body = `<p style="font-size:13px;color:var(--t2);margin-bottom:20px;">Solicite orçamento personalizado via WhatsApp ou preencha abaixo.</p>`;
+  }
+
+  body += `
+    <div style="border-top:1px solid var(--b);padding-top:16px;margin-top:4px;">
+      <div style="font-size:12px;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.07em;">Seus dados para contato</div>
+      <div class="lead-form">
+        <div class="form-group">
+          <input class="form-input" id="lnome" placeholder="Seu nome completo" aria-label="Nome completo" autocomplete="name">
+          <span class="field-error" id="lnomeErr">Nome é obrigatório</span>
+        </div>
+        <div class="form-group">
+          <div class="phone-mask-wrap">
+            <span class="phone-flag" aria-hidden="true">🇧🇷</span>
+            <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" autocomplete="tel" aria-label="Seu WhatsApp">
+          </div>
+          <span class="field-error" id="lwppErr">WhatsApp inválido</span>
+        </div>
+        <div class="form-group">
+          <input class="form-input" id="lcarro" placeholder="Modelo do carro (ex: Gol 1.0 2019)" autocomplete="off" aria-label="Modelo do carro">
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:4px;">
+        <button class="btn btn-primary" style="flex:1" id="btnEnviarLead" onclick="enviarLead('${id}')">
+          <span id="enviarLeadText">✔ Confirmar orçamento</span>
+          <span id="enviarLeadSpin" style="display:none;"><span class="spinner"></span></span>
+        </button>
+        <button class="btn btn-wpp" style="flex:1" onclick="wppOficina('${id}')">💬 WhatsApp</button>
+      </div>
+    </div>`;
+
+  document.getElementById('bm-nome').textContent = of.nome;
+  document.getElementById('bm-sub').textContent = svc ? `Orçamento: ${svc.nome}` : 'Solicitar orçamento';
+  document.getElementById('bm-body').innerHTML = body;
+  openModal('budgetModal');
+}
+
+async function enviarLead(ofId) {
+  if (STATE._submitting) return;
+  clearAllErrors();
+  const nome = document.getElementById('lnome')?.value.trim();
+  const wpp = document.getElementById('lwpp')?.value.trim();
+  const carro = document.getElementById('lcarro')?.value.trim();
+  let valid = true;
+  if (!nome) { showFieldError('lnome', 'lnomeErr'); valid = false; }
+  if (!validatePhone(wpp)) { showFieldError('lwpp', 'lwppErr'); valid = false; }
+  if (!valid) return;
+
+  STATE._submitting = true;
+  setBtnLoading('btnEnviarLead', 'enviarLeadText', 'enviarLeadSpin', true);
+  const of = getOficina(ofId);
+  const q = STATE.filtroChip;
+  const svc = q ? (of?.servicos||[]).find(s => s.nome.toLowerCase().includes(q.toLowerCase()) && s.ativo) : null;
+  const valor = svc ? Math.round((svc.min+svc.max)/2) : 0;
+
+  try {
+    await window.FB.enviarLead({
+      oficinaId: ofId, nomeCliente: nome,
+      whatsapp: wpp.replace(/\D/g,''), carro,
+      servico: svc?.nome || q || 'Consulta', valor
+    });
+    closeModal('budgetModal');
+    toast(`✅ Solicitação enviada para ${of?.nome}! Aguarde contato.`);
+  } catch(e) {
+    toast('Erro ao enviar. Tente novamente.', 'error');
+  } finally {
+    STATE._submitting = false;
+    setBtnLoading('btnEnviarLead', 'enviarLeadText', 'enviarLeadSpin', false);
+  }
+}
+
+function wppOficina(id) {
+  const of = getOficina(id);
+  if (!of?.whatsapp) { toast('WhatsApp não cadastrado', 'warning'); return; }
+  const svc = STATE.filtroServico || 'serviço';
+  const msg = encodeURIComponent(`Olá! Vi o perfil da ${of.nome} no MecBusca e tenho interesse em orçamento para: ${svc}.`);
+  window.open(`https://wa.me/55${of.whatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank', 'noopener');
+}
+
+function openBudgetPeca(id) {
+  const p = DEMO_PECAS.find(x => x.id === id);
+  if (!p) return;
+  const ofs = window.demoOficinas({});
+  document.getElementById('bm-nome').textContent = p.nome;
+  document.getElementById('bm-sub').textContent = `🔩 Peça · ${p.loja}`;
+  document.getElementById('bm-body').innerHTML = `
+    <table class="budget-table">
+      <tr><td>Peça</td><td>R$ ${p.preco} – ${p.precoMax}</td></tr>
+      <tr><td>Mão de obra estimada</td><td>R$ 40 – 80</td></tr>
+      <tr><td>Total estimado</td><td>R$ ${p.preco} – ${p.precoMax + 80}</td></tr>
+    </table>
+    <div class="budget-note">Compatível com: ${p.compat.join(', ')}. Preços podem variar.</div>
+    <div style="border-top:1px solid var(--b);padding-top:14px;">
+      <div class="form-group">
+        <input class="form-input" id="lnome" placeholder="Seu nome" autocomplete="name" aria-label="Nome">
+        <span class="field-error" id="lnomeErr">Nome é obrigatório</span>
+      </div>
+      <div class="form-group">
+        <div class="phone-mask-wrap">
+          <span class="phone-flag" aria-hidden="true">🇧🇷</span>
+          <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" autocomplete="tel" aria-label="WhatsApp">
+        </div>
+        <span class="field-error" id="lwppErr">WhatsApp inválido</span>
+      </div>
+      <div class="form-group"><input class="form-input" id="lcarro" placeholder="Modelo do carro" aria-label="Modelo do carro"></div>
+      <button class="btn btn-primary" id="btnEnviarLeadPeca" onclick="enviarLeadPeca('${id}')">
+        <span id="enviarLeadPecaText">✔ Solicitar orçamento</span>
+        <span id="enviarLeadPecaSpin" style="display:none;"><span class="spinner"></span></span>
+      </button>
+    </div>`;
+  openModal('budgetModal');
+}
+
+async function enviarLeadPeca(pecaId) {
+  if (STATE._submitting) return;
+  clearAllErrors();
+  const p = DEMO_PECAS.find(x => x.id === pecaId);
+  const nome = document.getElementById('lnome')?.value.trim();
+  const wpp = document.getElementById('lwpp')?.value.trim();
+  const carro = document.getElementById('lcarro')?.value.trim();
+  let valid = true;
+  if (!nome) { showFieldError('lnome', 'lnomeErr'); valid = false; }
+  if (!validatePhone(wpp)) { showFieldError('lwpp', 'lwppErr'); valid = false; }
+  if (!valid) return;
+  STATE._submitting = true;
+  setBtnLoading('btnEnviarLeadPeca', 'enviarLeadPecaText', 'enviarLeadPecaSpin', true);
+  try {
+    await window.FB.enviarLead({
+      oficinaId: 'of001', nomeCliente: nome,
+      whatsapp: wpp.replace(/\D/g,''), carro,
+      servico: 'Peça: ' + (p?.nome||pecaId), valor: p?.preco || 0
+    });
+    closeModal('budgetModal');
+    toast('✅ Solicitação enviada! A oficina entrará em contato.');
+  } catch(e) { toast('Erro ao enviar', 'error'); }
+  finally {
+    STATE._submitting = false;
+    setBtnLoading('btnEnviarLeadPeca', 'enviarLeadPecaText', 'enviarLeadPecaSpin', false);
+  }
+}
+
+function wppPeca(id) {
+  const p = DEMO_PECAS.find(x => x.id === id);
+  const msg = encodeURIComponent(`Olá! Vi no MecBusca e gostaria de orçamento para: ${p?.nome||id}.`);
+  window.open(`https://wa.me/5527999990001?text=${msg}`, '_blank', 'noopener');
+}
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     painel.js — Workshop dashboard module
+════════════════════════════════════════════════════════════ -->
+<script>
+function loadPainel() {
+  if (!STATE.oficinaAtual) {
+    STATE.oficinaAtual = STATE.onbData.nome
+      ? { ...STATE.onbData, id: 'of001' }
+      : { id:'of001', nome:'Auto Center Vitória', email:'admin@autocenter.com' };
+  }
+  document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  const p = document.getElementById('scPainel');
+  p.style.display = 'flex';
+  p.classList.add('active');
+  document.getElementById('painelNome').textContent = STATE.oficinaAtual.nome || 'Minha Oficina';
+  document.getElementById('painelEmail').textContent = STATE.user?.email || STATE.oficinaAtual.email || '';
+  document.getElementById('painelAvatar').textContent = (STATE.oficinaAtual.nome||'AC').slice(0,2).toUpperCase();
+  painelPage('dashboard', document.querySelector('#scPainel .nav-item'));
+  loadLeadsPainel();
+}
+
+async function loadLeadsPainel() {
+  try {
+    STATE.leads = await window.FB.listarLeadsDaOficina(STATE.oficinaAtual?.id||'of001');
+    const novos = STATE.leads.filter(l => l.status === 'novo').length;
+    document.getElementById('leadsNavBadge').textContent = novos;
+    document.getElementById('leadsNavBadge').setAttribute('aria-label', novos + ' leads novos');
+  } catch(e) { console.warn('Erro ao carregar leads', e); }
+}
+
+function painelPage(name, navEl) {
+  const titles = {
+    dashboard:'Dashboard', leads:'Leads & Contatos',
+    servicos:'Serviços & Preços', horarios:'Horários de Funcionamento',
+    metricas:'Métricas de Negócio'
+  };
+  document.getElementById('painelTitle').textContent = titles[name] || name;
+  document.querySelectorAll('#scPainel .nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  const c = document.getElementById('painelContent');
+  c.innerHTML = '';
+  if (name === 'dashboard') renderDashboard(c);
+  else if (name === 'leads') renderLeadsPainel(c);
+  else if (name === 'servicos') renderServicos(c);
+  else if (name === 'horarios') renderHorariosPainel(c);
+  else if (name === 'metricas') renderMetricas(c);
+  // Close mobile sidebar after navigation
+  document.getElementById('painelSidebar')?.classList.remove('open');
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────────
+function renderDashboard(c) {
+  const leads = STATE.leads;
+  const novos = leads.filter(l => l.status === 'novo').length;
+  const confirmados = leads.filter(l => l.status === 'confirmado').length;
+  const receita = leads.reduce((s, l) => s + (l.valor||0), 0);
+  const conversao = leads.length > 0 ? Math.round((confirmados / leads.length) * 100) : 0;
+
+  c.innerHTML = `
+  <div class="metrics-grid">
+    <div class="metric-card" tabindex="0">
+      <div class="metric-label">Receita estimada</div>
+      <div class="metric-value">${formatCurrency(receita)}</div>
+      <div class="metric-delta delta-up">↑ via leads</div>
+    </div>
+    <div class="metric-card" tabindex="0">
+      <div class="metric-label">Leads recebidos</div>
+      <div class="metric-value">${leads.length}</div>
+      <div class="metric-delta delta-up">${novos} novos</div>
+    </div>
+    <div class="metric-card" tabindex="0">
+      <div class="metric-label">Taxa de conversão</div>
+      <div class="metric-value">${conversao}%</div>
+      <div class="metric-delta ${conversao >= 50 ? 'delta-up' : 'delta-neutral'}">${confirmados} confirmados</div>
+    </div>
+    <div class="metric-card" tabindex="0">
+      <div class="metric-label">Avaliação</div>
+      <div class="metric-value">4,8 ★</div>
+      <div class="metric-delta delta-up">47 avaliações</div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header">
+        <div><div class="card-title">Últimos leads</div><div class="card-sub">Mais recentes primeiro</div></div>
+        <span style="font-size:12px;color:var(--g);cursor:pointer;" role="button" tabindex="0" onclick="painelPage('leads',null)">Ver todos →</span>
+      </div>
+      <div id="dashLeads" aria-live="polite"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Leads por dia</div></div>
+      <div class="bar-chart" id="barChart" aria-label="Gráfico de leads por dia"></div>
+      <div style="display:flex;gap:0;margin-top:6px;" id="barLabels" aria-hidden="true"></div>
+    </div>
+  </div>`;
+  renderMiniLeads(leads.slice(0, 4));
+  renderBarChart();
+}
+
+const LEAD_COLORS = [
+  'linear-gradient(135deg,#5B9CF6,#7B6CF6)',
+  'linear-gradient(135deg,#00A868,#007A4C)',
+  'linear-gradient(135deg,#FF6B6B,#FFB347)',
+  'linear-gradient(135deg,#9B59B6,#5B9CF6)'
+];
+const ST_MAP = {novo:'st-new',aguardando:'st-pend',confirmado:'st-done'};
+
+function renderMiniLeads(leads) {
+  const el = document.getElementById('dashLeads');
+  if (!el) return;
+  el.innerHTML = leads.map((l, i) => {
+    const ini = esc((l.nomeCliente||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase());
+    const t = l.criadoEm?.seconds ? timeAgo(l.criadoEm.seconds) : '—';
+    return `<div class="lead-row" tabindex="0">
+      <div class="lead-av" style="background:${LEAD_COLORS[i%4]}" aria-hidden="true">${ini}</div>
+      <div class="lead-info">
+        <div class="lead-name">${esc(l.nomeCliente)}</div>
+        <div class="lead-svc">${esc(l.servico)} · ${esc(l.carro||'')}</div>
+      </div>
+      <div class="lead-price">${l.valor ? formatCurrency(l.valor) : ''}</div>
+      <div class="lead-st ${ST_MAP[l.status]||'st-pend'}" aria-label="Status: ${esc(l.status||'novo')}">${esc(l.status||'novo')}</div>
+      <div class="lead-time">${esc(t)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderBarChart() {
+  const data = [4,7,5,9,6,12,8];
+  const days = ['S','T','Q','Q','S','S','D'];
+  const max = Math.max(...data);
+  document.getElementById('barChart').innerHTML = data.map((v, i) =>
+    `<div class="bar-col"><div class="bar${i===5?' hi':''}" style="height:${Math.round(v/max*85)}px;" title="${v} leads" role="img" aria-label="${days[i]}: ${v} leads"></div></div>`
+  ).join('');
+  document.getElementById('barLabels').innerHTML = days.map(d =>
+    `<div style="flex:1;text-align:center;font-size:10px;color:var(--t3);">${d}</div>`
+  ).join('');
+}
+
+// ── LEADS PAINEL ─────────────────────────────────────────────────
+function renderLeadsPainel(c) {
+  const leads = STATE.leads;
+  c.innerHTML = `<div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Todos os Leads</div><div class="card-sub">${leads.length} solicitações recebidas</div></div>
+      <select id="leadFilter" onchange="filterLeadsList()" style="background:var(--s);border:1px solid var(--b);border-radius:8px;color:var(--t);padding:6px 10px;font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;" aria-label="Filtrar por status">
+        <option value="">Todos</option>
+        <option value="novo">🟢 Novos</option>
+        <option value="aguardando">🟡 Aguardando</option>
+        <option value="confirmado">🔵 Confirmados</option>
+      </select>
+    </div>
+    <div id="leadsListFull" aria-live="polite"></div>
+  </div>`;
+  renderLeadsListFull(leads);
+}
+
+function filterLeadsList() {
+  const filter = document.getElementById('leadFilter')?.value;
+  const filtered = filter ? STATE.leads.filter(l => l.status === filter) : STATE.leads;
+  renderLeadsListFull(filtered);
+}
+
+function renderLeadsListFull(leads) {
+  const el = document.getElementById('leadsListFull');
+  if (!el) return;
+  el.innerHTML = leads.length
+    ? leads.map((l, i) => {
+        const ini = esc((l.nomeCliente||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase());
+        const t = l.criadoEm?.seconds ? timeAgo(l.criadoEm.seconds) : '—';
+        const wppNum = (l.whatsapp||'').replace(/\D/g,'');
+        const origemLabel = l.origem ? `<span style="font-size:10.5px;background:var(--bg3);padding:2px 7px;border-radius:6px;border:1px solid var(--b);color:var(--t3);">${esc(l.origem)}</span>` : '';
+        return `<div class="lead-row" tabindex="0">
+          <div class="lead-av" style="background:${LEAD_COLORS[i%4]}" aria-hidden="true">${ini}</div>
+          <div class="lead-info">
+            <div class="lead-name">${esc(l.nomeCliente)}</div>
+            <div class="lead-svc">${esc(l.servico)} · ${esc(l.carro||'')} · ${esc(l.whatsapp||'')}</div>
+          </div>
+          ${origemLabel}
+          <div class="lead-price">${l.valor ? formatCurrency(l.valor) : ''}</div>
+          <div class="lead-st ${ST_MAP[l.status]||'st-pend'}">${esc(l.status||'novo')}</div>
+          <div class="lead-time">${esc(t)}</div>
+          ${wppNum ? `<a href="https://wa.me/55${esc(wppNum)}" target="_blank" rel="noopener" class="btn btn-wpp btn-sm" style="width:auto;text-decoration:none;" aria-label="Contato WhatsApp de ${esc(l.nomeCliente)}">WhatsApp</a>` : ''}
+        </div>`;
+      }).join('')
+    : '<p style="color:var(--t3);font-size:13px;text-align:center;padding:40px 0;">Nenhum lead com esse filtro.</p>';
+}
+
+// ── SERVIÇOS ─────────────────────────────────────────────────────
+function renderServicos(c) {
+  c.innerHTML = `<div class="card">
+    <div class="card-header">
+      <div><div class="card-title">Serviços & Preços</div><div class="card-sub">Visíveis no app para clientes</div></div>
+      <button class="btn btn-primary btn-sm" style="width:auto" onclick="openAddSvcModal()" aria-label="Adicionar novo serviço">+ Adicionar</button>
+    </div>
+    <div id="svcPainelList" aria-live="polite"></div>
+  </div>`;
+  renderSvcPainelList();
+}
+
+function renderSvcPainelList() {
+  const el = document.getElementById('svcPainelList');
+  if (!el) return;
+  el.innerHTML = STATE.painelSvcs.map((s, i) => `
+    <div class="svc-panel-row">
+      <div style="flex:1;font-size:13.5px;color:var(--t)">${s.nome}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--g);min-width:100px;text-align:right">R$ ${s.min}–${s.max}</div>
+      <div class="svc-toggle${s.ativo?'':' off'}" onclick="toggleSvc(${i},this)" role="switch" aria-checked="${s.ativo}" aria-label="${s.nome} ${s.ativo?'ativo':'inativo'}" tabindex="0"></div>
+      <button class="edit-btn" onclick="editSvc(${i})" aria-label="Editar ${s.nome}">✏</button>
+    </div>`).join('');
+}
+
+function toggleSvc(i, el) {
+  STATE.painelSvcs[i].ativo = !STATE.painelSvcs[i].ativo;
+  el.classList.toggle('off');
+  el.setAttribute('aria-checked', STATE.painelSvcs[i].ativo);
+  toast(STATE.painelSvcs[i].ativo ? `"${STATE.painelSvcs[i].nome}" ativado` : `"${STATE.painelSvcs[i].nome}" desativado`);
+}
+
+let _editingSvcIdx = -1;
+
+function editSvc(i) {
+  _editingSvcIdx = i;
+  const s = STATE.painelSvcs[i];
+  document.getElementById('asvNome').value = s.nome;
+  document.getElementById('asvMin').value = s.min;
+  document.getElementById('asvMax').value = s.max;
+  document.getElementById('addSvcTitle').textContent = 'Editar Serviço';
+  openModal('addSvcModal');
+}
+
+function openAddSvcModal() {
+  _editingSvcIdx = -1;
+  document.getElementById('asvNome').value = '';
+  document.getElementById('asvMin').value = '';
+  document.getElementById('asvMax').value = '';
+  document.getElementById('addSvcTitle').textContent = 'Novo Serviço';
+  clearAllErrors();
+  openModal('addSvcModal');
+}
+
+function salvarNovoSvc() {
+  clearAllErrors();
+  const n = document.getElementById('asvNome').value.trim();
+  const mi = parseInt(document.getElementById('asvMin').value) || 0;
+  const ma = parseInt(document.getElementById('asvMax').value) || 0;
+  if (!n) { showFieldError('asvNome', 'asvNomeErr'); return; }
+  if (ma > 0 && mi > ma) {
+    toast('Preço mínimo não pode ser maior que o máximo', 'warning');
+    document.getElementById('asvMin').classList.add('has-error');
+    return;
+  }
+  if (_editingSvcIdx >= 0) {
+    STATE.painelSvcs[_editingSvcIdx] = { ...STATE.painelSvcs[_editingSvcIdx], nome: n, min: mi, max: ma };
+    toast(`"${n}" atualizado!`);
+  } else {
+    STATE.painelSvcs.push({nome:n,min:mi,max:ma,ativo:true});
+    toast(`"${n}" adicionado!`);
+  }
+  closeModal('addSvcModal');
+  renderSvcPainelList();
+}
+
+// ── HORÁRIOS ─────────────────────────────────────────────────────
+function renderHorariosPainel(c) {
+  c.innerHTML = `<div class="card" style="max-width:420px;">
+    <div class="card-header"><div class="card-title">Horário de Funcionamento</div></div>
+    <div id="painelHorarios" aria-label="Configuração de horários"></div>
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="salvarHorarios()">Salvar horários</button>
+  </div>`;
+  document.getElementById('painelHorarios').innerHTML = HORARIOS_PADRAO.map((h, i) => `
+    <div class="hora-row">
+      <div class="hora-day">${h.dia}</div>
+      <div class="hora-range">${h.range}</div>
+      <div class="hora-toggle${h.on?'':' off'}" onclick="this.classList.toggle('off');this.setAttribute('aria-checked',!this.classList.contains('off'))" role="switch" aria-checked="${h.on}" aria-label="Horário ${h.dia}" tabindex="0"></div>
+    </div>`).join('');
+}
+
+function salvarHorarios() {
+  toast('Horários salvos!');
+}
+
+// ── MÉTRICAS DE NEGÓCIO ───────────────────────────────────────────
+async function renderMetricas(c) {
+  const leads = STATE.leads;
+  const total = leads.length;
+  const confirmados = leads.filter(l => l.status === 'confirmado').length;
+  const receita = leads.reduce((s, l) => s + (l.valor||0), 0);
+  const ticket = total > 0 ? Math.round(receita / total) : 0;
+  const conversao = total > 0 ? Math.round((confirmados / total) * 100) : 0;
+
+  // Origens
+  const origens = leads.reduce((acc, l) => {
+    const o = l.origem || 'busca';
+    acc[o] = (acc[o] || 0) + 1;
+    return acc;
+  }, {});
+  const origensTotal = Object.values(origens).reduce((s,v)=>s+v, 0);
+
+  // Serviços mais procurados
+  const servicosMais = leads.reduce((acc, l) => {
+    if (l.servico) acc[l.servico] = (acc[l.servico] || 0) + 1;
+    return acc;
+  }, {});
+  const topServicos = Object.entries(servicosMais).sort((a,b)=>b[1]-a[1]).slice(0, 4);
+
+  // Comparativo simulado (sem dados históricos reais usamos delta fixo)
+  const deltaSemana = '+12%';
+  const deltaMes = '+8%';
+
+  c.innerHTML = `
+  <div class="metrics-grid">
+    <div class="metric-card"><div class="metric-label">Taxa de conversão</div><div class="metric-value">${conversao}%</div><div class="metric-delta ${conversao>=50?'delta-up':'delta-neutral'}">${confirmados}/${total} leads</div></div>
+    <div class="metric-card"><div class="metric-label">Ticket médio</div><div class="metric-value">${formatCurrency(ticket)}</div><div class="metric-delta delta-up">por lead</div></div>
+    <div class="metric-card"><div class="metric-label">Receita total</div><div class="metric-value">${formatCurrency(receita)}</div><div class="metric-delta delta-up">${deltaMes} vs mês anterior</div></div>
+    <div class="metric-card"><div class="metric-label">Crescimento semanal</div><div class="metric-value">${deltaSemana}</div><div class="metric-delta delta-up">vs semana anterior</div></div>
+  </div>
+  <div class="grid2">
+    <div class="card">
+      <div class="card-header"><div class="card-title">Origem dos leads</div></div>
+      ${origensTotal > 0
+        ? Object.entries(origens).map(([k, v]) => {
+          const pct = Math.round((v/origensTotal)*100);
+          return `<div class="conv-row">
+            <div style="font-size:12.5px;color:var(--t2);width:80px;">${k}</div>
+            <div class="conv-bar-bg"><div class="conv-bar-fill" style="width:${pct}%"></div></div>
+            <div style="font-size:12px;color:var(--t3);width:40px;text-align:right;">${v} (${pct}%)</div>
+          </div>`;
+        }).join('')
+        : '<p style="color:var(--t3);font-size:13px;text-align:center;padding:20px 0;">Sem dados ainda.</p>'
+      }
+    </div>
+    <div class="card">
+      <div class="card-header"><div class="card-title">Serviços mais procurados</div></div>
+      ${topServicos.length
+        ? topServicos.map(([svc, cnt]) => {
+          const pct = Math.round((cnt/total)*100);
+          return `<div class="conv-row">
+            <div style="font-size:12.5px;color:var(--t2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${svc}</div>
+            <div class="conv-bar-bg" style="width:80px;flex:none;"><div class="conv-bar-fill" style="width:${pct}%"></div></div>
+            <div style="font-size:12px;color:var(--t3);width:40px;text-align:right;">${cnt}x</div>
+          </div>`;
+        }).join('')
+        : '<p style="color:var(--t3);font-size:13px;text-align:center;padding:20px 0;">Sem dados ainda.</p>'
+      }
+    </div>
+  </div>`;
+}
+</script>
+
+
+<!-- ══════════════════════════════════════════════════════════
+     app.js — Bootstrap / init
+════════════════════════════════════════════════════════════ -->
+<script>
+// ── INIT ─────────────────────────────────────────────────────────
+window.addEventListener('fbready', () => {
+  document.getElementById('loaderMsg').textContent = 'Pronto!';
+  setTimeout(() => {
+    document.getElementById('scLoader').style.display = 'none';
+    goTo('scHome');
+  }, 1000);
+
+  // Listen for auth state changes if Firebase is ready
+  if (window.FB.ready()) {
+    window.FB.onAuthChange(user => {
+      STATE.user = user;
+      if (user) {
+        // Refresh leads in panel if already loaded
+        if (document.getElementById('scPainel').classList.contains('active')) {
+          loadLeadsPainel();
+        }
+      }
+    });
+  }
+});
+
+// Fallback if Firebase takes too long
+setTimeout(() => {
+  const loader = document.getElementById('scLoader');
+  if (loader && loader.classList.contains('active')) {
+    loader.style.display = 'none';
+    goTo('scHome');
+  }
+}, 3000);
+
+// ── GLOBAL ERROR HANDLER ────────────────────────────────────────
+window.addEventListener('unhandledrejection', e => {
+  console.error('Unhandled promise rejection:', e.reason);
+  toast('Ocorreu um erro inesperado. Tente novamente.', 'error');
+});
+
+// ── LOG ANALYTICS ────────────────────────────────────────────────
+const Analytics = {
+  log(event, data = {}) {
+    if (!window.FB.ready()) return;
+    const ts = new Date().toISOString();
+    console.log(`[Analytics] ${ts} ${event}`, data);
+    // In production: addDoc(collection(db, "analytics"), { event, data, ts: serverTimestamp() })
+  }
+};
+window.Analytics = Analytics;
+</script>
+
+</body>
+</html>
+
