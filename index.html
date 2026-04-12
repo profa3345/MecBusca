@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MecBusca v4 — Sistema Completo</title>
+<title>MecBusca — Encontre oficinas perto de você</title>
+<meta name="description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
+<meta name="theme-color" content="#00D084">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="MecBusca">
+<link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;MecBusca&quot;,&quot;short_name&quot;:&quot;MecBusca&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230A0D0B&quot;,&quot;theme_color&quot;:&quot;%2300D084&quot;}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 
@@ -129,7 +136,13 @@ select.form-input option{background:var(--bg3);}
   display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--t);
   transform:translateX(120%);transition:transform var(--transition-med);
   z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.5);max-width:340px;
+  overflow:hidden;
 }
+.toast::after{content:'';position:absolute;bottom:0;left:0;height:3px;width:100%;
+  background:var(--g);transform-origin:left;animation:toastBar 3s linear forwards;}
+.toast.error::after{background:var(--re);}
+.toast.warning::after{background:var(--am);}
+@keyframes toastBar{from{transform:scaleX(1);}to{transform:scaleX(0);}}
 .toast.show{transform:translateX(0);}
 .toast-icon{font-size:18px;}
 .toast.success .toast-icon{color:var(--g);}
@@ -170,6 +183,17 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .loader-fill{height:100%;width:0;background:var(--g);border-radius:2px;animation:lfill 1.2s ease forwards;}
 @keyframes lfill{to{width:100%;}}
 .loader-sub{font-size:13px;color:var(--t3);}
+
+/* ── TEMA CLARO ── */
+[data-tema="claro"]{
+  --bg:#F5F7F5;--bg2:#EDEFED;--bg3:#E5E8E5;--bg4:#DCDFD8;
+  --s:#FFFFFF;--s2:#F0F3F0;
+  --b:rgba(0,150,80,0.15);--b2:rgba(0,150,80,0.3);
+  --t:#1A2E1A;--t2:#3D5C3D;--t3:#6B8C6B;
+}
+[data-tema="claro"] .of-card,[data-tema="claro"] .card,[data-tema="claro"] .modal{
+  box-shadow:0 2px 12px rgba(0,0,0,0.08);
+}
 
 /* ── AUTH SCREEN ── */
 
@@ -348,11 +372,16 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .results-count strong{color:var(--t);}
 
 /* OFICINA CARD */
+.btn-fav{background:none;border:none;font-size:18px;cursor:pointer;padding:4px;line-height:1;
+  transition:transform 0.2s;color:var(--t3);min-height:auto;}
+.btn-fav:hover{transform:scale(1.25);}
+.btn-fav.fav-on{color:#FF6B6B;}
+.fav-count{font-size:10px;color:var(--t3);background:var(--bg3);border-radius:5px;padding:1px 5px;margin-left:2px;}
 .badge-pro{display:inline-flex;align-items:center;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-size:9px;font-weight:800;padding:2px 6px;border-radius:8px;margin-right:4px;vertical-align:middle;letter-spacing:0.05em;}
 .of-card-pro{border-color:rgba(255,215,0,0.35)!important;background:linear-gradient(160deg,var(--s),rgba(255,215,0,0.04))!important;}
 .of-score{font-size:10px;color:var(--t3);background:var(--bg3);border-radius:5px;padding:1px 6px;margin-left:auto;}
-.of-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:18px;margin-bottom:12px;transition:all 0.2s;cursor:pointer;}
-.of-card:hover{border-color:var(--b2);transform:translateY(-2px);}
+.of-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);animation:fadeUp 0.2s ease both;padding:18px;margin-bottom:12px;transition:all 0.2s;cursor:pointer;}
+.of-card:hover{border-color:var(--b2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,208,132,0.08);}
 .of-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;}
 .of-avatar{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--gdark),var(--g));display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#0A0D0B;flex-shrink:0;}
 .of-info{flex:1;}
@@ -455,6 +484,8 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .nav-item:hover{background:var(--s);color:var(--t);}
 .nav-item.active{background:var(--gg);color:var(--g);font-weight:500;}
 .nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;width:3px;border-radius:0 2px 2px 0;background:var(--g);}
+.badge-pulse{animation:badgePulse 0.6s ease 3;}
+@keyframes badgePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.4);}}
 .nav-badge{margin-left:auto;background:var(--g);color:#0A0D0B;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;}
 .sidebar-footer{padding:14px 10px;border-top:1px solid var(--b);}
 .of-info-bar{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:background var(--transition);}
@@ -647,7 +678,7 @@ button,a,[role=button]{min-height:44px;}
 
       <!-- BUSCA OFICINAS -->
       <div class="home-search-box" id="hbox-oficinas">
-        <div class="home-search-title">Encontre a oficina ideal</div>
+        <div class="home-search-title">🔧 Encontre a oficina ideal</div>
         <div class="home-fields">
           <div class="home-field home-field-full">
             <label for="hServico">Serviço</label>
@@ -683,7 +714,7 @@ button,a,[role=button]{min-height:44px;}
 
       <!-- BUSCA PEÇAS -->
       <div class="home-search-box" id="hbox-pecas" style="display:none;">
-        <div class="home-search-title">Encontre a peça que você precisa</div>
+        <div class="home-search-title">🔩 Encontre a peça que você precisa</div>
         <div class="home-fields">
           <div class="home-field home-field-full">
             <label for="hPeca">Peça ou componente</label>
@@ -711,6 +742,7 @@ button,a,[role=button]{min-height:44px;}
     <a onclick="goTo('scAuth')">Painel da oficina</a>
     <span>© 2025 MecBusca</span>
     <a onclick="goTo('scFornecedor')">Cadastrar fornecedor</a>
+    <button onclick="toggleTema()" id="temaBtn" title="Alternar tema" style="background:none;border:none;cursor:pointer;font-size:16px;padding:4px;min-height:auto;" aria-label="Alternar tema claro/escuro">🌙</button>
   </footer>
 </div>
 
@@ -924,12 +956,15 @@ button,a,[role=button]{min-height:44px;}
   <header class="cli-header">
     <div class="cli-top">
       <div class="cli-logo" aria-label="MecBusca">Mec<em>Busca</em></div>
+      <button class="btn btn-ghost btn-sm" onclick="renderFavoritos()" style="width:auto;min-height:auto;padding:5px 10px;font-size:12px;border-radius:8px;gap:4px;" title="Meus favoritos" aria-label="Ver favoritos">
+        ❤️ <span id="favCount" style="font-size:11px;color:var(--t3);"></span>
+      </button>
       <div class="cli-loc" id="cliLoc" tabindex="0" role="button" onclick="pedirGeolocalizacao(()=>runSearch())" title="Usar minha localização">📍 Cariacica, ES</div>
       <button class="btn btn-ghost btn-sm" onclick="goTo('scHome')" style="margin-left:8px;width:auto;" aria-label="Voltar ao início">↩</button>
     </div>
     <div class="search-bar" role="search">
       <svg class="ico" style="width:15px;height:15px;color:var(--t3)" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="search" id="cliSearch" placeholder="Buscar oficina, serviço ou peça..." oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
+      <input type="search" id="cliSearch" placeholder="Buscar oficina, serviço ou peça..." onfocus="if(!this.value)renderHistorico()" oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
       <span id="searchClear" style="font-size:16px;color:var(--t3);cursor:pointer;display:none;" onclick="clearSearch()" aria-label="Limpar busca" role="button" tabindex="0">×</span>
       <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()" aria-expanded="false" aria-controls="filtersPanel" style="min-height:auto;">
         ⚙ Filtros
@@ -1009,6 +1044,12 @@ button,a,[role=button]{min-height:44px;}
   </div>
   <!-- Active filter tags -->
   <div class="active-filters" id="activeFilters" style="display:none;"></div>
+
+  <!-- BUSCAS RECENTES -->
+  <div id="recentSearches" style="display:none;padding:8px 20px 0;background:var(--bg2);border-bottom:1px solid var(--b);">
+    <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Buscas recentes</div>
+    <div id="recentList" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+  </div>
 
   <!-- CHIPS -->
   <nav class="cli-filters" id="cliFilters" aria-label="Filtros rápidos"></nav>
@@ -1591,6 +1632,8 @@ const STATE = {
   onbData: { nome:'', cidade:'', bairro:'', endereco:'', wpp:'', email:'', servicos:[], horarios:[], plano:'pro' },
   selectedPlan: 'pro',
   // Panel
+  _submitting: false,
+  _stats: null,
   oficinaAtual: null,
   leads: [],
   painelSvcs: [
@@ -1704,6 +1747,162 @@ function closeOverlay(id, event) {
   document.body.style.overflow = '';
   // wait for transition then hide
   setTimeout(() => { if (!el.classList.contains('open')) el.style.display = 'none'; }, 300);
+}
+
+// ── HISTÓRICO DE BUSCAS ──────────────────────────────────────────
+const HIST_KEY = 'mecbusca_historico';
+const HIST_MAX = 6;
+
+function getHistorico() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); }
+  catch { return []; }
+}
+
+function addHistorico(termo) {
+  if (!termo || termo.length < 2) return;
+  try {
+    let hist = getHistorico().filter(h => h !== termo);
+    hist.unshift(termo);
+    hist = hist.slice(0, HIST_MAX);
+    localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+    renderHistorico();
+  } catch(e) {}
+}
+
+function renderHistorico() {
+  const hist = getHistorico();
+  const container = document.getElementById('recentSearches');
+  const list = document.getElementById('recentList');
+  if (!container || !list) return;
+  if (!hist.length) { container.style.display = 'none'; return; }
+  container.style.display = '';
+  list.innerHTML =   list.innerHTML = hist.map((h, i) =>
+    '<button class="chip hist-item" data-h="' + i + '" style="font-size:11.5px;">'
+    + '🕐 ' + esc(h)
+    + '<span class="hist-del" data-h="' + i + '" style="margin-left:6px;opacity:0.6;font-size:12px;">×</span>'
+    + '</button>'
+  ).join('');
+  list.querySelectorAll('.hist-item').forEach(btn => {
+    const h = hist[+btn.dataset.h];
+    btn.addEventListener('click', () => buscarHistorico(h));
+  });
+  list.querySelectorAll('.hist-del').forEach(span => {
+    span.addEventListener('click', e => { e.stopPropagation(); removerHistorico(hist[+span.dataset.h]); });
+  });
+}
+
+function buscarHistorico(termo) {
+  document.getElementById('cliSearch').value = termo;
+  STATE.filtroChip = termo;
+  runSearch();
+}
+
+function removerHistorico(termo) {
+  try {
+    const hist = getHistorico().filter(h => h !== termo);
+    localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+    renderHistorico();
+  } catch(e) {}
+}
+
+// ── FAVORITOS ────────────────────────────────────────────────────
+const FAV_KEY = 'mecbusca_favoritos';
+
+function getFavs() {
+  try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+
+function saveFavs(set) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify([...set])); } catch(e) {}
+}
+
+function isFav(id) { return getFavs().has(id); }
+
+function toggleFav(id) {
+  const favs = getFavs();
+  const wasOn = favs.has(id);
+  wasOn ? favs.delete(id) : favs.add(id);
+  saveFavs(favs);
+  // Sync to Firestore if logged in
+  if (window.FB?.ready() && STATE.user && !STATE.user.isDemo) {
+    const field = wasOn ? 'favoritos_removed' : 'favoritos_added';
+    window.FB.trackEvent(id, wasOn ? 'unfav' : 'fav').catch(() => {});
+  }
+  // Re-render card button without full re-render
+  const btn = document.querySelector('.btn-fav[onclick*="' + id + '"]');
+  if (btn) {
+    const on = !wasOn;
+    btn.classList.toggle('fav-on', on);
+    btn.innerHTML = on ? '❤️' : '🤍';
+    btn.setAttribute('aria-label', (on ? 'Desfavoritar' : 'Favoritar') + ' oficina');
+  }
+  toast(wasOn ? 'Removido dos favoritos' : '❤️ Adicionado aos favoritos', wasOn ? 'warning' : 'success');
+  updateFavCount();
+}
+
+function updateFavCount() {
+  const n = getFavs().size;
+  const el = document.getElementById('favCount');
+  if (el) el.textContent = n > 0 ? n : '';
+}
+
+function renderFavoritos() {
+  const favIds = getFavs();
+  if (!favIds.size) {
+    toast('Você ainda não tem favoritos. Toque ❤️ em qualquer oficina.', 'warning');
+    return;
+  }
+  const favOficinas = STATE.oficinas.filter(o => favIds.has(o.id));
+  if (!favOficinas.length) {
+    // Load favorites from storage even if not in current search
+    toast('Acesse a busca para ver suas oficinas favoritas.', 'warning');
+    return;
+  }
+  goTo('scCliente');
+  STATE.oficinas = favOficinas;
+  renderOficinas();
+  document.getElementById('resultsCount').innerHTML =
+    '<strong>' + favOficinas.length + '</strong> favorita' + (favOficinas.length !== 1 ? 's' : '');
+}
+
+// ── COMPARTILHAR ─────────────────────────────────────────────────
+function compartilharOficina(id) {
+  const of = getOficina(id) || STATE.oficinas.find(o => o.id === id);
+  if (!of) return;
+  const txt = 'Encontrei ' + of.nome + ' no MecBusca! Oficina em ' + (of.bairro||of.cidade||'Cariacica') + '. Acesse: ' + window.location.href;
+  if (navigator.share) {
+    navigator.share({ title: of.nome, text: txt }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(txt).then(() => toast('Link copiado! 🔗')).catch(() => {
+      window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank', 'noopener,noreferrer');
+    });
+  }
+}
+
+// ── TEMA CLARO/ESCURO ─────────────────────────────────────────
+function toggleTema() {
+  const root = document.documentElement;
+  const isLight = root.getAttribute('data-tema') === 'claro';
+  if (isLight) {
+    root.removeAttribute('data-tema');
+    document.getElementById('temaBtn').textContent = '🌙';
+    try { localStorage.setItem('mecbusca_tema', 'escuro'); } catch(e) {}
+  } else {
+    root.setAttribute('data-tema', 'claro');
+    document.getElementById('temaBtn').textContent = '☀️';
+    try { localStorage.setItem('mecbusca_tema', 'claro'); } catch(e) {}
+  }
+}
+function initTema() {
+  try {
+    const t = localStorage.getItem('mecbusca_tema');
+    if (t === 'claro') {
+      document.documentElement.setAttribute('data-tema', 'claro');
+      const btn = document.getElementById('temaBtn');
+      if (btn) btn.textContent = '☀️';
+    }
+  } catch(e) {}
 }
 
 // ── HOME TABS ─────────────────────────────────────────────────────
@@ -1898,7 +2097,7 @@ function goTo(id) {
   el.style.display = '';
   el.classList.add('active');
   window.scrollTo(0, 0);
-  if (id === 'scCliente') { renderFilters(); runSearch(); }
+  if (id === 'scCliente') { renderFilters(); runSearch(); renderHistorico(); updateFavCount(); }
   if (id === 'scHome') { buildServicoSelect(); }
   // Close mobile sidebar when navigating
   document.getElementById('painelSidebar')?.classList.remove('open');
@@ -2545,6 +2744,9 @@ function clearSearch() {
 }
 
 async function runSearch() {
+  // Save to history if user typed something
+  const q = document.getElementById('cliSearch')?.value?.trim();
+  if (q && q.length >= 2) addHistorico(q);
   if (STATE.modo === 'oficinas') await loadOficinas();
   else if (STATE.modo === 'tipos') renderTipos();
   else if (STATE.modo === 'servicos') renderServicosCliente();
@@ -2589,7 +2791,14 @@ function renderOficinas() {
   const _sortLabel = STATE.userLat ? '📍 por proximidade' : '⭐ por relevância';
   document.getElementById('resultsCount').innerHTML = '<strong>'+ofs.length+'</strong> oficina'+(ofs.length!==1?'s':'')+' encontrada'+(ofs.length!==1?'s':'')+' <span style="font-size:11px;color:var(--t3);">· '+_sortLabel+'</span>';
   if (!ofs.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhuma oficina encontrada</div><div class="empty-sub">Tente outro serviço ou cidade diferente.</div><div class="empty-sub">Ajuste os filtros ou tente outro serviço</div></div>`;
+    list.innerHTML = '<div class="empty-state">'
+    +'<div class="empty-icon">🔍</div>'
+    +'<div class="empty-title">Nenhuma oficina encontrada</div>'
+    +'<div class="empty-sub">Tente remover os filtros ou buscar por outro serviço.</div>'
+    +'<div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">'
+    +'<button class="chip active" onclick="clearSearch();runSearch()">Ver todas as oficinas</button>'
+    +'<button class="chip" onclick="toggleFilters()">Ajustar filtros</button>'
+    +'</div></div>';
     return;
   }
   // Analytics: track impressions
@@ -2598,7 +2807,7 @@ function renderOficinas() {
   if (ofs.length && window.location.hash === '#debug') {
     console.table(ofs.map(o => ({ nome:o.nome, plano:o.plano||'—', score:o._score, dist:o._dist?.toFixed?.(1)+'km'||'?', avaliacao:o.avaliacao })));
   }
-  list.innerHTML = ofs.map(of => {
+  list.innerHTML = ofs.map((of, _i) => {
     const svcMatch = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
     const preco = svcMatch ? `R$ ${svcMatch.min} – ${svcMatch.max}` :
       (of.servicos&&of.servicos.length ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
@@ -2607,12 +2816,17 @@ function renderOficinas() {
     const ini = esc((of.nome||'OF').slice(0, 2).toUpperCase());
     const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
     const statusTxt = esc(of.aberto ? '● Aberto · ' + (of.horario||'') : '● Fechado · ' + (of.horario||''));
-    return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
+    return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" style="animation-delay:${_i*40}ms" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
       <div class="of-top">
         <div class="of-avatar" aria-hidden="true">${ini}</div>
         <div class="of-info">
           <div class="of-name">
             ${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${esc(of.nome)}
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;">
+            <button class="btn-fav ${isFav(of.id)?'fav-on':''}" onclick="event.stopPropagation();toggleFav('${esc(of.id)}')" aria-label="Favoritar ${esc(of.nome)}" title="Favoritar">
+              ${isFav(of.id)?'❤️':'🤍'}
+            </button>
           </div>
           <div class="of-meta">
             <span class="of-dist">📍 ${of._dist&&of._dist<900?(of._dist<1?"< 1 km":of._dist.toFixed(1)+" km"):esc(of.distancia||of.bairro||of.cidade)}</span>
@@ -2865,6 +3079,7 @@ function openBudget(id) {
           <span id="enviarLeadSpin" style="display:none;"><span class="spinner"></span></span>
         </button>
         <button class="btn btn-wpp" style="flex:1" onclick="wppOficina('${id}')">💬 WhatsApp</button>
+        <button class="btn btn-ghost btn-sm btn-icon" onclick="compartilharOficina('${id}')" title="Compartilhar" aria-label="Compartilhar oficina" style="width:40px;flex-shrink:0;">🔗</button>
       </div>
     </div>
     <div style="border-top:1px solid var(--b);padding-top:14px;margin-top:14px;" id="avalia-section-${id}">
@@ -3015,6 +3230,26 @@ function loadPainel() {
   painelPage('dashboard', document.querySelector('#scPainel .nav-item'));
   loadLeadsPainel();
   preloadPainelData();
+  // Wire realtime listener for new leads
+  if (window._leadsUnsub) window._leadsUnsub(); // cleanup previous
+  window._leadsUnsub = window.FB.onLeadsSnapshot(
+    STATE.oficinaAtual?.id || 'of001',
+    leads => {
+      STATE.leads = leads;
+      const novos = leads.filter(l => l.status === 'novo').length;
+      const badge = document.getElementById('leadsNavBadge');
+      if (badge) {
+        badge.textContent = novos;
+        badge.setAttribute('aria-label', novos + ' leads novos');
+        badge.style.display = novos > 0 ? '' : 'none';
+        if (novos > 0) badge.classList.add('badge-pulse');
+      }
+      // Refresh leads page if open
+      if (document.querySelector('.nav-item.active')?.textContent?.includes('Leads')) {
+        loadLeadsPainel();
+      }
+    }
+  );
 }
 
 // Preload stats when painel opens
@@ -3267,10 +3502,10 @@ function renderSvcPainelList() {
   if (!el) return;
   el.innerHTML = STATE.painelSvcs.map((s, i) => `
     <div class="svc-panel-row">
-      <div style="flex:1;font-size:13.5px;color:var(--t)">${s.nome}</div>
+      <div style="flex:1;font-size:13.5px;color:var(--t)">${esc(s.nome)}</div>
       <div style="font-size:13px;font-weight:600;color:var(--g);min-width:100px;text-align:right">R$ ${s.min}–${s.max}</div>
-      <div class="svc-toggle${s.ativo?'':' off'}" onclick="toggleSvc(${i},this)" role="switch" aria-checked="${s.ativo}" aria-label="${s.nome} ${s.ativo?'ativo':'inativo'}" tabindex="0"></div>
-      <button class="edit-btn" onclick="editSvc(${i})" aria-label="Editar ${s.nome}">✏</button>
+      <div class="svc-toggle${s.ativo?'':' off'}" onclick="toggleSvc(${i},this)" role="switch" aria-checked="${s.ativo}" aria-label="${esc(s.nome)} ${s.ativo?'ativo':'inativo'}" tabindex="0"></div>
+      <button class="edit-btn" onclick="editSvc(${i})" aria-label="Editar ${esc(s.nome)}">✏</button>
     </div>`).join('');
 }
 
@@ -3422,6 +3657,7 @@ window._fbReady = false;
 window.addEventListener('fbready', () => {
   window._fbReady = true;
   buildServicoSelect();
+  initTema();
   // Garantir overlays começam escondidos
   ['scAuth','scOnboarding','scFornecedor'].forEach(id => {
     const el = document.getElementById(id);
