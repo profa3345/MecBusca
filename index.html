@@ -348,6 +348,9 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .results-count strong{color:var(--t);}
 
 /* OFICINA CARD */
+.badge-pro{display:inline-flex;align-items:center;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-size:9px;font-weight:800;padding:2px 6px;border-radius:8px;margin-right:4px;vertical-align:middle;letter-spacing:0.05em;}
+.of-card-pro{border-color:rgba(255,215,0,0.35)!important;background:linear-gradient(160deg,var(--s),rgba(255,215,0,0.04))!important;}
+.of-score{font-size:10px;color:var(--t3);background:var(--bg3);border-radius:5px;padding:1px 6px;margin-left:auto;}
 .of-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:18px;margin-bottom:12px;transition:all 0.2s;cursor:pointer;}
 .of-card:hover{border-color:var(--b2);transform:translateY(-2px);}
 .of-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;}
@@ -921,7 +924,7 @@ button,a,[role=button]{min-height:44px;}
   <header class="cli-header">
     <div class="cli-top">
       <div class="cli-logo" aria-label="MecBusca">Mec<em>Busca</em></div>
-      <div class="cli-loc" id="cliLoc" tabindex="0" aria-label="Localização atual: Cariacica, ES">📍 Cariacica, ES</div>
+      <div class="cli-loc" id="cliLoc" tabindex="0" role="button" onclick="pedirGeolocalizacao(()=>runSearch())" title="Usar minha localização">📍 Cariacica, ES</div>
       <button class="btn btn-ghost btn-sm" onclick="goTo('scHome')" style="margin-left:8px;width:auto;" aria-label="Voltar ao início">↩</button>
     </div>
     <div class="search-bar" role="search">
@@ -1148,7 +1151,22 @@ import {
   signOut, onAuthStateChanged, sendPasswordResetEmail, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ── Firebase Config ───────────────────────────────────────────────
+// ── Firebase Config ───────────────────────────────────────────
+// PARA ATIVAR O BACKEND REAL:
+// 1. Acesse console.firebase.google.com → projeto "mecbusca"
+// 2. Firestore Database → Criar banco (modo produção)
+// 3. Authentication → Ativar Email/Senha
+// 4. Abra o app no browser e rode no console: await seedFirebase()
+//    Isso cria as 4 oficinas demo reais no Firestore
+// 5. Regras do Firestore (cole em Rules):
+//    rules_version='2'; service cloud.firestore {
+//      match /databases/{db}/documents {
+//        match /oficinas/{id} { allow read:if true; allow write:if request.auth!=null; }
+//        match /leads/{id}    { allow read,write:if true; }
+//        match /users/{id}    { allow read,write:if request.auth!=null; }
+//      }
+//    }
+// ─────────────────────────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
   authDomain: "mecbusca.firebaseapp.com",
@@ -1290,12 +1308,12 @@ window.FB = {
     if (filtros.apenasAberta) oficinas = oficinas.filter(o => o.aberto === true);
     if (filtros.tipoVeiculo) oficinas = oficinas.filter(o =>
       (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
-    if (filtros.lat && filtros.lng) {
-      oficinas = oficinas.map(o => ({
-        ...o,
-        _dist: o.lat && o.lng ? haversineKm(filtros.lat, filtros.lng, o.lat, o.lng) : 999
-      })).sort((a,b) => a._dist - b._dist);
-    }
+    // Ranking inteligente — sempre aplicado
+    oficinas = oficinas.map(o => {
+      const dist = (filtros.lat && filtros.lng && o.lat && o.lng)
+        ? haversineKm(filtros.lat, filtros.lng, o.lat, o.lng) : 999;
+      return { ...o, _dist: dist, _score: (window.calcRankingScore||((o,d,q)=>0))(o, dist, filtros.servico || '') };
+    }).sort((a, b) => b._score - a._score);
     return oficinas;
   },
 
@@ -1401,13 +1419,38 @@ window.FB = {
     await updateDoc(doc(db, "oficinas", oficinaId), { lat, lng, atualizadoEm: serverTimestamp() });
   },
 
-  // ── MÉTRICAS ─────────────────────────────────────────────────
+  // ── ANALYTICS ────────────────────────────────────────────────────
+  async trackEvent(oficinaId, tipo) {
+    if (!isFirebaseReady || oficina_id_is_demo(oficinaId)) return;
+    const fields = { impressao:'stats.impressoes', clique:'stats.cliques',
+                     whatsapp:'stats.whatsapp', orcamento:'stats.orcamentos' };
+    if (!fields[tipo]) return;
+    try {
+      await updateDoc(doc(db, 'oficinas', oficinaId),
+        { [fields[tipo]]: increment(1), 'stats.ultimoEvento': serverTimestamp() });
+    } catch(e) {}
+  },
+
+  async getStats(oficinaId) {
+    if (!isFirebaseReady) return demoStats();
+    try {
+      const snap = await getDoc(doc(db, 'oficinas', oficinaId));
+      return snap.exists() ? (snap.data().stats || demoStats()) : demoStats();
+    } catch(e) { return demoStats(); }
+  },
+
+  // ── MÉTRICAS ─────────────────────────────────────────────────────
   async getMetricas(oficinaId) {
     if (!isFirebaseReady) return demoMetricas(oficinaId);
     const leads = await this.listarLeadsDaOficina(oficinaId);
     return calcMetricas(leads);
   }
 };
+
+function oficina_id_is_demo(id) { return !id || id.startsWith('of00'); }
+function demoStats() {
+  return { impressoes:312, cliques:87, whatsapp:34, orcamentos:23 };
+}
 
 // ── Haversine (distância entre coordenadas) ───────────────────────
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -1430,15 +1473,15 @@ function demoOficinas(filtros = {}) {
   const now = new Date(), hour = now.getHours();
   const base = [
     { id:"of001", nome:"Auto Center Vitória", cidade:"Cariacica", bairro:"Campo Grande",
-      whatsapp:"27999990001", avaliacao:4.8, totalAvaliacoes:47, distancia:"0,8 km",
+      whatsapp:"27999990001", avaliacao:4.8, totalAvaliacoes:47, distancia:"0,8 km", plano:"pro",
       aberto: hour>=7&&hour<18, horario:"até 18h", tipoVeiculo:["carro"], lat:-20.268, lng:-40.413,
       servicos:[{nome:"Troca de óleo",min:89,max:120,ativo:true},{nome:"Freios dianteiros",min:220,max:350,ativo:true},{nome:"Alinhamento",min:60,max:80,ativo:true},{nome:"Suspensão",min:180,max:320,ativo:true}]},
     { id:"of002", nome:"Oficina do Zé", cidade:"Cariacica", bairro:"Padre Gabriel",
-      whatsapp:"27999990002", avaliacao:4.3, totalAvaliacoes:23, distancia:"1,2 km",
+      whatsapp:"27999990002", avaliacao:4.3, totalAvaliacoes:23, distancia:"1,2 km", plano:"basico",
       aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["carro","moto"], lat:-20.271, lng:-40.418,
       servicos:[{nome:"Troca de óleo",min:75,max:95,ativo:true},{nome:"Elétrica automotiva",min:80,max:200,ativo:true}]},
     { id:"of003", nome:"MasterCar Revisões", cidade:"Cariacica", bairro:"Nova Rosa da Penha",
-      whatsapp:"27999990003", avaliacao:4.9, totalAvaliacoes:89, distancia:"2,1 km",
+      whatsapp:"27999990003", avaliacao:4.9, totalAvaliacoes:89, distancia:"2,1 km", plano:"pro",
       aberto: hour>=8&&hour<18, horario:"abre 8h", tipoVeiculo:["carro"], lat:-20.262, lng:-40.421,
       servicos:[{nome:"Troca de óleo",min:110,max:150,ativo:true},{nome:"Revisão completa",min:450,max:750,ativo:true},{nome:"Ar-condicionado",min:120,max:200,ativo:true},{nome:"Suspensão",min:200,max:400,ativo:true}]},
     { id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
@@ -1454,10 +1497,21 @@ function demoOficinas(filtros = {}) {
   if (filtros.precoMax)     r = r.filter(o => o.servicos.some(s => s.min <= filtros.precoMax));
   if (filtros.apenasAberta) r = r.filter(o => o.aberto);
   if (filtros.tipoVeiculo)  r = r.filter(o => (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
-  if (filtros.lat && filtros.lng) {
-    r = r.map(o => ({ ...o, _dist: haversineKm(filtros.lat, filtros.lng, o.lat, o.lng) }))
-         .sort((a,b) => a._dist - b._dist);
-  }
+  r = r.map(o => {
+    const dist = (filtros.lat && filtros.lng && o.lat && o.lng)
+      ? haversineKm(filtros.lat, filtros.lng, o.lat, o.lng)
+      : parseFloat((o.distancia || '10').replace(',', '.'));
+    return { ...o, _dist: dist, _score: (window.calcRankingScore||((o,d,q)=>0))(o, dist, filtros.servico || '') };
+  }).sort((a, b) => {
+    const diff = b._score - a._score;
+    // Tiebreaker within 5pts: Pro first
+    if (Math.abs(diff) < 5) {
+      const aPro = a.plano === 'pro' ? 1 : 0;
+      const bPro = b.plano === 'pro' ? 1 : 0;
+      if (bPro !== aPro) return bPro - aPro;
+    }
+    return diff;
+  });
   return r;
 }
 
@@ -1483,7 +1537,44 @@ function calcMetricas(leads) {
   return { total, confirmados, receita, ticket, conversao, origens, servicosMais };
 }
 
+// ── RANKING ENGINE ───────────────────────────────────────────────
+// score = proximidade(40) + avaliação(35) + match_serviço(15) + plano(10)
+function calcRankingScore(o, distKm, query) {
+  const distScore = Math.max(0, 40 - (Math.min(distKm, 20) / 20) * 40);
+  const avalScore = ((o.avaliacao || 0) / 5) * 35;
+  const q = (query || '').toLowerCase();
+  const svcs = (o.servicos || []).filter(s => s.ativo);
+  const svcScore = q
+    ? svcs.some(s => s.nome.toLowerCase() === q) ? 15
+    : svcs.some(s => s.nome.toLowerCase().includes(q)) ? 8 : 0
+    : 0;
+  const planScore  = o.plano === 'pro' ? 10 : o.plano === 'basico' ? 3 : 0;
+  const openBoost  = o.aberto ? 5 : 0;
+  const avalBoost  = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
+  return Math.round((distScore + avalScore + svcScore + planScore + openBoost + avalBoost) * 10) / 10;
+}
+window.calcRankingScore = calcRankingScore;
+
 window.demoOficinas = demoOficinas;
+
+// ── SEED FIREBASE (dev only — run once from console: seedFirebase()) ──
+window.seedFirebase = async function() {
+  if (!isFirebaseReady) { console.error('Firebase not ready'); return; }
+  const oficinas = demoOficinas({});
+  const batch = [];
+  for (const o of oficinas) {
+    const { _dist, _score, ...data } = o;
+    const ref = await addDoc(collection(db, 'oficinas'), {
+      ...data, ativo: true, uid: 'seed',
+      stats: { impressoes:0, cliques:0, whatsapp:0, orcamentos:0 },
+      criadoEm: serverTimestamp()
+    });
+    batch.push(ref.id);
+    console.log('Seeded:', data.nome, '→', ref.id);
+  }
+  console.log('✅ Seed completo. IDs:', batch);
+  return batch;
+};
 window.dispatchEvent(new Event("fbready"));
 </script>
 
@@ -1512,6 +1603,7 @@ const STATE = {
   // Client search
   userLat: null, userLng: null,
   oficinas: [],
+  _stats: null,
   modo: 'oficinas',
   filtroChip: '',
   filtroServico: '',
@@ -2041,7 +2133,8 @@ async function demoLogin() {
   STATE.user = { uid: 'demo', email: 'demo@mecbusca.com', isDemo: true };
   STATE.oficinaAtual = {
     id: 'of001', nome: 'Auto Center Vitória',
-    email: 'admin@autocenter.com', cidade: 'Cariacica'
+    email: 'admin@autocenter.com', cidade: 'Cariacica',
+    plano: 'pro', avaliacao: 4.8, totalAvaliacoes: 47
   };
   // Reset state BEFORE loadPainel to avoid finally-block race
   STATE._submitting = false;
@@ -2239,7 +2332,7 @@ async function finalizarCadastro() {
   setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
   try {
     const id = await window.FB.cadastrarOficina(STATE.onbData);
-    STATE.oficina = { id, ...STATE.onbData };
+    STATE.oficina = { id, ...STATE.onbData, plano: STATE.selectedPlan || 'basico' };
     STATE.oficinaAtual = STATE.oficina;
     toast('🎉 Oficina cadastrada com sucesso!');
     nextStep(4);
@@ -2493,10 +2586,17 @@ function renderOficinas() {
   const list = document.getElementById('resultsList');
   const ofs = STATE.oficinas;
   const q = (STATE.filtroChip||'').toLowerCase();
-  document.getElementById('resultsCount').innerHTML = `<strong>${ofs.length}</strong> oficina${ofs.length!==1?'s':''} encontrada${ofs.length!==1?'s':''}`;
+  const _sortLabel = STATE.userLat ? '📍 por proximidade' : '⭐ por relevância';
+  document.getElementById('resultsCount').innerHTML = '<strong>'+ofs.length+'</strong> oficina'+(ofs.length!==1?'s':'')+' encontrada'+(ofs.length!==1?'s':'')+' <span style="font-size:11px;color:var(--t3);">· '+_sortLabel+'</span>';
   if (!ofs.length) {
     list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhuma oficina encontrada</div><div class="empty-sub">Tente outro serviço ou cidade diferente.</div><div class="empty-sub">Ajuste os filtros ou tente outro serviço</div></div>`;
     return;
+  }
+  // Analytics: track impressions
+  ofs.forEach(of => window.FB?.trackEvent(of.id, 'impressao'));
+  // Dev: log ranking table
+  if (ofs.length && window.location.hash === '#debug') {
+    console.table(ofs.map(o => ({ nome:o.nome, plano:o.plano||'—', score:o._score, dist:o._dist?.toFixed?.(1)+'km'||'?', avaliacao:o.avaliacao })));
   }
   list.innerHTML = ofs.map(of => {
     const svcMatch = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
@@ -2507,13 +2607,15 @@ function renderOficinas() {
     const ini = esc((of.nome||'OF').slice(0, 2).toUpperCase());
     const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
     const statusTxt = esc(of.aberto ? '● Aberto · ' + (of.horario||'') : '● Fechado · ' + (of.horario||''));
-    return `<article class="of-card" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
+    return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
       <div class="of-top">
         <div class="of-avatar" aria-hidden="true">${ini}</div>
         <div class="of-info">
-          <div class="of-name">${esc(of.nome)}</div>
+          <div class="of-name">
+            ${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${esc(of.nome)}
+          </div>
           <div class="of-meta">
-            <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade)}</span>
+            <span class="of-dist">📍 ${of._dist&&of._dist<900?(of._dist<1?"< 1 km":of._dist.toFixed(1)+" km"):esc(of.distancia||of.bairro||of.cidade)}</span>
             <span class="of-stars" aria-label="${esc(String(of.avaliacao))} estrelas">★ ${esc(String(of.avaliacao||'—'))} <span>(${esc(String(of.avaliacoes||0))})</span></span>
             <span class="${statusClass}" aria-live="polite">${statusTxt}</span>
           </div>
@@ -2717,6 +2819,7 @@ function renderPecas() {
 function getOficina(id) { return STATE.oficinas.find(o => o.id === id); }
 
 function openBudget(id) {
+  window.FB?.trackEvent(id, 'clique');
   const of = getOficina(id);
   if (!of) return;
   const q = (STATE.filtroChip||'').toLowerCase();
@@ -2803,6 +2906,7 @@ async function enviarLead(ofId) {
       whatsapp: wpp.replace(/\D/g,''), carro,
       servico: svc?.nome || q || 'Consulta', valor
     });
+    window.FB?.trackEvent(ofId, 'orcamento');
     closeModal('budgetModal');
     toast('✅ Solicitação enviada para ' + (of?.nome||'oficina') + '! Aguarde contato.');
   } catch(e) {
@@ -2814,6 +2918,7 @@ async function enviarLead(ofId) {
 }
 
 function wppOficina(id) {
+  window.FB?.trackEvent(id, 'whatsapp');
   const of = getOficina(id);
   if (!of?.whatsapp) { toast('WhatsApp não cadastrado', 'warning'); return; }
   const svc = STATE.filtroServico || 'serviço';
@@ -2909,6 +3014,15 @@ function loadPainel() {
   document.getElementById('painelAvatar').textContent = (STATE.oficinaAtual.nome||'AC').slice(0,2).toUpperCase();
   painelPage('dashboard', document.querySelector('#scPainel .nav-item'));
   loadLeadsPainel();
+  preloadPainelData();
+}
+
+// Preload stats when painel opens
+async function preloadPainelData() {
+  if (!STATE.oficinaAtual) return;
+  try {
+    STATE._stats = await window.FB.getStats(STATE.oficinaAtual.id);
+  } catch(e) { STATE._stats = null; }
 }
 
 async function loadLeadsPainel() {
@@ -2963,61 +3077,98 @@ function painelPage(name, navEl) {
 }
 
 // ── DASHBOARD ────────────────────────────────────────────────────
-function renderDashboard(c) {
-  const leads = STATE.leads;
-  const novos = leads.filter(l => l.status === 'novo').length;
-  const confirmados = leads.filter(l => l.status === 'confirmado').length;
-  const receita = leads.reduce((s, l) => s + (l.valor||0), 0);
-  const conversao = leads.length > 0 ? Math.round((confirmados / leads.length) * 100) : 0;
+async function renderDashboard(el) {
+  const leads   = STATE.leads;
+  const oficina = STATE.oficinaAtual || {};
+  const stats   = STATE._stats || await (window.FB?.getStats(oficina.id) || Promise.resolve({impressoes:0,cliques:0,whatsapp:0,orcamentos:0}));
+  const isPro   = oficina.plano === 'pro';
+  const rankPos = isPro ? 1 : 4;
 
-  c.innerHTML = `
-  <div class="metrics-grid">
-    <div class="metric-card" tabindex="0">
-      <div class="metric-label">Receita estimada</div>
-      <div class="metric-value">${formatCurrency(receita)}</div>
-      <div class="metric-delta delta-up">↑ via leads</div>
-    </div>
-    <div class="metric-card" tabindex="0">
-      <div class="metric-label">Leads recebidos</div>
-      <div class="metric-value">${leads.length}</div>
-      <div class="metric-delta delta-up">${novos} novos</div>
-    </div>
-    <div class="metric-card" tabindex="0">
-      <div class="metric-label">Taxa de conversão</div>
-      <div class="metric-value">${conversao}%</div>
-      <div class="metric-delta ${conversao >= 50 ? 'delta-up' : 'delta-neutral'}">${confirmados} confirmados</div>
-    </div>
-    <div class="metric-card" tabindex="0">
-      <div class="metric-label">Avaliação</div>
-      <div class="metric-value">4,8 ★</div>
-      <div class="metric-delta delta-up">47 avaliações</div>
-    </div>
-  </div>
-  <div class="grid2">
-    <div class="card">
-      <div class="card-header">
-        <div><div class="card-title">Últimos leads</div><div class="card-sub">Mais recentes primeiro</div></div>
-        <span style="font-size:12px;color:var(--g);cursor:pointer;" role="button" tabindex="0" onclick="painelPage('leads',null)">Ver todos →</span>
-      </div>
-      <div id="dashLeads" aria-live="polite"></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><div class="card-title">Leads por dia</div></div>
-      <div class="bar-chart" id="barChart" aria-label="Gráfico de leads por dia"></div>
-      <div style="display:flex;gap:0;margin-top:6px;" id="barLabels" aria-hidden="true"></div>
-    </div>
-  </div>`;
-  renderMiniLeads(leads.slice(0, 4));
-  renderBarChart();
+  const confirmados = leads.filter(l => l.status === 'confirmado').length;
+  const novos       = leads.filter(l => l.status === 'novo').length;
+  const aguardando  = leads.filter(l => l.status === 'aguardando').length;
+  const receita     = leads.reduce((s,l) => s + (l.valor||0), 0);
+  const conversao   = leads.length ? Math.round(confirmados/leads.length*100) : 0;
+  const ticket      = leads.length ? Math.round(receita/leads.length) : 0;
+
+  const imp = stats.impressoes || 0;
+  const cli = stats.cliques    || 0;
+  const wpp = stats.whatsapp   || 0;
+  const orc = stats.orcamentos || 0;
+  const ctr      = imp ? Math.round(cli/imp*100) : 0;
+  const wppRate  = cli ? Math.round(wpp/cli*100) : 0;
+  const convRate = wpp ? Math.round(orc/wpp*100) : 0;
+
+  function kpi(label, value, sub, deltaClass) {
+    return '<div class="metric-card" tabindex="0">'
+      +'<div class="metric-label">'+label+'</div>'
+      +'<div class="metric-value">'+value+'</div>'
+      +'<div class="metric-delta '+(deltaClass||'delta-up')+'">'+sub+'</div>'
+      +'</div>';
+  }
+
+  function funnelRow(label, val, pct, color) {
+    return '<div class="conv-row">'
+      +'<div style="font-size:12px;color:var(--t2);width:110px;">'+label+'</div>'
+      +'<div class="conv-bar-bg"><div class="conv-bar-fill" style="width:'+pct+'%;background:'+color+';"></div></div>'
+      +'<div style="font-size:12px;color:var(--t3);width:50px;text-align:right;">'+val+'</div>'
+      +'</div>';
+  }
+
+  const pct = function(n,d){ return d ? Math.round(n/d*100) : 0; };
+
+  const funnel =
+    funnelRow('👁 Impressões', imp, 100, 'var(--bl)')
+    + funnelRow('🖱 Cliques',   cli, pct(cli,imp), 'var(--pu)')
+    + funnelRow('💬 WhatsApp',  wpp, pct(wpp,imp), 'var(--wpp)')
+    + funnelRow('✅ Orçamentos',orc, pct(orc,imp), 'var(--g)');
+
+  const rankColor = isPro ? '#FFD700' : 'var(--t2)';
+  const rankNote  = isPro
+    ? '<div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:var(--r);padding:10px 14px;font-size:12.5px;color:var(--t2);">⭐ Você está em destaque no topo das buscas.</div>'
+    : '<div style="background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:10px 14px;font-size:12.5px;color:var(--t2);">💡 <b style=\'color:var(--g)\'>Upgrade Pro</b> para aparecer no topo e receber 3× mais leads.</div>';
+
+  el.innerHTML =
+    '<div class="metrics-grid">'
+    + kpi('💰 Receita estimada', formatCurrency(receita), 'Ticket médio '+formatCurrency(ticket))
+    + kpi('👥 Leads recebidos',  leads.length, novos+' novos · '+aguardando+' aguardando')
+    + kpi('📈 Conversão', conversao+'%', confirmados+' confirmados', conversao>=50?'delta-up':'delta-neutral')
+    + kpi('⭐ Avaliação', (oficina.avaliacao||'—')+' ★', (oficina.totalAvaliacoes||0)+' avaliações')
+    +'</div>'
+    +'<div class="grid2" style="margin-bottom:16px;">'
+    +'<div class="card"><div class="card-header"><div class="card-title">📊 Funil de visibilidade</div></div>'
+    +'<div style="padding:4px 0;">'
+    + funnel
+    +'<div style="font-size:11px;color:var(--t3);margin-top:8px;">CTR '+ctr+'% · WhatsApp '+wppRate+'% dos cliques · Conv. '+convRate+'%</div>'
+    +'</div></div>'
+    +'<div class="card"><div class="card-header"><div class="card-title">🏆 Posição no ranking</div></div>'
+    +'<div style="text-align:center;padding:16px 0;">'
+    +'<div style="font-size:52px;font-weight:800;font-family:Syne,sans-serif;color:'+rankColor+';">#'+rankPos+'</div>'
+    +'<div style="font-size:12px;color:var(--t3);margin:4px 0 12px;">'+(isPro?'Destaque Pro — topo da busca':'Plano Básico — posição orgânica')+'</div>'
+    + rankNote
+    +'</div></div>'
+    +'</div>'
+    +'<div class="card"><div class="card-header">'
+    +'<div><div class="card-title">Últimos leads</div><div class="card-sub">'+leads.length+' total</div></div>'
+    +'<button class="btn btn-ghost btn-sm" onclick="painelPage(&apos;leads&apos;,null)" style="width:auto;">Ver todos →</button>'
+    +'</div><div id="miniLeads">'+renderMiniLeads(leads.slice(0,4))+'</div></div>';
+
+  if (!isPro) {
+    el.insertAdjacentHTML('beforeend',
+      '<div style="background:linear-gradient(135deg,var(--gg2),rgba(255,215,0,.05));border:1.5px solid rgba(255,215,0,.3);border-radius:var(--rl);padding:20px;margin-top:16px;text-align:center;">'
+      +'<div style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;margin-bottom:6px;">🚀 Turbine sua oficina com o Plano Pro</div>'
+      +'<div style="font-size:13px;color:var(--t2);margin-bottom:14px;">Apareça no topo · Leads ilimitados · Dashboard completo</div>'
+      +'<button class="btn btn-primary" style="width:auto;padding:12px 28px;background:#FFD700;color:#0A0D0B;" '
+      +'onclick="showUpgradeCTA()">⭐ Fazer upgrade — R$ 97/mês</button>'
+      +'</div>'
+    );
+  }
 }
 
-const LEAD_COLORS = [
-  'linear-gradient(135deg,#5B9CF6,#7B6CF6)',
-  'linear-gradient(135deg,#00A868,#007A4C)',
-  'linear-gradient(135deg,#FF6B6B,#FFB347)',
-  'linear-gradient(135deg,#9B59B6,#5B9CF6)'
-];
-const ST_MAP = {novo:'st-new',aguardando:'st-pend',confirmado:'st-done'};
+
+function showUpgradeCTA() {
+  toast('Em breve! Contate-nos via WhatsApp para fazer upgrade.', 'warning');
+}
 
 function renderMiniLeads(leads) {
   const el = document.getElementById('dashLeads');
