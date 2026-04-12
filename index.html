@@ -750,7 +750,7 @@ button,a,[role=button]{min-height:44px;}
       <label class="form-label" for="fWppF">WhatsApp (com DDD) *</label>
       <div class="phone-mask-wrap">
         <span class="phone-flag">🇧🇷</span>
-        <input class="form-input" id="fWppF" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)">
+        <input class="form-input" id="fWppF" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)">
       </div>
       <span class="field-error" id="fWppFErr">WhatsApp inválido</span>
     </div>
@@ -828,7 +828,7 @@ button,a,[role=button]{min-height:44px;}
         <label class="form-label" for="onbWpp">WhatsApp (com DDD) *</label>
         <div class="phone-mask-wrap">
           <span class="phone-flag" aria-hidden="true">🇧🇷</span>
-          <input class="form-input" id="onbWpp" placeholder="(27) 9 9999-0000" type="tel" autocomplete="tel" oninput="phoneMask(this)" aria-required="true">
+          <input class="form-input" id="onbWpp" placeholder="(27) 9 9999-0000" type="tel" autocomplete="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" aria-required="true">
         </div>
         <span class="field-error" id="onbWppErr">WhatsApp inválido (precisa de 11 dígitos)</span>
       </div>
@@ -1031,7 +1031,7 @@ button,a,[role=button]{min-height:44px;}
 <!-- ══════════════════════════════════════════════════════════
      SCREEN: PAINEL DA OFICINA
 ════════════════════════════════════════════════════════════ -->
-<div id="scPainel" role="main">
+<div id="scPainel" class="screen" role="main">
   <nav class="sidebar" id="painelSidebar" aria-label="Menu do painel">
     <div class="logo-area">
       <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -1679,7 +1679,7 @@ function adicionarServicoAoCatalogo(nome) {
   const extras = getServicosExtra();
   if (extras.some(s => s.toLowerCase() === nomeLower)) return;
   extras.push(nome.trim());
-  localStorage.setItem(LS_KEY_SVCS, JSON.stringify(extras));
+  try { localStorage.setItem(LS_KEY_SVCS, JSON.stringify(extras)); } catch(e) { console.warn('localStorage indisponível'); }
   // Rebuildamos o select caso a home esteja visível
   buildServicoSelect();
 }
@@ -1718,6 +1718,10 @@ function buildServicoSelect() {
 
 // ── HOME SEARCH ──────────────────────────────────────────────────
 function homeBuscar() {
+  // UX: disable button during transition
+  const btn = document.querySelector('.home-search-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '🔍 Buscando...'; }
+  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '🔍 Buscar oficinas'; }}, 1500);
   const servico = document.getElementById('hServico').value;
   const cidade  = document.getElementById('hCidade').value;
   const bairro  = document.getElementById('hBairro').value;
@@ -1801,6 +1805,7 @@ function goTo(id) {
   if (!el) return;
   el.style.display = '';
   el.classList.add('active');
+  window.scrollTo(0, 0);
   if (id === 'scCliente') { renderFilters(); runSearch(); }
   if (id === 'scHome') { buildServicoSelect(); }
   // Close mobile sidebar when navigating
@@ -2228,6 +2233,9 @@ async function finalizarCadastro() {
   STATE._submitting = true;
   STATE.onbData.plano = STATE.selectedPlan;
   STATE.onbData.ativo = true;
+  // Garante que servicos e horarios do onboarding estão no payload
+  if (!STATE.onbData.servicos) STATE.onbData.servicos = [];
+  if (!STATE.onbData.horarios) STATE.onbData.horarios = [];
   setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
   try {
     const id = await window.FB.cadastrarOficina(STATE.onbData);
@@ -2487,7 +2495,7 @@ function renderOficinas() {
   const q = (STATE.filtroChip||'').toLowerCase();
   document.getElementById('resultsCount').innerHTML = `<strong>${ofs.length}</strong> oficina${ofs.length!==1?'s':''} encontrada${ofs.length!==1?'s':''}`;
   if (!ofs.length) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhuma oficina encontrada</div><div class="empty-sub">Ajuste os filtros ou tente outro serviço</div></div>`;
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">Nenhuma oficina encontrada</div><div class="empty-sub">Tente outro serviço ou cidade diferente.</div><div class="empty-sub">Ajuste os filtros ou tente outro serviço</div></div>`;
     return;
   }
   list.innerHTML = ofs.map(of => {
@@ -2592,7 +2600,7 @@ function renderCardEstabelecimento(of) {
     <div class="of-services">${svcs}</div>
     <div class="of-actions">
       <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')">💰 Ver orçamento</button>
-      ${of.whatsapp?`<button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();window.open('https://wa.me/55${esc(of.whatsapp.replace(/\D/g,''))}','_blank','noopener')">💬 WhatsApp</button>`:''}
+      ${of.whatsapp?`<button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();window.open('https://wa.me/55${esc(of.whatsapp.replace(/\D/g,'', 'noopener,noreferrer'))}','_blank','noopener')">💬 WhatsApp</button>`:''}
     </div>
   </article>`;
 }
@@ -2740,7 +2748,7 @@ function openBudget(id) {
         <div class="form-group">
           <div class="phone-mask-wrap">
             <span class="phone-flag" aria-hidden="true">🇧🇷</span>
-            <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" autocomplete="tel" aria-label="Seu WhatsApp">
+            <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" autocomplete="tel" aria-label="Seu WhatsApp">
           </div>
           <span class="field-error" id="lwppErr">WhatsApp inválido</span>
         </div>
@@ -2810,7 +2818,7 @@ function wppOficina(id) {
   if (!of?.whatsapp) { toast('WhatsApp não cadastrado', 'warning'); return; }
   const svc = STATE.filtroServico || 'serviço';
   const msg = encodeURIComponent(`Olá! Vi o perfil da ${of.nome} no MecBusca e tenho interesse em orçamento para: ${svc}.`);
-  window.open(`https://wa.me/55${of.whatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank', 'noopener');
+  window.open(`https://wa.me/55${of.whatsapp.replace(/\D/g,'', 'noopener,noreferrer')}?text=${msg}`, '_blank', 'noopener');
 }
 
 function openBudgetPeca(id) {
@@ -2834,7 +2842,7 @@ function openBudgetPeca(id) {
       <div class="form-group">
         <div class="phone-mask-wrap">
           <span class="phone-flag" aria-hidden="true">🇧🇷</span>
-          <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" autocomplete="tel" aria-label="WhatsApp">
+          <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" autocomplete="tel" aria-label="WhatsApp">
         </div>
         <span class="field-error" id="lwppErr">WhatsApp inválido</span>
       </div>
@@ -3187,7 +3195,7 @@ function salvarHorarios() {
 }
 
 // ── MÉTRICAS DE NEGÓCIO ───────────────────────────────────────────
-async function renderMetricas(c) {
+function renderMetricas(c) {
   const leads = STATE.leads;
   const total = leads.length;
   const confirmados = leads.filter(l => l.status === 'confirmado').length;
