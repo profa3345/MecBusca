@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MecBusca v3 — Sistema Completo</title>
+<title>MecBusca v4 — Sistema Completo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 
@@ -51,6 +51,27 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 <style id="css-base">
 /* ── SCREENS ── */
 .screen{display:none;min-height:100vh;}
+
+/* ── OVERLAYS (modais e drawer que ficam sobre a home) ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal-overlay .modal{transform:translateY(20px);transition:transform 0.25s cubic-bezier(.25,.8,.25,1);}
+.modal-overlay.open .modal{transform:translateY(0);}
+
+/* Drawer (slide from right) */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;
+  display:flex;justify-content:flex-end;
+  opacity:0;pointer-events:none;transition:opacity 0.22s;}
+.drawer-overlay.open{opacity:1;pointer-events:all;}
+.drawer{background:var(--bg2);width:min(520px,100vw);height:100vh;overflow-y:auto;
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform 0.28s cubic-bezier(.25,.8,.25,1);}
+.drawer-overlay.open .drawer{transform:translateX(0);}
+.drawer-header{display:flex;align-items:center;padding:16px 20px;border-bottom:1px solid var(--b);
+  position:sticky;top:0;background:var(--bg2);z-index:1;flex-shrink:0;}
+.drawer-body{padding:24px 24px 40px;flex:1;}
 .screen.active{display:block;}
 
 /* ── TYPOGRAPHY ── */
@@ -151,7 +172,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .loader-sub{font-size:13px;color:var(--t3);}
 
 /* ── AUTH SCREEN ── */
-#scAuth{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;}
+
 .auth-wrap{max-width:400px;width:100%;padding:40px 24px;}
 .auth-logo{font-family:'Syne',sans-serif;font-size:40px;font-weight:800;text-align:center;margin-bottom:6px;}
 .auth-logo em{color:var(--g);font-style:normal;}
@@ -165,29 +186,54 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .auth-footer a{color:var(--g);cursor:pointer;}
 
 /* ── HOME ── */
-#scHome{background:var(--bg);display:flex;align-items:center;justify-content:center;min-height:100vh;}
-.home-wrap{text-align:center;max-width:480px;padding:40px 24px;}
+#scHome{background:var(--bg);min-height:100vh;display:flex;flex-direction:column;}
+.home-hero{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px;}
+.home-wrap{text-align:center;max-width:560px;width:100%;}
 .home-logo{font-family:'Syne',sans-serif;font-size:48px;font-weight:800;margin-bottom:8px;}
 .home-logo em{color:var(--g);font-style:normal;}
-.home-tagline{font-size:16px;color:var(--t2);margin-bottom:48px;line-height:1.6;}
-.portal-cards{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px;}
-.portal-card{
-  background:var(--s);border:1px solid var(--b);border-radius:var(--rxl);
-  padding:28px 20px;cursor:pointer;transition:all 0.2s;text-align:center;
-}
-.portal-card:hover{border-color:var(--b2);transform:translateY(-3px);background:var(--s2);}
+.home-tagline{font-size:15px;color:var(--t2);margin-bottom:32px;line-height:1.6;}
+.home-tabs{display:flex;gap:0;background:var(--s);border:1.5px solid var(--b);border-radius:var(--r);overflow:hidden;margin-bottom:14px;}
+.home-tab{flex:1;padding:10px;font-size:13.5px;font-weight:600;color:var(--t2);cursor:pointer;transition:all var(--transition);border:none;background:transparent;font-family:'Syne',sans-serif;}
+.home-tab.active{background:var(--gg);color:var(--g);}
+.home-tab:hover:not(.active){background:var(--s2);color:var(--t);}
+.home-search-box{background:var(--s);border:1.5px solid var(--b2);border-radius:var(--rxl);padding:20px;margin-bottom:20px;text-align:left;}
+.home-search-title{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:14px;font-weight:500;}
+.home-fields{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.home-field-full{grid-column:1/-1;}
+.home-field label{font-size:11px;color:var(--t3);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.06em;}
+.home-field input,.home-field select{width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border var(--transition);}
+.home-field input:focus,.home-field select:focus{border-color:var(--g);}
+.home-field input::placeholder{color:var(--t3);}
+.home-field select option{background:var(--bg3);}
+.home-search-btn{width:100%;padding:13px;background:var(--g);color:#0A0D0B;font-weight:700;font-size:15px;border:none;border-radius:var(--r);cursor:pointer;font-family:'Syne',sans-serif;transition:all var(--transition);display:flex;align-items:center;justify-content:center;gap:8px;}
+.home-search-btn:hover{background:#1DE898;transform:translateY(-1px);}
+.home-search-btn:active{transform:translateY(0);}
+.star-rating{display:flex;gap:6px;margin-bottom:2px;}
+.star{font-size:26px;color:var(--s2);cursor:pointer;transition:color 0.15s;line-height:1;user-select:none;}
+.star.on{color:#FFD700;}
+.star:hover{color:#FFD700;}
+
+.home-popular{margin-bottom:16px;}
+.home-pop-label{font-size:12px;color:var(--t3);margin-bottom:10px;}
+.home-chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
+.home-chip{padding:6px 14px;border-radius:20px;font-size:12.5px;border:1px solid var(--b);background:var(--s);color:var(--t2);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+.home-chip:hover{background:var(--gg);border-color:var(--b2);color:var(--g);}
+.home-footer{display:flex;align-items:center;justify-content:center;gap:20px;padding:18px 24px;border-top:1px solid var(--b);font-size:12px;color:var(--t3);}
+.home-footer a{color:var(--g);cursor:pointer;}
+.portal-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rxl);padding:28px 20px;cursor:pointer;transition:all 0.2s;text-align:center;}
 .portal-card.featured{border-color:var(--b2);background:linear-gradient(135deg,var(--s),var(--gg2));}
 .pc-icon{font-size:32px;margin-bottom:12px;}
 .pc-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--t);margin-bottom:4px;}
 .pc-sub{font-size:12px;color:var(--t3);}
 .home-note{font-size:11px;color:var(--t3);}
+@media(max-width:520px){.home-logo{font-size:36px;}.home-fields{grid-template-columns:1fr;}.home-field-full{grid-column:auto;}}
 </style>
 
 <!-- ══════════════════════════════════════════════════════════
      styles/onboarding.css
 ════════════════════════════════════════════════════════════ -->
 <style id="css-onboarding">
-#scOnboarding{background:var(--bg);min-height:100vh;}
+
 .onb-wrap{max-width:560px;margin:0 auto;padding:40px 24px;}
 .onb-header{display:flex;align-items:center;gap:12px;margin-bottom:40px;}
 .onb-back{width:36px;height:36px;border-radius:9px;background:var(--s);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t2);font-size:18px;transition:all var(--transition);}
@@ -529,15 +575,16 @@ button,a,[role=button]{min-height:44px;}
 <!-- ══════════════════════════════════════════════════════════
      SCREEN: AUTH (Login / Register workshop)
 ════════════════════════════════════════════════════════════ -->
-<div id="scAuth" class="screen">
-  <div class="auth-wrap">
-    <div class="auth-logo">Mec<em>Busca</em></div>
+<!-- MODAL: AUTH (login/registro) -->
+<div class="modal-overlay" id="scAuth" role="dialog" aria-modal="true" aria-label="Acesso ao painel" onclick="closeOverlay('scAuth',event)">
+  <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeOverlay('scAuth')" aria-label="Fechar">×</button>
+    <div class="auth-logo" style="font-size:28px;margin-bottom:4px;">Mec<em>Busca</em></div>
     <div class="auth-tagline">Painel exclusivo para oficinas cadastradas</div>
     <div class="auth-tabs" role="tablist">
       <div class="auth-tab active" role="tab" aria-selected="true" onclick="switchAuthTab('login')">Entrar</div>
       <div class="auth-tab" role="tab" aria-selected="false" onclick="switchAuthTab('register')">Criar conta</div>
     </div>
-    <!-- LOGIN -->
     <div id="authLogin">
       <div class="form-group">
         <label class="form-label" for="authEmail">Email</label>
@@ -553,10 +600,12 @@ button,a,[role=button]{min-height:44px;}
         <span id="loginBtnText">Entrar no painel</span>
         <span id="loginBtnSpinner" style="display:none;"><span class="spinner"></span></span>
       </button>
+      <div style="text-align:center;margin-top:12px;">
+        <span style="font-size:12px;color:var(--t3);cursor:pointer;" onclick="doPasswordReset()">Esqueci minha senha</span>
+      </div>
       <div class="auth-divider">ou</div>
       <button class="btn btn-ghost" onclick="demoLogin()">🚀 Entrar como demo (sem cadastro)</button>
     </div>
-    <!-- REGISTER -->
     <div id="authRegister" style="display:none">
       <div class="form-group">
         <label class="form-label" for="regNome">Nome da oficina</label>
@@ -575,45 +624,176 @@ button,a,[role=button]{min-height:44px;}
         <span id="regBtnSpinner" style="display:none;"><span class="spinner"></span></span>
       </button>
     </div>
-    <div class="auth-footer">
-      <a onclick="goTo('scHome')">← Voltar ao início</a>
-    </div>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
-     SCREEN: HOME
+     SCREEN: HOME — busca direta
 ════════════════════════════════════════════════════════════ -->
 <div id="scHome" class="screen">
-  <div class="home-wrap">
-    <div class="home-logo">Mec<em>Busca</em></div>
-    <div class="home-tagline">O marketplace de oficinas mecânicas.<br>Orçamento instantâneo. WhatsApp direto.</div>
-    <div class="portal-cards" role="list">
-      <div class="portal-card" role="listitem" onclick="goTo('scCliente')" tabindex="0" aria-label="Sou cliente — encontrar oficinas" onkeypress="if(event.key==='Enter')goTo('scCliente')">
-        <div class="pc-icon" aria-hidden="true">🔍</div>
-        <div class="pc-title">Sou cliente</div>
-        <div class="pc-sub">Quero encontrar oficinas e orçamentos</div>
+  <div class="home-hero">
+    <div class="home-wrap">
+      <div class="home-logo">Mec<em>Busca</em></div>
+      <div class="home-tagline">Encontre a melhor oficina perto de você.<br>Orçamento instantâneo. WhatsApp direto.</div>
+
+      <!-- ABAS DE BUSCA -->
+      <div class="home-tabs" role="tablist">
+        <button class="home-tab active" id="htab-oficinas" onclick="homeSetTab('oficinas')" role="tab" aria-selected="true">🔧 Oficinas</button>
+        <button class="home-tab" id="htab-pecas" onclick="homeSetTab('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
       </div>
-      <div class="portal-card featured" role="listitem" onclick="goTo('scOnboarding')" tabindex="0" aria-label="Sou oficina — receber mais clientes" onkeypress="if(event.key==='Enter')goTo('scOnboarding')">
-        <div class="pc-icon" aria-hidden="true">🔧</div>
-        <div class="pc-title">Sou oficina</div>
-        <div class="pc-sub">Quero receber mais clientes</div>
+
+      <!-- BUSCA OFICINAS -->
+      <div class="home-search-box" id="hbox-oficinas">
+        <div class="home-search-title">Encontre a oficina ideal</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServico">Serviço</label>
+            <select id="hServico" aria-label="Selecione o serviço">
+              <!-- preenchido dinamicamente por buildServicoSelect() -->
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidade">Cidade</label>
+            <select id="hCidade">
+              <option value="">Todas as cidades</option>
+              <option value="Cariacica" selected>Cariacica</option>
+              <option value="Vitória">Vitória</option>
+              <option value="Serra">Serra</option>
+              <option value="Vila Velha">Vila Velha</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hBairro">Bairro</label>
+            <select id="hBairro">
+              <option value="">Todos os bairros</option>
+              <option value="Campo Grande">Campo Grande</option>
+              <option value="Padre Gabriel">Padre Gabriel</option>
+              <option value="Nova Rosa da Penha">Nova Rosa da Penha</option>
+              <option value="Itaquari">Itaquari</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscar()">
+          🔍 Buscar oficinas
+        </button>
+      </div>
+
+      <!-- BUSCA PEÇAS -->
+      <div class="home-search-box" id="hbox-pecas" style="display:none;">
+        <div class="home-search-title">Encontre a peça que você precisa</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hPeca">Peça ou componente</label>
+            <input id="hPeca" type="text" placeholder="Ex: Filtro de óleo, pastilha, amortecedor..." autocomplete="off" onkeydown="if(event.key==='Enter')homeBuscarPeca()">
+          </div>
+          <div class="home-field home-field-full">
+            <label for="hVeiculo">Veículo (opcional)</label>
+            <input id="hVeiculo" type="text" placeholder="Ex: Gol 1.0, HB20, Onix..." autocomplete="off" onkeydown="if(event.key==='Enter')homeBuscarPeca()">
+          </div>
+        </div>
+        <button class="home-search-btn" style="background:var(--pu);" onclick="homeBuscarPeca()">
+          🔩 Buscar peças
+        </button>
+      </div>
+
+      <div class="home-note" id="home-cta">
+        <span style="color:var(--g);cursor:pointer;" onclick="openOverlay('scOnboarding')">Cadastre sua oficina, é grátis.</span>
+        &nbsp;·&nbsp;
+        <span style="color:var(--pu);cursor:pointer;" onclick="goTo('scFornecedor')">Vende peças? Cadastre-se.</span>
       </div>
     </div>
-    <div class="home-note">Já tem cadastro? <span style="color:var(--g);cursor:pointer;" tabindex="0" role="link" onclick="goTo('scAuth')" onkeypress="if(event.key==='Enter')goTo('scAuth')">Acessar painel →</span></div>
+  </div>
+
+  <footer class="home-footer">
+    <a onclick="goTo('scAuth')">Painel da oficina</a>
+    <span>© 2025 MecBusca</span>
+    <a onclick="goTo('scFornecedor')">Cadastrar fornecedor</a>
+  </footer>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SCREEN: FORNECEDOR — cadastro de vendedor de peças
+════════════════════════════════════════════════════════════ -->
+<!-- MODAL: FORNECEDOR -->
+<div class="modal-overlay" id="scFornecedor" role="dialog" aria-modal="true" aria-label="Cadastro de fornecedor" onclick="closeOverlay('scFornecedor',event)">
+  <div class="modal" style="max-width:500px;" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeOverlay('scFornecedor')" aria-label="Fechar">×</button>
+    <div class="modal-title" style="color:var(--pu);">🔩 Cadastro de Fornecedor</div>
+    <div class="modal-sub">Apareça para mecânicos e oficinas que buscam peças na sua região.</div>
+    <div class="form-group">
+      <label class="form-label" for="fNome">Nome da loja / empresa *</label>
+      <input class="form-input" id="fNome" placeholder="Ex: AutoPeças Vitória">
+      <span class="field-error" id="fNomeErr">Nome é obrigatório</span>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="fCidadeF">Cidade *</label>
+        <select class="form-input" id="fCidadeF">
+          <option value="">Selecione</option>
+          <option value="Cariacica">Cariacica</option>
+          <option value="Vitória">Vitória</option>
+          <option value="Serra">Serra</option>
+          <option value="Vila Velha">Vila Velha</option>
+        </select>
+        <span class="field-error" id="fCidadeFErr">Cidade obrigatória</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fBairroF">Bairro</label>
+        <input class="form-input" id="fBairroF" placeholder="Ex: Campo Grande">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="fEnderecoF">Endereço</label>
+      <input class="form-input" id="fEnderecoF" placeholder="Rua, número">
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="fWppF">WhatsApp (com DDD) *</label>
+      <div class="phone-mask-wrap">
+        <span class="phone-flag">🇧🇷</span>
+        <input class="form-input" id="fWppF" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)">
+      </div>
+      <span class="field-error" id="fWppFErr">WhatsApp inválido</span>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="fEmailF">Email</label>
+        <input class="form-input" id="fEmailF" type="email" placeholder="contato@loja.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fEntregaF">Entrega</label>
+        <select class="form-input" id="fEntregaF">
+          <option value="nao">Somente retirada</option>
+          <option value="local">Entrega local</option>
+          <option value="es">Todo ES</option>
+          <option value="nacional">Nacional</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="fEspecF">Especialidades</label>
+      <input class="form-input" id="fEspecF" placeholder="Ex: Freios, filtros, suspensão...">
+    </div>
+    <div style="background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:var(--t2);">
+      🔩 Seu catálogo ficará visível para mecânicos e oficinas cadastradas no MecBusca.
+    </div>
+    <button class="btn btn-primary" style="background:var(--pu);" onclick="cadastrarFornecedor()">
+      <span id="fornecedorBtnText">🔩 Cadastrar fornecedor</span>
+      <span id="fornecedorSpinner" style="display:none;"><span class="spinner"></span></span>
+    </button>
   </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
      SCREEN: ONBOARDING
 ════════════════════════════════════════════════════════════ -->
-<div id="scOnboarding" class="screen">
-  <div class="onb-wrap">
-    <div class="onb-header">
-      <div class="onb-back" onclick="goTo('scHome')" tabindex="0" aria-label="Voltar" onkeypress="if(event.key==='Enter')goTo('scHome')">←</div>
-      <div class="onb-logo">Mec<em>Busca</em></div>
+<!-- DRAWER: ONBOARDING (cadastro de oficina) -->
+<div class="drawer-overlay" id="scOnboarding" role="dialog" aria-modal="true" aria-label="Cadastro de oficina" onclick="closeOverlay('scOnboarding',event)">
+  <div class="drawer" onclick="event.stopPropagation()">
+    <div class="drawer-header">
+      <button class="modal-close" style="position:static;" onclick="closeOverlay('scOnboarding')" aria-label="Fechar">×</button>
+      <div class="onb-logo" style="margin:0 auto 0 12px;">Mec<em>Busca</em></div>
     </div>
-    <div class="steps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1">
+    <div class="drawer-body"><div class="steps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1">
       <div class="step-seg active" id="seg0"></div>
       <div class="step-seg" id="seg1"></div>
       <div class="step-seg" id="seg2"></div>
@@ -726,9 +906,10 @@ button,a,[role=button]{min-height:44px;}
         <div class="success-icon" aria-hidden="true">✅</div>
         <div class="success-title">Oficina cadastrada!</div>
         <div class="success-sub">Seu perfil já está visível no MecBusca.<br>Clientes podem te encontrar agora mesmo.</div>
-        <button class="btn btn-primary" style="margin-bottom:12px;" onclick="loadPainel()">Acessar meu painel →</button>
+        <button class="btn btn-primary" style="margin-bottom:12px;" onclick="closeOverlay('scOnboarding');loadPainel();">Acessar meu painel →</button>
         <button class="btn btn-ghost" onclick="goTo('scCliente')">Ver como cliente vê</button>
       </div>
+    
     </div>
   </div>
 </div>
@@ -958,77 +1139,114 @@ button,a,[role=button]{min-height:44px;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, getDocs, query, where,
-  orderBy, serverTimestamp, onSnapshot, doc, updateDoc, getDoc
+  getFirestore, collection, addDoc, getDocs, getDoc, setDoc,
+  query, where, orderBy, serverTimestamp, onSnapshot,
+  doc, updateDoc, increment, runTransaction, limit, startAfter
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  signOut, onAuthStateChanged
+  signOut, onAuthStateChanged, sendPasswordResetEmail, updateProfile
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ── Configure Firebase ────────────────────────────────────────────
+// ── Firebase Config ───────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
+  authDomain: "mecbusca.firebaseapp.com",
+  projectId: "mecbusca",
+  storageBucket: "mecbusca.firebasestorage.app",
+  messagingSenderId: "273467472832",
+  appId: "1:273467472832:web:fee239b43f50adae04a625"
 };
-// ─────────────────────────────────────────────────────────────────
 
 let app, db, auth, isFirebaseReady = false;
 try {
-  app = initializeApp(firebaseConfig);
-  db = getFirestore(app);
+  app  = initializeApp(firebaseConfig);
+  db   = getFirestore(app);
   auth = getAuth(app);
-  if (!firebaseConfig.apiKey.includes("YOUR_")) {
-    isFirebaseReady = true;
-    console.log("✅ Firebase conectado");
-  } else {
-    console.warn("⚠️ Firebase em modo DEMO — configure firebaseConfig");
-  }
+  isFirebaseReady = true;
+  console.log("✅ Firebase conectado");
 } catch(e) {
   console.warn("Firebase não inicializado:", e);
+}
+
+// ── Rate Limiter (anti-spam) ──────────────────────────────────────
+const _rateLimits = {};
+function rateLimit(key, maxCalls, windowMs) {
+  const now = Date.now();
+  if (!_rateLimits[key]) _rateLimits[key] = [];
+  _rateLimits[key] = _rateLimits[key].filter(t => now - t < windowMs);
+  if (_rateLimits[key].length >= maxCalls) return false;
+  _rateLimits[key].push(now);
+  return true;
+}
+
+// ── Input Sanitizer ───────────────────────────────────────────────
+function sanitize(str, maxLen = 200) {
+  if (typeof str !== 'string') return '';
+  return str.trim().slice(0, maxLen).replace(/<[^>]*>/g, '');
+}
+function sanitizeData(obj) {
+  const out = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (typeof v === 'string') out[k] = sanitize(v);
+    else if (typeof v === 'number') out[k] = isFinite(v) ? v : 0;
+    else if (Array.isArray(v)) out[k] = v.slice(0, 50);
+    else if (v && typeof v === 'object') out[k] = sanitizeData(v);
+    else out[k] = v;
+  }
+  return out;
 }
 
 // ── Firebase Public API ───────────────────────────────────────────
 window.FB = {
   ready: () => isFirebaseReady,
 
-  // AUTH
+  // ── AUTH ─────────────────────────────────────────────────────
   async login(email, password) {
     if (!isFirebaseReady) throw new Error("Firebase não configurado");
+    if (!rateLimit('login:'+email, 5, 60000)) throw new Error("Muitas tentativas. Aguarde 1 minuto.");
     const cred = await signInWithEmailAndPassword(auth, email, password);
     return cred.user;
   },
 
-  async register(email, password) {
+  async register(email, password, displayName) {
     if (!isFirebaseReady) throw new Error("Firebase não configurado");
+    if (!rateLimit('register', 3, 300000)) throw new Error("Limite de cadastros atingido. Tente em 5 minutos.");
     const cred = await createUserWithEmailAndPassword(auth, email, password);
+    if (displayName) await updateProfile(cred.user, { displayName: sanitize(displayName, 80) });
+    // Cria perfil do usuário no Firestore
+    await setDoc(doc(db, "users", cred.user.uid), {
+      email: cred.user.email,
+      displayName: sanitize(displayName || '', 80),
+      role: "oficina",
+      criadoEm: serverTimestamp()
+    });
     return cred.user;
   },
 
-  async logout() {
-    if (auth) await signOut(auth);
+  async logout() { if (auth) await signOut(auth); },
+
+  async resetPassword(email) {
+    if (!isFirebaseReady) throw new Error("Firebase não configurado");
+    if (!rateLimit('reset:'+email, 2, 300000)) throw new Error("Aguarde antes de solicitar novamente.");
+    await sendPasswordResetEmail(auth, email);
   },
 
-  onAuthChange(cb) {
-    if (!auth) return () => {};
-    return onAuthStateChanged(auth, cb);
-  },
+  onAuthChange(cb) { return auth ? onAuthStateChanged(auth, cb) : () => {}; },
+  getCurrentUser() { return auth?.currentUser || null; },
 
-  getCurrentUser() {
-    return auth?.currentUser || null;
-  },
-
-  // OFICINAS — scoped to authenticated user
+  // ── OFICINAS ─────────────────────────────────────────────────
   async cadastrarOficina(data) {
     if (!isFirebaseReady) return demoSave("oficina", data);
     const user = auth.currentUser;
+    if (!user) throw new Error("Usuário não autenticado");
+    const existing = await this.getMinhaOficina(user.uid);
+    if (existing) return existing.id;
+    const clean = sanitizeData(data);
     const ref = await addDoc(collection(db, "oficinas"), {
-      ...data, ativo: true, uid: user?.uid || null,
-      criadoEm: serverTimestamp()
+      ...clean, ativo: true, uid: user.uid,
+      avaliacoes: 0, totalAvaliacoes: 0, avaliacao: 0,
+      criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp()
     });
     return ref.id;
   },
@@ -1042,44 +1260,91 @@ window.FB = {
     return { id: d.id, ...d.data() };
   },
 
-  async listarOficinas(filtros = {}) {
+  async atualizarOficina(oficinaId, data) {
+    if (!isFirebaseReady) return true;
+    const user = auth.currentUser;
+    if (!user) throw new Error("Não autorizado");
+    const clean = sanitizeData(data);
+    await updateDoc(doc(db, "oficinas", oficinaId), {
+      ...clean, atualizadoEm: serverTimestamp()
+    });
+    return true;
+  },
+
+  async listarOficinas(filtros = {}, pagSize = 20, lastDoc = null) {
     if (!isFirebaseReady) return demoOficinas(filtros);
-    const snap = await getDocs(collection(db, "oficinas"));
-    let oficinas = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(o => o.ativo);
-    if (filtros.servico) {
-      oficinas = oficinas.filter(o =>
-        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(filtros.servico.toLowerCase()) && s.ativo)
-      );
-    }
-    if (filtros.cidade) {
-      oficinas = oficinas.filter(o =>
-        (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase())
-      );
-    }
-    if (filtros.bairro) {
-      oficinas = oficinas.filter(o =>
-        (o.bairro||'').toLowerCase().includes(filtros.bairro.toLowerCase())
-      );
-    }
-    if (filtros.avaliacaoMin) {
-      oficinas = oficinas.filter(o => (o.avaliacao||0) >= filtros.avaliacaoMin);
-    }
-    if (filtros.precoMax) {
-      oficinas = oficinas.filter(o =>
-        (o.servicos||[]).some(s => s.min <= filtros.precoMax)
-      );
-    }
-    if (filtros.apenasAberta) {
-      oficinas = oficinas.filter(o => o.aberto === true);
+    let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize));
+    if (lastDoc) q = query(q, startAfter(lastDoc));
+    const snap = await getDocs(q);
+    let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
+    // Filtros client-side (Firebase free tier não suporta compound queries sem índice)
+    if (filtros.servico) oficinas = oficinas.filter(o =>
+      (o.servicos||[]).some(s => s.nome.toLowerCase().includes(filtros.servico.toLowerCase()) && s.ativo));
+    if (filtros.cidade) oficinas = oficinas.filter(o =>
+      (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
+    if (filtros.bairro) oficinas = oficinas.filter(o =>
+      (o.bairro||'').toLowerCase().includes(filtros.bairro.toLowerCase()));
+    if (filtros.avaliacaoMin) oficinas = oficinas.filter(o => (o.avaliacao||0) >= filtros.avaliacaoMin);
+    if (filtros.precoMax) oficinas = oficinas.filter(o =>
+      (o.servicos||[]).some(s => s.min <= filtros.precoMax));
+    if (filtros.apenasAberta) oficinas = oficinas.filter(o => o.aberto === true);
+    if (filtros.tipoVeiculo) oficinas = oficinas.filter(o =>
+      (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
+    if (filtros.lat && filtros.lng) {
+      oficinas = oficinas.map(o => ({
+        ...o,
+        _dist: o.lat && o.lng ? haversineKm(filtros.lat, filtros.lng, o.lat, o.lng) : 999
+      })).sort((a,b) => a._dist - b._dist);
     }
     return oficinas;
   },
 
-  // LEADS — scoped to workshop
+  // ── AVALIAÇÕES ───────────────────────────────────────────────
+  async avaliarOficina(oficinaId, nota, comentario) {
+    if (!isFirebaseReady) { toast("Avaliação salva (demo)"); return; }
+    const user = auth.currentUser;
+    if (!user) throw new Error("Faça login para avaliar");
+    if (!rateLimit('avaliacao:'+user.uid+':'+oficinaId, 1, 86400000))
+      throw new Error("Você já avaliou esta oficina hoje.");
+    nota = Math.max(1, Math.min(5, Number(nota)));
+    const avalRef = doc(collection(db, "oficinas", oficinaId, "avaliacoes"));
+    await runTransaction(db, async tx => {
+      const ofDoc = await tx.get(doc(db, "oficinas", oficinaId));
+      if (!ofDoc.exists()) throw new Error("Oficina não encontrada");
+      const d = ofDoc.data();
+      const novaTotal = (d.totalAvaliacoes || 0) + 1;
+      const novaMedia = ((d.avaliacao || 0) * (d.totalAvaliacoes || 0) + nota) / novaTotal;
+      tx.set(avalRef, {
+        uid: user.uid, nota, comentario: sanitize(comentario || '', 500),
+        criadoEm: serverTimestamp()
+      });
+      tx.update(doc(db, "oficinas", oficinaId), {
+        avaliacao: Math.round(novaMedia * 10) / 10,
+        totalAvaliacoes: novaTotal,
+        atualizadoEm: serverTimestamp()
+      });
+    });
+  },
+
+  async listarAvaliacoes(oficinaId) {
+    if (!isFirebaseReady) return [];
+    const q = query(
+      collection(db, "oficinas", oficinaId, "avaliacoes"),
+      orderBy("criadoEm", "desc"), limit(10)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  // ── LEADS ────────────────────────────────────────────────────
   async enviarLead(data) {
+    if (!rateLimit('lead:'+data.whatsapp, 3, 300000))
+      throw new Error("Muitas solicitações. Aguarde alguns minutos.");
     if (!isFirebaseReady) return demoSave("lead", data);
+    const clean = sanitizeData(data);
+    if (!clean.nomeCliente || !clean.whatsapp) throw new Error("Dados incompletos");
     const ref = await addDoc(collection(db, "leads"), {
-      ...data, status: "novo", criadoEm: serverTimestamp()
+      ...clean, status: "novo", criadoEm: serverTimestamp()
     });
     return ref.id;
   },
@@ -1087,27 +1352,56 @@ window.FB = {
   async listarLeadsDaOficina(oficinaId) {
     if (!isFirebaseReady) return demoLeads(oficinaId);
     const q = query(
-      collection(db, "leads"),
-      where("oficinaId", "==", oficinaId),
-      orderBy("criadoEm", "desc")
+      collection(db, "leads"), where("oficinaId", "==", oficinaId),
+      orderBy("criadoEm", "desc"), limit(100)
     );
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    try {
+      const snap = await getDocs(q);
+      return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) {
+      if (e.code === "failed-precondition") throw new Error("MISSING_INDEX:" + e.message);
+      throw e;
+    }
   },
 
   async atualizarLead(leadId, data) {
     if (!isFirebaseReady) return true;
-    await updateDoc(doc(db, "leads", leadId), { ...data, atualizadoEm: serverTimestamp() });
+    await updateDoc(doc(db, "leads", leadId), { ...sanitizeData(data), atualizadoEm: serverTimestamp() });
     return true;
   },
 
   onLeadsSnapshot(oficinaId, cb) {
     if (!isFirebaseReady) return () => {};
-    const q = query(collection(db, "leads"), where("oficinaId", "==", oficinaId), orderBy("criadoEm", "desc"));
+    const q = query(collection(db, "leads"), where("oficinaId","==",oficinaId), orderBy("criadoEm","desc"));
     return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   },
 
-  // MÉTRICAS
+  // ── FORNECEDORES ─────────────────────────────────────────────
+  async cadastrarFornecedorDB(data) {
+    if (!isFirebaseReady) return null;
+    if (!rateLimit('fornecedor', 3, 300000)) throw new Error("Limite atingido. Tente em 5 minutos.");
+    const clean = sanitizeData(data);
+    const ref = await addDoc(collection(db, "fornecedores"), {
+      ...clean, ativo: true, criadoEm: serverTimestamp()
+    });
+    return ref.id;
+  },
+
+  async listarFornecedores(filtros = {}) {
+    if (!isFirebaseReady) return [];
+    const snap = await getDocs(query(collection(db, "fornecedores"), where("ativo","==",true)));
+    let lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (filtros.cidade) lista = lista.filter(f => (f.cidade||'').includes(filtros.cidade));
+    return lista;
+  },
+
+  // ── GEOLOCALIZAÇÃO ───────────────────────────────────────────
+  async salvarGeoOficina(oficinaId, lat, lng) {
+    if (!isFirebaseReady) return;
+    await updateDoc(doc(db, "oficinas", oficinaId), { lat, lng, atualizadoEm: serverTimestamp() });
+  },
+
+  // ── MÉTRICAS ─────────────────────────────────────────────────
   async getMetricas(oficinaId) {
     if (!isFirebaseReady) return demoMetricas(oficinaId);
     const leads = await this.listarLeadsDaOficina(oficinaId);
@@ -1115,74 +1409,60 @@ window.FB = {
   }
 };
 
+// ── Haversine (distância entre coordenadas) ───────────────────────
+function haversineKm(lat1, lng1, lat2, lng2) {
+  const R = 6371, dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+window.haversineKm = haversineKm;
+
 // ── Demo Data ─────────────────────────────────────────────────────
 let _demoId = 1000;
 const demoStore = { oficinas: [], leads: [] };
-
 function demoSave(col, data) {
   const id = "demo_" + (++_demoId);
-  demoStore[col + "s"].push({ id, ...data });
+  demoStore[col+"s"].push({ id, ...data });
   return id;
 }
 
 function demoOficinas(filtros = {}) {
-  const now = new Date();
-  const hour = now.getHours();
+  const now = new Date(), hour = now.getHours();
   const base = [
-    {
-      id:"of001", nome:"Auto Center Vitória", cidade:"Cariacica", bairro:"Campo Grande",
-      whatsapp:"27999990001", avaliacao:4.8, avaliacoes:47, distancia:"0,8 km",
-      aberto: hour >= 7 && hour < 18, horario:"até 18h", tipoVeiculo:['carro'],
-      servicos:[
-        {nome:"Troca de óleo",min:89,max:120,ativo:true},
-        {nome:"Freios dianteiros",min:220,max:350,ativo:true},
-        {nome:"Alinhamento",min:60,max:80,ativo:true},
-        {nome:"Suspensão",min:180,max:320,ativo:true},
-      ]
-    },
-    {
-      id:"of002", nome:"Oficina do Zé", cidade:"Cariacica", bairro:"Padre Gabriel",
-      whatsapp:"27999990002", avaliacao:4.3, avaliacoes:23, distancia:"1,2 km",
-      aberto: hour >= 7 && hour < 17, horario:"até 17h", tipoVeiculo:['carro','moto'],
-      servicos:[
-        {nome:"Troca de óleo",min:75,max:95,ativo:true},
-        {nome:"Elétrica automotiva",min:80,max:200,ativo:true},
-      ]
-    },
-    {
-      id:"of003", nome:"MasterCar Revisões", cidade:"Cariacica", bairro:"Nova Rosa da Penha",
-      whatsapp:"27999990003", avaliacao:4.9, avaliacoes:89, distancia:"2,1 km",
-      aberto: hour >= 8 && hour < 18, horario:"abre 8h", tipoVeiculo:['carro'],
-      servicos:[
-        {nome:"Troca de óleo",min:110,max:150,ativo:true},
-        {nome:"Revisão completa",min:450,max:750,ativo:true},
-        {nome:"Ar-condicionado",min:120,max:200,ativo:true},
-        {nome:"Suspensão",min:200,max:400,ativo:true},
-      ]
-    },
-    {
-      id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
-      whatsapp:"27999990004", avaliacao:3.9, avaliacoes:11, distancia:"3,0 km",
-      aberto: hour >= 7 && hour < 19, horario:"até 19h", tipoVeiculo:['carro','caminhao'],
-      servicos:[
-        {nome:"Freios dianteiros",min:180,max:300,ativo:true},
-        {nome:"Alinhamento",min:55,max:75,ativo:true},
-      ]
-    }
+    { id:"of001", nome:"Auto Center Vitória", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999990001", avaliacao:4.8, totalAvaliacoes:47, distancia:"0,8 km",
+      aberto: hour>=7&&hour<18, horario:"até 18h", tipoVeiculo:["carro"], lat:-20.268, lng:-40.413,
+      servicos:[{nome:"Troca de óleo",min:89,max:120,ativo:true},{nome:"Freios dianteiros",min:220,max:350,ativo:true},{nome:"Alinhamento",min:60,max:80,ativo:true},{nome:"Suspensão",min:180,max:320,ativo:true}]},
+    { id:"of002", nome:"Oficina do Zé", cidade:"Cariacica", bairro:"Padre Gabriel",
+      whatsapp:"27999990002", avaliacao:4.3, totalAvaliacoes:23, distancia:"1,2 km",
+      aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["carro","moto"], lat:-20.271, lng:-40.418,
+      servicos:[{nome:"Troca de óleo",min:75,max:95,ativo:true},{nome:"Elétrica automotiva",min:80,max:200,ativo:true}]},
+    { id:"of003", nome:"MasterCar Revisões", cidade:"Cariacica", bairro:"Nova Rosa da Penha",
+      whatsapp:"27999990003", avaliacao:4.9, totalAvaliacoes:89, distancia:"2,1 km",
+      aberto: hour>=8&&hour<18, horario:"abre 8h", tipoVeiculo:["carro"], lat:-20.262, lng:-40.421,
+      servicos:[{nome:"Troca de óleo",min:110,max:150,ativo:true},{nome:"Revisão completa",min:450,max:750,ativo:true},{nome:"Ar-condicionado",min:120,max:200,ativo:true},{nome:"Suspensão",min:200,max:400,ativo:true}]},
+    { id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
+      whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km",
+      aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","caminhao"], lat:-20.275, lng:-40.408,
+      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]}
   ];
   let r = [...base];
   if (filtros.servico) r = r.filter(o => o.servicos.some(s => s.nome.toLowerCase().includes(filtros.servico.toLowerCase()) && s.ativo));
-  if (filtros.cidade) r = r.filter(o => o.cidade.toLowerCase().includes(filtros.cidade.toLowerCase()));
-  if (filtros.bairro) r = r.filter(o => o.bairro.toLowerCase().includes(filtros.bairro.toLowerCase()));
+  if (filtros.cidade)  r = r.filter(o => o.cidade.toLowerCase().includes(filtros.cidade.toLowerCase()));
+  if (filtros.bairro)  r = r.filter(o => o.bairro.toLowerCase().includes(filtros.bairro.toLowerCase()));
   if (filtros.avaliacaoMin) r = r.filter(o => o.avaliacao >= filtros.avaliacaoMin);
-  if (filtros.precoMax) r = r.filter(o => o.servicos.some(s => s.min <= filtros.precoMax));
+  if (filtros.precoMax)     r = r.filter(o => o.servicos.some(s => s.min <= filtros.precoMax));
   if (filtros.apenasAberta) r = r.filter(o => o.aberto);
-  if (filtros.tipoVeiculo) r = r.filter(o => (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
+  if (filtros.tipoVeiculo)  r = r.filter(o => (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
+  if (filtros.lat && filtros.lng) {
+    r = r.map(o => ({ ...o, _dist: haversineKm(filtros.lat, filtros.lng, o.lat, o.lng) }))
+         .sort((a,b) => a._dist - b._dist);
+  }
   return r;
 }
 
 function demoLeads(id) {
-  const now = Date.now() / 1000;
+  const now = Date.now()/1000;
   return [
     {id:"l1",nomeCliente:"Marcos Silva",servico:"Troca de óleo",carro:"Gol 1.0",whatsapp:"27911110001",status:"novo",valor:114,criadoEm:{seconds:now-120},origem:"busca"},
     {id:"l2",nomeCliente:"Ana Oliveira",servico:"Freios dianteiros",carro:"HB20",whatsapp:"27911110002",status:"aguardando",valor:280,criadoEm:{seconds:now-1080},origem:"whatsapp"},
@@ -1192,28 +1472,14 @@ function demoLeads(id) {
     {id:"l6",nomeCliente:"Carla Santos",servico:"Suspensão",carro:"Polo 2020",whatsapp:"27911110006",status:"aguardando",valor:320,criadoEm:{seconds:now-172800},origem:"whatsapp"},
   ];
 }
-
-function demoMetricas(id) {
-  const leads = demoLeads(id);
-  return calcMetricas(leads);
-}
-
+function demoMetricas(id) { return calcMetricas(demoLeads(id)); }
 function calcMetricas(leads) {
-  const total = leads.length;
-  const confirmados = leads.filter(l => l.status === 'confirmado').length;
-  const receita = leads.reduce((s, l) => s + (l.valor || 0), 0);
-  const ticket = total > 0 ? Math.round(receita / total) : 0;
-  const conversao = total > 0 ? Math.round((confirmados / total) * 100) : 0;
-  const origens = leads.reduce((acc, l) => {
-    const o = l.origem || 'busca';
-    acc[o] = (acc[o] || 0) + 1;
-    return acc;
-  }, {});
-  const servicosMais = leads.reduce((acc, l) => {
-    const s = l.servico || 'Outro';
-    acc[s] = (acc[s] || 0) + 1;
-    return acc;
-  }, {});
+  const total = leads.length, confirmados = leads.filter(l=>l.status==="confirmado").length;
+  const receita = leads.reduce((s,l)=>s+(l.valor||0),0);
+  const ticket = total>0 ? Math.round(receita/total) : 0;
+  const conversao = total>0 ? Math.round((confirmados/total)*100) : 0;
+  const origens = leads.reduce((acc,l) => { const o=l.origem||"busca"; acc[o]=(acc[o]||0)+1; return acc; }, {});
+  const servicosMais = leads.reduce((acc,l) => { const s=l.servico||"Outro"; acc[s]=(acc[s]||0)+1; return acc; }, {});
   return { total, confirmados, receita, ticket, conversao, origens, servicosMais };
 }
 
@@ -1244,6 +1510,7 @@ const STATE = {
     {nome:'Ar-condicionado',min:120,max:200,ativo:false}
   ],
   // Client search
+  userLat: null, userLng: null,
   oficinas: [],
   modo: 'oficinas',
   filtroChip: '',
@@ -1272,16 +1539,270 @@ const HORARIOS_PADRAO = [
 ════════════════════════════════════════════════════════════ -->
 <script>
 // ── NAVIGATION ───────────────────────────────────────────────────
+// ── FORNECEDOR ────────────────────────────────────────────────────
+async function cadastrarFornecedor() {
+  const nome   = document.getElementById('fNome').value.trim();
+  const cidade = document.getElementById('fCidadeF').value;
+  const wpp    = document.getElementById('fWppF').value.replace(/\D/g,'');
+  let ok = true;
+  if (!nome)   { document.getElementById('fNome').classList.add('has-error');    document.getElementById('fNomeErr').style.display='block';    ok=false; }
+  if (!cidade) { document.getElementById('fCidadeF').classList.add('has-error'); document.getElementById('fCidadeFErr').style.display='block'; ok=false; }
+  if (wpp.length < 10) { document.getElementById('fWppF').classList.add('has-error'); document.getElementById('fWppFErr').style.display='block'; ok=false; }
+  if (!ok) return;
+
+  const btn = document.getElementById('fornecedorBtnText');
+  const spin = document.getElementById('fornecedorSpinner');
+  btn.style.display='none'; spin.style.display='';
+
+  // Salva dados do fornecedor (demo: localStorage)
+  const fornecedor = {
+    nome, cidade,
+    bairro:    document.getElementById('fBairroF').value.trim(),
+    endereco:  document.getElementById('fEnderecoF').value.trim(),
+    whatsapp:  wpp,
+    email:     document.getElementById('fEmailF').value.trim(),
+    espec:     document.getElementById('fEspecF').value.trim(),
+    entrega:   document.getElementById('fEntregaF').value,
+    cadastradoEm: new Date().toISOString()
+  };
+  try {
+    const lista = JSON.parse(localStorage.getItem('mecbusca_fornecedores') || '[]');
+    lista.push(fornecedor);
+    localStorage.setItem('mecbusca_fornecedores', JSON.stringify(lista));
+  } catch(e) {}
+
+  try {
+    await window.FB.cadastrarFornecedorDB(fornecedor);
+    btn.style.display=''; spin.style.display='none';
+    toast('Fornecedor cadastrado com sucesso! 🔩', 'success');
+    setTimeout(() => closeOverlay('scFornecedor'), 1200);
+  } catch(e) {
+    btn.style.display=''; spin.style.display='none';
+    // Fallback: salva localmente mesmo sem Firebase
+    try {
+      const lista = JSON.parse(localStorage.getItem('mecbusca_fornecedores') || '[]');
+      lista.push(fornecedor);
+      localStorage.setItem('mecbusca_fornecedores', JSON.stringify(lista));
+    } catch(_) {}
+    toast('Cadastro salvo localmente.', 'success');
+    setTimeout(() => goTo('scHome'), 1200);
+  }
+}
+
+// ── OVERLAY SYSTEM ───────────────────────────────────────────────
+// scAuth, scOnboarding, scFornecedor are overlays (modal/drawer), not screens.
+// They sit on top of whatever screen is active.
+const OVERLAYS = ['scAuth', 'scOnboarding', 'scFornecedor'];
+
+function openOverlay(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = 'flex';
+  // force reflow for transition
+  el.getBoundingClientRect();
+  el.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeOverlay(id, event) {
+  if (event && event.target !== document.getElementById(id)) return;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove('open');
+  document.body.style.overflow = '';
+  // wait for transition then hide
+  setTimeout(() => { if (!el.classList.contains('open')) el.style.display = 'none'; }, 300);
+}
+
+// ── HOME TABS ─────────────────────────────────────────────────────
+function homeSetTab(tab) {
+  document.querySelectorAll('.home-tab').forEach(t => {
+    t.classList.toggle('active', t.id === 'htab-' + tab);
+    t.setAttribute('aria-selected', t.id === 'htab-' + tab);
+  });
+  document.getElementById('hbox-oficinas').style.display = tab === 'oficinas' ? '' : 'none';
+  document.getElementById('hbox-pecas').style.display   = tab === 'pecas'    ? '' : 'none';
+}
+
+function homeBuscarPeca() {
+  const peca    = document.getElementById('hPeca').value.trim();
+  const veiculo = document.getElementById('hVeiculo').value.trim();
+  const q = [peca, veiculo].filter(Boolean).join(' ');
+  document.getElementById('cliSearch').value = q;
+  goTo('scCliente');
+  setMode('pecas');
+  runSearch();
+}
+
+// ── CATÁLOGO DINÂMICO DE SERVIÇOS ────────────────────────────────
+const SERVICOS_PADRAO = [
+  // Manutenção
+  { nome:'Troca de óleo',       cat:'Manutenção' },
+  { nome:'Revisão completa',    cat:'Manutenção' },
+  { nome:'Filtros',             cat:'Manutenção' },
+  { nome:'Velas de ignição',    cat:'Manutenção' },
+  // Freios e Suspensão
+  { nome:'Freios dianteiros',   cat:'Freios e Suspensão' },
+  { nome:'Freios traseiros',    cat:'Freios e Suspensão' },
+  { nome:'Alinhamento',         cat:'Freios e Suspensão' },
+  { nome:'Balanceamento',       cat:'Freios e Suspensão' },
+  { nome:'Suspensão',           cat:'Freios e Suspensão' },
+  { nome:'Amortecedor',         cat:'Freios e Suspensão' },
+  // Motor e Câmbio
+  { nome:'Correia dentada',     cat:'Motor e Câmbio' },
+  { nome:'Embreagem',           cat:'Motor e Câmbio' },
+  { nome:'Câmbio',              cat:'Motor e Câmbio' },
+  { nome:'Injeção eletrônica',  cat:'Motor e Câmbio' },
+  // Elétrica e Ar
+  { nome:'Elétrica automotiva', cat:'Elétrica e Ar' },
+  { nome:'Ar-condicionado',     cat:'Elétrica e Ar' },
+  { nome:'Bateria',             cat:'Elétrica e Ar' },
+  // Outros
+  { nome:'Pneus',               cat:'Outros' },
+  { nome:'Funilaria e pintura', cat:'Outros' },
+  { nome:'Vidros',              cat:'Outros' },
+  { nome:'Escapamento',         cat:'Outros' },
+];
+
+const LS_KEY_SVCS = 'mecbusca_servicos_extra';
+
+function getServicosExtra() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY_SVCS) || '[]'); }
+  catch { return []; }
+}
+
+function adicionarServicoAoCatalogo(nome) {
+  if (!nome) return;
+  const nomeLower = nome.toLowerCase().trim();
+  // Ignora se já existe no padrão
+  if (SERVICOS_PADRAO.some(s => s.nome.toLowerCase() === nomeLower)) return;
+  const extras = getServicosExtra();
+  if (extras.some(s => s.toLowerCase() === nomeLower)) return;
+  extras.push(nome.trim());
+  localStorage.setItem(LS_KEY_SVCS, JSON.stringify(extras));
+  // Rebuildamos o select caso a home esteja visível
+  buildServicoSelect();
+}
+
+function buildServicoSelect() {
+  const sel = document.getElementById('hServico');
+  if (!sel) return;
+  const valorAtual = sel.value;
+
+  // Agrupar padrões por categoria
+  const cats = {};
+  SERVICOS_PADRAO.forEach(s => {
+    if (!cats[s.cat]) cats[s.cat] = [];
+    cats[s.cat].push(s.nome);
+  });
+
+  let html = '<option value="">— Selecione o serviço —</option>';
+  Object.entries(cats).forEach(([cat, svcs]) => {
+    html += `<optgroup label="${cat}">`;
+    svcs.forEach(n => { html += `<option value="${n}">${n}</option>`; });
+    html += '</optgroup>';
+  });
+
+  // Extras cadastrados pelas oficinas
+  const extras = getServicosExtra();
+  if (extras.length > 0) {
+    html += '<optgroup label="Outros serviços">';
+    extras.forEach(n => { html += `<option value="${n}">${n}</option>`; });
+    html += '</optgroup>';
+  }
+
+  sel.innerHTML = html;
+  // Restaura valor anterior se ainda existir
+  if (valorAtual) sel.value = valorAtual;
+}
+
+// ── HOME SEARCH ──────────────────────────────────────────────────
+function homeBuscar() {
+  const servico = document.getElementById('hServico').value;
+  const cidade  = document.getElementById('hCidade').value;
+  const bairro  = document.getElementById('hBairro').value;
+
+  document.getElementById('cliSearch').value = servico;
+  if (cidade) document.getElementById('fCidade').value = cidade;
+  if (bairro) document.getElementById('fBairro').value = bairro;
+
+  if (cidade || bairro) {
+    document.getElementById('filtersPanel').classList.add('open');
+    document.getElementById('filterToggleBtn').classList.add('active');
+    document.getElementById('filterToggleBtn').setAttribute('aria-expanded','true');
+  }
+
+  goTo('scCliente');
+  // Tenta geolocalização antes de buscar
+  pedirGeolocalizacao(() => { runSearch(); applyAdvFilters(); });
+}
+
+// ── AVALIAÇÕES ────────────────────────────────────────────────────
+let _starSelecionada = {};
+function selectStar(ofId, nota) {
+  _starSelecionada[ofId] = nota;
+  document.querySelectorAll(`#stars-${ofId} .star`).forEach((el, i) => {
+    el.classList.toggle('on', i < nota);
+    el.setAttribute('aria-checked', i < nota);
+  });
+}
+
+async function submitAvaliacao(ofId) {
+  const nota = _starSelecionada[ofId];
+  if (!nota) { toast('Selecione uma nota antes de enviar', 'warning'); return; }
+  const comentario = document.getElementById('aval-coment-'+ofId)?.value || '';
+  try {
+    await window.FB.avaliarOficina(ofId, nota, comentario);
+    toast('Avaliação enviada! Obrigado 🙏', 'success');
+    document.getElementById('avalia-section-'+ofId).innerHTML =
+      '<div style="text-align:center;padding:12px;font-size:13px;color:var(--g);">✅ Avaliação registrada!</div>';
+  } catch(e) {
+    toast(e.message || 'Erro ao enviar avaliação', 'error');
+  }
+}
+
+// ── GEOLOCALIZAÇÃO REAL ───────────────────────────────────────────
+function pedirGeolocalizacao(callback) {
+  if (!navigator.geolocation) { callback(); return; }
+  // Só pede uma vez por sessão
+  if (window._geoAsked) { callback(); return; }
+  window._geoAsked = true;
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      STATE.userLat = pos.coords.latitude;
+      STATE.userLng = pos.coords.longitude;
+      // Atualiza label de localização
+      const locEl = document.getElementById('cliLoc');
+      if (locEl) locEl.innerHTML = '📍 Perto de mim';
+      console.log(`📍 Geo: ${STATE.userLat.toFixed(4)}, ${STATE.userLng.toFixed(4)}`);
+      callback();
+    },
+    err => { console.log('Geo negada ou erro:', err.message); callback(); },
+    { timeout: 5000, maximumAge: 300000 }
+  );
+}
+
 function goTo(id) {
+  // Overlays (modais/drawer) não são screens — abrir com openOverlay
+  if (['scAuth','scOnboarding','scFornecedor'].includes(id)) {
+    openOverlay(id);
+    return;
+  }
+  // Fechar qualquer overlay aberto ao navegar
+  ['scAuth','scOnboarding','scFornecedor'].forEach(ov => {
+    const el = document.getElementById(ov);
+    if (el && el.classList.contains('open')) closeOverlay(ov);
+  });
   document.querySelectorAll('.screen').forEach(s => {
     s.classList.remove('active');
-    s.style.display = '';
+    s.style.display = 'none';
   });
   const el = document.getElementById(id);
   if (!el) return;
   el.style.display = '';
   el.classList.add('active');
   if (id === 'scCliente') { renderFilters(); runSearch(); }
+  if (id === 'scHome') { buildServicoSelect(); }
   // Close mobile sidebar when navigating
   document.getElementById('painelSidebar')?.classList.remove('open');
 }
@@ -1309,6 +1830,14 @@ function openModal(id) {
 }
 function closeModal(id, e) {
   if (!e || e.target === document.getElementById(id)) {
+    // Se é o modal de orçamento e tem dados preenchidos, pedir confirmação
+    if (id === 'budgetModal' && e) {
+      const nome = document.getElementById('lnome')?.value.trim();
+      const wpp = document.getElementById('lwpp')?.value.trim();
+      if (nome || wpp) {
+        if (!window.confirm('Fechar o orçamento? Os dados preenchidos serão perdidos.')) return;
+      }
+    }
     const el = document.getElementById(id);
     el.classList.remove('open');
     releaseFocus(el);
@@ -1482,7 +2011,15 @@ async function doLogin() {
     STATE.oficinaAtual = oficina || { id: 'of001', nome: 'Minha Oficina', email };
     loadPainel();
   } catch(e) {
-    const msg = e.code === 'auth/invalid-credential' ? 'Email ou senha incorretos' : 'Erro ao entrar. Tente novamente.';
+    const erros = {
+      'auth/invalid-credential': 'Email ou senha incorretos.',
+      'auth/user-not-found': 'Nenhuma conta com este email.',
+      'auth/wrong-password': 'Senha incorreta.',
+      'auth/too-many-requests': 'Muitas tentativas. Aguarde alguns minutos.',
+      'auth/network-request-failed': 'Sem conexão. Verifique sua internet.',
+      'auth/user-disabled': 'Esta conta foi desativada.',
+    };
+    const msg = erros[e.code] || 'Erro ao entrar. Tente novamente.';
     showFieldError('authPass', 'authPassErr');
     document.getElementById('authPassErr').textContent = msg;
     toast(msg, 'error');
@@ -1522,19 +2059,27 @@ async function doRegister() {
   setBtnLoading('btnRegister', 'regBtnText', 'regBtnSpinner', true);
   try {
     if (!window.FB.ready()) {
-      // Demo fallback
       STATE.onbData.nome = nome;
       STATE.onbData.email = email;
-      goTo('scOnboarding');
+      openOverlay('scOnboarding');
       return;
     }
     const user = await window.FB.register(email, pass);
     STATE.user = user;
     STATE.onbData.nome = nome;
     STATE.onbData.email = email;
-    goTo('scOnboarding');
+    openOverlay('scOnboarding');
   } catch(e) {
-    toast('Erro ao criar conta: ' + (e.message || 'tente outro email'), 'error');
+    // Mapeamento de erros Firebase → mensagens em português
+    const erros = {
+      'auth/email-already-in-use': 'Este email já está cadastrado. Tente fazer login.',
+      'auth/invalid-email': 'Endereço de email inválido.',
+      'auth/weak-password': 'Senha muito fraca. Use pelo menos 6 caracteres.',
+      'auth/network-request-failed': 'Sem conexão. Verifique sua internet.',
+      'auth/too-many-requests': 'Muitas tentativas. Aguarde alguns minutos.',
+    };
+    const msg = erros[e.code] || 'Erro ao criar conta. Tente novamente.';
+    toast(msg, 'error');
   } finally {
     STATE._submitting = false;
     setBtnLoading('btnRegister', 'regBtnText', 'regBtnSpinner', false);
@@ -1542,7 +2087,6 @@ async function doRegister() {
 }
 
 async function doLogout() {
-  // Confirm before destroying session
   const confirmed = window.confirm('Deseja mesmo sair do painel?');
   if (!confirmed) return;
   try {
@@ -1553,6 +2097,31 @@ async function doLogout() {
   STATE.leads = [];
   goTo('scHome');
   toast('Sessão encerrada');
+}
+
+async function doPasswordReset() {
+  const email = document.getElementById('authEmail').value.trim();
+  if (!validateEmail(email)) {
+    showFieldError('authEmail', 'authEmailErr');
+    document.getElementById('authEmailErr').textContent = 'Informe seu email acima primeiro';
+    toast('Informe seu email no campo acima', 'warning');
+    return;
+  }
+  if (!window.FB.ready()) {
+    toast('Firebase não configurado', 'error');
+    return;
+  }
+  try {
+    await window.FB.resetPassword(email);
+    toast(`Email de recuperação enviado para ${email}`, 'success');
+  } catch(e) {
+    const erros = {
+      'auth/user-not-found': 'Nenhuma conta com este email.',
+      'auth/invalid-email': 'Email inválido.',
+      'auth/too-many-requests': 'Muitas tentativas. Aguarde.',
+    };
+    toast(erros[e.code] || 'Erro ao enviar email de recuperação.', 'error');
+  }
 }
 </script>
 
@@ -1612,9 +2181,9 @@ function nextStep(to) {
 function renderOnbSvcList() {
   document.getElementById('onbSvcList').innerHTML = STATE.onbData.servicos.map((s, i) => `
     <div class="svc-item">
-      <div class="svc-name">${s.nome}</div>
+      <div class="svc-name">${esc(s.nome)}</div>
       <div class="svc-price">R$ ${s.min}–${s.max}</div>
-      <button class="svc-del" onclick="removeOnbSvc(${i})" aria-label="Remover ${s.nome}">×</button>
+      <button class="svc-del" onclick="removeOnbSvc(${i})" aria-label="Remover ${esc(s.nome)}">×</button>
     </div>`).join('');
 }
 
@@ -1624,6 +2193,7 @@ function addOnbSvc() {
   const ma = parseInt(document.getElementById('nsvcMax').value) || 0;
   if (!n) { toast('Informe o nome do serviço', 'warning'); return; }
   STATE.onbData.servicos.push({nome:n,min:mi,max:ma,ativo:true});
+  adicionarServicoAoCatalogo(n); // ← adiciona ao catálogo da home se for novo
   document.getElementById('nsvcNome').value = '';
   document.getElementById('nsvcMin').value = '';
   document.getElementById('nsvcMax').value = '';
@@ -1882,7 +2452,6 @@ async function runSearch() {
 
 // ── OFICINAS ────────────────────────────────────────────────────
 async function loadOficinas() {
-  // Show skeleton while loading
   const list = document.getElementById('resultsList');
   list.innerHTML = [1,2,3].map(() => `
     <div class="of-card" style="pointer-events:none;">
@@ -1900,7 +2469,10 @@ async function loadOficinas() {
     </div>`).join('');
   document.getElementById('resultsCount').innerHTML = '';
 
-  const filtros = { servico: STATE.filtroChip, ...STATE.advFilters };
+  const filtros = {
+    servico: STATE.filtroChip, ...STATE.advFilters,
+    ...(STATE.userLat ? { lat: STATE.userLat, lng: STATE.userLng } : {})
+  };
   try {
     STATE.oficinas = await window.FB.listarOficinas(filtros);
     renderOficinas();
@@ -1998,27 +2570,29 @@ function renderEstabelecimentosPorTipo(tipoId) {
 function renderCardEstabelecimento(of) {
   const ti = TIPO_INFO[of.tipo||'oficina'] || TIPO_INFO.oficina;
   const preco = (of.servicos||[]).length
-    ? (() => { const m = of.servicos[0]; return m.min ? `R$ ${m.min} – ${m.max}` : m.nome; })()
+    ? (() => { const m = of.servicos[0]; return m.min ? `R$ ${m.min} – ${m.max}` : esc(m.nome); })()
     : 'Sob consulta';
-  const svcs = (of.servicos||[]).slice(0,3).map(s => `<span class="svc-tag">${s.nome}</span>`).join('');
-  const ini = (of.nome||'ES').slice(0,2).toUpperCase();
-  return `<article class="of-card" onclick="openBudgetEstab('${of.id}','${of.tipo||'oficina'}')" tabindex="0">
+  const svcs = (of.servicos||[]).slice(0,3).map(s => `<span class="svc-tag">${esc(s.nome)}</span>`).join('');
+  const ini = esc((of.nome||'ES').slice(0,2).toUpperCase());
+  const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
+  const statusTxt = of.aberto ? '● Aberto' : '● Fechado';
+  return `<article class="of-card" onclick="openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')" tabindex="0" aria-label="${esc(of.nome)}">
     <div class="of-top">
       <div class="of-avatar" aria-hidden="true">${ini}</div>
       <div class="of-info">
-        <div class="of-name">${of.nome} <span class="tipo-badge">${ti.icon} ${ti.label}</span></div>
+        <div class="of-name">${esc(of.nome)} <span class="tipo-badge">${ti.icon} ${esc(ti.label)}</span></div>
         <div class="of-meta">
-          <span class="of-dist">📍 ${of.distancia||of.bairro||of.cidade}</span>
-          <span class="of-stars">★ ${of.avaliacao||'—'} <span>(${of.avaliacoes||0})</span></span>
-          <span class="${of.aberto?'of-status-open':'of-status-closed'}">${of.aberto?'● Aberto':'● Fechado'}</span>
+          <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade)}</span>
+          <span class="of-stars">★ ${esc(String(of.avaliacao||'—'))} <span>(${esc(String(of.avaliacoes||0))})</span></span>
+          <span class="${statusClass}">${statusTxt}</span>
         </div>
       </div>
       <div class="of-price-badge">${preco}</div>
     </div>
     <div class="of-services">${svcs}</div>
     <div class="of-actions">
-      <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudgetEstab('${of.id}','${of.tipo||'oficina'}')">💰 Ver orçamento</button>
-      ${of.whatsapp?`<button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();window.open('https://wa.me/55${(of.whatsapp||'').replace(/\D/g,'')}','_blank')">💬 WhatsApp</button>`:''}
+      <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')">💰 Ver orçamento</button>
+      ${of.whatsapp?`<button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();window.open('https://wa.me/55${esc(of.whatsapp.replace(/\D/g,''))}','_blank','noopener')">💬 WhatsApp</button>`:''}
     </div>
   </article>`;
 }
@@ -2032,12 +2606,14 @@ function openBudgetEstab(id, tipo) {
   document.getElementById('bm-nome').textContent = estab.nome;
   document.getElementById('bm-sub').textContent = `${ti.icon} ${ti.label} · 📍 ${estab.bairro||estab.cidade}`;
   const svcs = (estab.servicos||[]).filter(s=>s.ativo&&s.min);
+  const wppNum = (estab.whatsapp||'').replace(/\D/g,'');
+  const msgWpp = encodeURIComponent(`Olá! Vi o ${estab.nome} no MecBusca e gostaria de mais informações.`);
   document.getElementById('bm-body').innerHTML = `
     ${svcs.length ? `<table class="budget-table">
-      ${svcs.map(s=>`<tr><td>${s.nome}</td><td>R$ ${s.min} – ${s.max}</td></tr>`).join('')}
+      ${svcs.map(s=>`<tr><td>${esc(s.nome)}</td><td>R$ ${s.min} – ${s.max}</td></tr>`).join('')}
     </table>` : '<p style="color:var(--t3);font-size:13px;margin-bottom:16px;">Consulte valores diretamente.</p>'}
     <p class="budget-note">* Valores estimados. Confirme via WhatsApp.</p>
-    ${estab.whatsapp?`<a class="btn btn-wpp" href="https://wa.me/55${estab.whatsapp.replace(/\D/g,'')}?text=Olá! Vi o ${encodeURIComponent(estab.nome)} no MecBusca." target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;">💬 Chamar no WhatsApp</a>`:''}`;
+    ${wppNum?`<a class="btn btn-wpp" href="https://wa.me/55${esc(wppNum)}?text=${msgWpp}" target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;">💬 Chamar no WhatsApp</a>`:''}`;
   openModal('budgetModal');
 }
 
@@ -2179,10 +2755,18 @@ function openBudget(id) {
         </button>
         <button class="btn btn-wpp" style="flex:1" onclick="wppOficina('${id}')">💬 WhatsApp</button>
       </div>
+    </div>
+    <div style="border-top:1px solid var(--b);padding-top:14px;margin-top:14px;" id="avalia-section-${id}">
+      <div style="font-size:12px;color:var(--t3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.07em;">Avalie esta oficina</div>
+      <div class="star-rating" id="stars-${id}" role="radiogroup" aria-label="Nota de 1 a 5 estrelas">
+        ${[1,2,3,4,5].map(n=>('<span class="star" data-v="'+n+'" onclick="selectStar(\''+id+'\','+n+')" role="radio" aria-label="'+n+' estrela" tabindex="0">★</span>')).join('')}
+      </div>
+      <textarea class="form-input" id="aval-coment-${id}" placeholder="Comentário (opcional)..." style="margin-top:8px;min-height:60px;resize:none;" maxlength="500"></textarea>
+      <button class="btn btn-ghost" style="margin-top:8px;width:100%;" onclick="submitAvaliacao('${id}')">Enviar avaliação</button>
     </div>`;
 
   document.getElementById('bm-nome').textContent = of.nome;
-  document.getElementById('bm-sub').textContent = svc ? `Orçamento: ${svc.nome}` : 'Solicitar orçamento';
+  document.getElementById('bm-sub').textContent = svc ? ('Orçamento: ' + svc.nome) : 'Solicitar orçamento';
   document.getElementById('bm-body').innerHTML = body;
   openModal('budgetModal');
 }
@@ -2212,7 +2796,7 @@ async function enviarLead(ofId) {
       servico: svc?.nome || q || 'Consulta', valor
     });
     closeModal('budgetModal');
-    toast(`✅ Solicitação enviada para ${of?.nome}! Aguarde contato.`);
+    toast('✅ Solicitação enviada para ' + (of?.nome||'oficina') + '! Aguarde contato.');
   } catch(e) {
     toast('Erro ao enviar. Tente novamente.', 'error');
   } finally {
@@ -2298,9 +2882,8 @@ function wppPeca(id) {
 }
 </script>
 
-
 <!-- ══════════════════════════════════════════════════════════
-     painel.js — Workshop dashboard module
+     painel.js — Workshop panel
 ════════════════════════════════════════════════════════════ -->
 <script>
 function loadPainel() {
@@ -2326,7 +2909,29 @@ async function loadLeadsPainel() {
     const novos = STATE.leads.filter(l => l.status === 'novo').length;
     document.getElementById('leadsNavBadge').textContent = novos;
     document.getElementById('leadsNavBadge').setAttribute('aria-label', novos + ' leads novos');
-  } catch(e) { console.warn('Erro ao carregar leads', e); }
+  } catch(e) {
+    if (e.message && e.message.startsWith('MISSING_INDEX')) {
+      // Mostrar aviso claro dentro do painel
+      const content = document.getElementById('painelContent');
+      if (content) {
+        content.innerHTML = `<div style="background:rgba(255,179,71,0.1);border:1px solid rgba(255,179,71,0.3);border-radius:var(--rl);padding:24px;max-width:560px;">
+          <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:var(--am);margin-bottom:8px;">⚠ Índice do Firestore não criado</div>
+          <div style="font-size:13px;color:var(--t2);line-height:1.7;margin-bottom:16px;">
+            A listagem de leads precisa de um índice composto no Firebase.<br>
+            Acesse o <strong>Firebase Console → Firestore → Índices → Compostos</strong> e crie:<br><br>
+            Coleção: <code style="background:var(--s);padding:2px 6px;border-radius:4px;">leads</code><br>
+            Campo 1: <code style="background:var(--s);padding:2px 6px;border-radius:4px;">oficinaId</code> — Crescente<br>
+            Campo 2: <code style="background:var(--s);padding:2px 6px;border-radius:4px;">criadoEm</code> — Decrescente
+          </div>
+          <div style="font-size:12px;color:var(--t3);">Após criar o índice (leva ~1 min), recarregue a página.</div>
+        </div>`;
+      }
+      toast('Índice do Firestore não criado. Veja as instruções no painel.', 'warning');
+    } else {
+      console.warn('Erro ao carregar leads', e);
+      toast('Erro ao carregar leads. Verifique sua conexão.', 'error');
+    }
+  }
 }
 
 function painelPage(name, navEl) {
@@ -2555,6 +3160,7 @@ function salvarNovoSvc() {
     toast(`"${n}" atualizado!`);
   } else {
     STATE.painelSvcs.push({nome:n,min:mi,max:ma,ativo:true});
+    adicionarServicoAoCatalogo(n); // ← adiciona ao catálogo da home se for novo
     toast(`"${n}" adicionado!`);
   }
   closeModal('addSvcModal');
@@ -2648,13 +3254,20 @@ async function renderMetricas(c) {
 }
 </script>
 
-
 <!-- ══════════════════════════════════════════════════════════
      app.js — Bootstrap / init
 ════════════════════════════════════════════════════════════ -->
 <script>
 // ── INIT ─────────────────────────────────────────────────────────
+window._fbReady = false;
 window.addEventListener('fbready', () => {
+  window._fbReady = true;
+  buildServicoSelect();
+  // Garantir overlays começam escondidos
+  ['scAuth','scOnboarding','scFornecedor'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
   document.getElementById('loaderMsg').textContent = 'Pronto!';
   setTimeout(() => {
     document.getElementById('scLoader').style.display = 'none';
@@ -2678,7 +3291,7 @@ window.addEventListener('fbready', () => {
 // Fallback if Firebase takes too long
 setTimeout(() => {
   const loader = document.getElementById('scLoader');
-  if (loader && loader.classList.contains('active')) {
+  if (loader && loader.style.display !== 'none') {
     loader.style.display = 'none';
     goTo('scHome');
   }
@@ -2704,4 +3317,3 @@ window.Analytics = Analytics;
 
 </body>
 </html>
-
