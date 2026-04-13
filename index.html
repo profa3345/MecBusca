@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MecBusca — Encontre oficinas perto de você</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
 <meta name="description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
 <meta name="theme-color" content="#00D084">
 <meta name="mobile-web-app-capable" content="yes">
@@ -12,6 +13,7 @@
 <meta name="apple-mobile-web-app-title" content="MecBusca">
 <link rel="manifest" href="data:application/json,{&quot;name&quot;:&quot;MecBusca&quot;,&quot;short_name&quot;:&quot;MecBusca&quot;,&quot;start_url&quot;:&quot;/&quot;,&quot;display&quot;:&quot;standalone&quot;,&quot;background_color&quot;:&quot;%230A0D0B&quot;,&quot;theme_color&quot;:&quot;%2300D084&quot;}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
 
 <!-- ══════════════════════════════════════════════════════════
@@ -82,7 +84,7 @@ html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);colo
 .screen.active{display:block;}
 
 /* ── TYPOGRAPHY ── */
-.font-display{font-family:'Syne',sans-serif;}
+
 .brand em{color:var(--g);font-style:normal;}
 
 /* ── BUTTONS ── */
@@ -237,11 +239,11 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .star.on{color:#FFD700;}
 .star:hover{color:#FFD700;}
 
-.home-popular{margin-bottom:16px;}
-.home-pop-label{font-size:12px;color:var(--t3);margin-bottom:10px;}
-.home-chips{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;}
-.home-chip{padding:6px 14px;border-radius:20px;font-size:12.5px;border:1px solid var(--b);background:var(--s);color:var(--t2);cursor:pointer;transition:all 0.15s;white-space:nowrap;}
-.home-chip:hover{background:var(--gg);border-color:var(--b2);color:var(--g);}
+
+
+
+
+
 .home-footer{display:flex;align-items:center;justify-content:center;gap:20px;padding:18px 24px;border-top:1px solid var(--b);font-size:12px;color:var(--t3);}
 .home-footer a{color:var(--g);cursor:pointer;}
 .portal-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rxl);padding:28px 20px;cursor:pointer;transition:all 0.2s;text-align:center;}
@@ -377,6 +379,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .btn-fav:hover{transform:scale(1.25);}
 .btn-fav.fav-on{color:#FF6B6B;}
 .fav-count{font-size:10px;color:var(--t3);background:var(--bg3);border-radius:5px;padding:1px 5px;margin-left:2px;}
+.badge-sponsored{background:linear-gradient(135deg,#7C3AED,#A78BFA)!important;}
 .badge-pro{display:inline-flex;align-items:center;background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;font-size:9px;font-weight:800;padding:2px 6px;border-radius:8px;margin-right:4px;vertical-align:middle;letter-spacing:0.05em;}
 .of-card-pro{border-color:rgba(255,215,0,0.35)!important;background:linear-gradient(160deg,var(--s),rgba(255,215,0,0.04))!important;}
 .of-score{font-size:10px;color:var(--t3);background:var(--bg3);border-radius:5px;padding:1px 6px;margin-left:auto;}
@@ -592,7 +595,7 @@ button:focus-visible,a:focus-visible{outline:2px solid var(--g);outline-offset:2
 button,a,[role=button]{min-height:44px;}
 .chip,.nav-item,.modal-close,.edit-btn,.svc-del{min-height:36px;}
 /* High contrast secondary text */
-.improved-contrast{color:#7A9B7B;} /* was --t3 which was too light */
+ /* was --t3 which was too light */
 </style>
 </head>
 <body>
@@ -614,7 +617,11 @@ button,a,[role=button]{min-height:44px;}
   <div class="modal" style="max-width:420px;" onclick="event.stopPropagation()">
     <button class="modal-close" onclick="closeOverlay('scAuth')" aria-label="Fechar">×</button>
     <div class="auth-logo" style="font-size:28px;margin-bottom:4px;">Mec<em>Busca</em></div>
-    <div class="auth-tagline">Painel exclusivo para oficinas cadastradas</div>
+    <div class="auth-tagline">Acesse o painel da sua oficina</div>
+    <div style="text-align:center;margin-bottom:12px;">
+      <span style="font-size:12px;color:var(--t3);">Cliente buscando oficinas? </span>
+      <a onclick="closeOverlay('scAuth');goTo('scCliente')" style="font-size:12px;color:var(--g);cursor:pointer;">Ir para a busca →</a>
+    </div>
     <div class="auth-tabs" role="tablist">
       <div class="auth-tab active" role="tab" aria-selected="true" onclick="switchAuthTab('login')">Entrar</div>
       <div class="auth-tab" role="tab" aria-selected="false" onclick="switchAuthTab('register')">Criar conta</div>
@@ -964,7 +971,7 @@ button,a,[role=button]{min-height:44px;}
     </div>
     <div class="search-bar" role="search">
       <svg class="ico" style="width:15px;height:15px;color:var(--t3)" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="search" id="cliSearch" placeholder="Buscar oficina, serviço ou peça..." onfocus="if(!this.value)renderHistorico()" oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
+      <input type="search" id="cliSearch" placeholder="Ex: barulho no freio, carro vibrando, trocar óleo..." onfocus="if(!this.value)renderHistorico()" oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
       <span id="searchClear" style="font-size:16px;color:var(--t3);cursor:pointer;display:none;" onclick="clearSearch()" aria-label="Limpar busca" role="button" tabindex="0">×</span>
       <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()" aria-expanded="false" aria-controls="filtersPanel" style="min-height:auto;">
         ⚙ Filtros
@@ -975,6 +982,7 @@ button,a,[role=button]{min-height:44px;}
       <button class="mode-btn" id="mode-tipos" onclick="setMode('tipos')" role="tab" aria-selected="false">🏪 Tipos</button>
       <button class="mode-btn" id="mode-servicos" onclick="setMode('servicos')" role="tab" aria-selected="false">⚙️ Serviços</button>
       <button class="mode-btn" id="mode-pecas" onclick="setMode('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
+      <button class="mode-btn" id="mode-mapa" onclick="setMode('mapa')" role="tab" aria-selected="false">🗺️ Mapa</button>
     </div>
   </header>
 
@@ -1054,6 +1062,15 @@ button,a,[role=button]{min-height:44px;}
   <!-- CHIPS -->
   <nav class="cli-filters" id="cliFilters" aria-label="Filtros rápidos"></nav>
 
+  <!-- MAP CONTAINER -->
+  <div id="mapaContainer" style="display:none;height:60vh;position:relative;">
+    <div id="leafletMap" style="height:100%;width:100%;"></div>
+    <div id="mapLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--bg3);font-size:14px;color:var(--t2);">
+    <button onclick="mapaCentralizar()" style="position:absolute;top:10px;right:10px;z-index:999;background:var(--s);border:1px solid var(--b2);border-radius:var(--r);padding:8px 12px;font-size:12px;cursor:pointer;color:var(--t);display:none;" id="btnCentralizar">📍 Centralizar em mim</button>
+      Carregando mapa... 🗺️
+    </div>
+  </div>
+
   <div class="cli-body">
     <div class="results-header">
       <div class="results-count" id="resultsCount" aria-live="polite" aria-atomic="true"></div>
@@ -1087,7 +1104,10 @@ button,a,[role=button]{min-height:44px;}
         </div>
         <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Abrir menu">☰</button>
       </div>
-      <div class="plan-badge" aria-label="Plano ativo: Pro"><div class="plan-dot" aria-hidden="true"></div>Plano Pro · ativo</div>
+      <div class="plan-badge" id="planBadge" aria-label="Plano ativo">
+          <div class="plan-dot" aria-hidden="true"></div>
+          <span id="planBadgeText">Plano Pro · ativo</span>
+        </div>
     </div>
     <div class="nav">
       <div class="nav-label" aria-hidden="true">Painel</div>
@@ -1337,8 +1357,14 @@ window.FB = {
     const snap = await getDocs(q);
     let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
     // Filtros client-side (Firebase free tier não suporta compound queries sem índice)
-    if (filtros.servico) oficinas = oficinas.filter(o =>
-      (o.servicos||[]).some(s => s.nome.toLowerCase().includes(filtros.servico.toLowerCase()) && s.ativo));
+    if (filtros.servico) {
+      const terms = (window.expandirQuery || (q => [q.toLowerCase()]))(filtros.servico);
+      oficinas = oficinas.filter(o =>
+        (o.servicos||[]).some(s => s.ativo &&
+          terms.some(t => s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase()))
+        )
+      );
+    }
     if (filtros.cidade) oficinas = oficinas.filter(o =>
       (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
     if (filtros.bairro) oficinas = oficinas.filter(o =>
@@ -1457,6 +1483,10 @@ window.FB = {
   // ── GEOLOCALIZAÇÃO ───────────────────────────────────────────
   async salvarGeoOficina(oficinaId, lat, lng) {
     if (!isFirebaseReady) return;
+    // Validate coords are finite numbers in reasonable range
+    if (!isFinite(lat) || !isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+      console.error('Invalid geo coords:', lat, lng); return;
+    }
     await updateDoc(doc(db, "oficinas", oficinaId), { lat, lng, atualizadoEm: serverTimestamp() });
   },
 
@@ -1531,7 +1561,12 @@ function demoOficinas(filtros = {}) {
       servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]}
   ];
   let r = [...base];
-  if (filtros.servico) r = r.filter(o => o.servicos.some(s => s.nome.toLowerCase().includes(filtros.servico.toLowerCase()) && s.ativo));
+  if (filtros.servico) {
+    const terms = (window.expandirQuery || (q => [q.toLowerCase()]))(filtros.servico);
+    r = r.filter(o => (o.servicos||[]).some(s => s.ativo &&
+      terms.some(t => s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase()))
+    ));
+  }
   if (filtros.cidade)  r = r.filter(o => o.cidade.toLowerCase().includes(filtros.cidade.toLowerCase()));
   if (filtros.bairro)  r = r.filter(o => o.bairro.toLowerCase().includes(filtros.bairro.toLowerCase()));
   if (filtros.avaliacaoMin) r = r.filter(o => o.avaliacao >= filtros.avaliacaoMin);
@@ -1578,6 +1613,81 @@ function calcMetricas(leads) {
   return { total, confirmados, receita, ticket, conversao, origens, servicosMais };
 }
 
+// ── BUSCA SEMÂNTICA / SINÔNIMOS ──────────────────────────────────
+// Maps termos coloquiais → serviço real + tags relacionadas
+const SINONIMOS = {
+  // Freios
+  'freio': ['freios dianteiros','freios traseiros','pastilha','disco'],
+  'pastilha': ['freios dianteiros','freios traseiros'],
+  'disco': ['freios dianteiros','freios traseiros'],
+  'frear': ['freios dianteiros','freios traseiros'],
+  // Óleo / Revisão
+  'oleo': ['troca de óleo'],
+  'óleo': ['troca de óleo'],
+  'revisao': ['revisão completa'],
+  'revisão': ['revisão completa'],
+  'manutencao': ['revisão completa','troca de óleo'],
+  'manutenção': ['revisão completa','troca de óleo'],
+  // Suspensão
+  'suspensao': ['suspensão','amortecedor'],
+  'suspensão': ['suspensão','amortecedor'],
+  'amortecedor': ['suspensão','amortecedor'],
+  'mola': ['suspensão'],
+  'batendo': ['suspensão','amortecedor'],
+  // Elétrica
+  'eletrica': ['elétrica automotiva','bateria'],
+  'elétrica': ['elétrica automotiva','bateria'],
+  'bateria': ['bateria','elétrica automotiva'],
+  'alternador': ['elétrica automotiva'],
+  'partida': ['elétrica automotiva','bateria'],
+  // Ar-condicionado
+  'ar': ['ar-condicionado'],
+  'gelando': ['ar-condicionado'],
+  'climatizador': ['ar-condicionado'],
+  // Diagnóstico de sintomas
+  'barulho': ['suspensão','freios dianteiros','amortecedor'],
+  'ruído': ['suspensão','freios dianteiros','amortecedor'],
+  'ruido': ['suspensão','freios dianteiros','amortecedor'],
+  'tremendo': ['suspensão','amortecedor','balanceamento'],
+  'vibrando': ['balanceamento','alinhamento','suspensão'],
+  'puxando': ['alinhamento','freios dianteiros'],
+  'esquentando': ['revisão completa','óleo'],
+  'vazamento': ['revisão completa'],
+  'fumaça': ['revisão completa'],
+  'fumaca': ['revisão completa'],
+  // Alinhamento
+  'alinhamento': ['alinhamento'],
+  'balanceamento': ['balanceamento'],
+  'pneu': ['alinhamento','balanceamento'],
+  // Correia
+  'correia': ['correia dentada'],
+  'embreagem': ['embreagem'],
+  'cambio': ['câmbio'],
+  'câmbio': ['câmbio'],
+};
+
+// Normaliza e expande query com sinônimos
+function expandirQuery(q) {
+  if (!q) return [];
+  const norm = q.toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '') // remove acentos
+    .replace(/[^a-z0-9 ]/g, ' ').trim();
+  const tokens = norm.split(/\s+/);
+  const expanded = new Set(tokens);
+  tokens.forEach(tok => {
+    // Direct match
+    if (SINONIMOS[tok]) SINONIMOS[tok].forEach(s => expanded.add(s));
+    // Prefix match (ex: "freio" matches "freios")
+    Object.keys(SINONIMOS).forEach(key => {
+      if (key.startsWith(tok) || tok.startsWith(key)) {
+        SINONIMOS[key].forEach(s => expanded.add(s));
+      }
+    });
+  });
+  return [...expanded];
+}
+window.expandirQuery = expandirQuery;
+
 // ── RANKING ENGINE ───────────────────────────────────────────────
 // score = proximidade(40) + avaliação(35) + match_serviço(15) + plano(10)
 function calcRankingScore(o, distKm, query) {
@@ -1592,7 +1702,11 @@ function calcRankingScore(o, distKm, query) {
   const planScore  = o.plano === 'pro' ? 10 : o.plano === 'basico' ? 3 : 0;
   const openBoost  = o.aberto ? 5 : 0;
   const avalBoost  = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
-  return Math.round((distScore + avalScore + svcScore + planScore + openBoost + avalBoost) * 10) / 10;
+  // Engajamento: CTR de cliques/impressões — max 5pts (só quando há dados reais suficientes)
+  const _imp = (o.stats?.impressoes || 0);
+  const _cli = (o.stats?.cliques    || 0);
+  const engBoost = _imp > 10 ? Math.min(5, Math.round((_cli / _imp) * 50)) : 0;
+  return Math.round((distScore + avalScore + svcScore + planScore + openBoost + avalBoost + engBoost) * 10) / 10;
 }
 window.calcRankingScore = calcRankingScore;
 
@@ -1600,6 +1714,11 @@ window.demoOficinas = demoOficinas;
 
 // ── SEED FIREBASE (dev only — run once from console: seedFirebase()) ──
 window.seedFirebase = async function() {
+  // Dev-only: only run from localhost or explicit confirmation
+  if (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0')) {
+    const ok = window.confirm('⚠️ seedFirebase() em produção! Confirmar?');
+    if (!ok) return;
+  }
   if (!isFirebaseReady) { console.error('Firebase not ready'); return; }
   const oficinas = demoOficinas({});
   const batch = [];
@@ -1646,7 +1765,6 @@ const STATE = {
   // Client search
   userLat: null, userLng: null,
   oficinas: [],
-  _stats: null,
   modo: 'oficinas',
   filtroChip: '',
   filtroServico: '',
@@ -1656,8 +1774,7 @@ const STATE = {
     cidade: '', bairro: '', tipoVeiculo: '', urgencia: '',
     avaliacaoMin: 1, precoMax: 2000, apenasAberta: false
   },
-  // Submit dedup guard
-  _submitting: false,
+  // (no duplicates)
 };
 
 const HORARIOS_PADRAO = [
@@ -1747,6 +1864,131 @@ function closeOverlay(id, event) {
   document.body.style.overflow = '';
   // wait for transition then hide
   setTimeout(() => { if (!el.classList.contains('open')) el.style.display = 'none'; }, 300);
+}
+
+// ── MAPA UTILS ───────────────────────────────────────────────────
+function mapaCentralizar() {
+  if (!_leafletMap) return;
+  if (STATE.userLat) {
+    _leafletMap.setView([STATE.userLat, STATE.userLng], 14);
+  } else {
+    pedirGeolocalizacao(() => {
+      if (STATE.userLat) _leafletMap.setView([STATE.userLat, STATE.userLng], 14);
+    });
+  }
+}
+
+// ── MAPA LEAFLET ─────────────────────────────────────────────────
+let _leafletMap = null;
+let _leafletMarkers = [];
+
+async function renderMapa() {
+  const container = document.getElementById('mapaContainer');
+  const loading   = document.getElementById('mapLoading');
+  if (!container) return;
+  container.style.display = '';
+
+  // Load Leaflet JS on demand (lazy)
+  if (!window.L) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GqaY=';
+      s.crossOrigin = '';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  if (loading) loading.style.display = 'none';
+
+  const lat = STATE.userLat || -20.268;
+  const lng = STATE.userLng || -40.413;
+
+  if (!_leafletMap) {
+    _leafletMap = window.L.map('leafletMap').setView([lat, lng], 13);
+    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+      maxZoom: 19
+    }).addTo(_leafletMap);
+  } else {
+    _leafletMap.setView([lat, lng], 13);
+  }
+
+  // Clear old markers
+  _leafletMarkers.forEach(m => m.remove());
+  _leafletMarkers = [];
+
+  // User position marker
+  if (STATE.userLat) {
+    const userIcon = window.L.divIcon({
+      html: '<div style="background:#00D084;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>',
+      iconSize: [16, 16], className: ''
+    });
+    window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon })
+      .addTo(_leafletMap)
+      .bindPopup('📍 Você está aqui');
+    _leafletMarkers.push(window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon }));
+  }
+
+  // Oficina markers
+  const ofs = STATE.oficinas.filter(o => o.lat && o.lng);
+  if (!ofs.length) {
+    const el = document.getElementById('mapLoading');
+    if (el) { el.style.display = 'flex'; el.textContent = '📍 Nenhuma oficina com localização cadastrada ainda.'; }
+  }
+  ofs.forEach(of => {
+    const isPro  = of.plano === 'pro';
+    const color  = isPro ? '#FFD700' : '#00D084';
+    const icon   = window.L.divIcon({
+      html: '<div style="background:' + color + ';color:#000;font-size:11px;font-weight:700;'
+          + 'padding:4px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.35);">'
+          + (isPro ? '⭐ ' : '🔧 ') + esc(of.nome.split(' ')[0])
+          + '</div>',
+      iconAnchor: [0, 0], className: ''
+    });
+    const marker = window.L.marker([of.lat, of.lng], { icon })
+      .addTo(_leafletMap)
+      .bindPopup(
+        '<b>' + esc(of.nome) + '</b><br>'
+        + '★ ' + (of.avaliacao || '—') + ' · ' + (of.bairro || of.cidade || '') + '<br>'
+        + '<button class="map-popup-btn" data-id="' + esc(of.id) + '" style="margin-top:6px;background:#00D084;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;color:#000;">Ver orçamento</button>'
+      )
+      .on('popupopen', () => {
+        document.querySelectorAll('.map-popup-btn').forEach(b => {
+          b.onclick = () => openBudget(b.dataset.id);
+        });
+      });
+    _leafletMarkers.push(marker);
+  });
+
+  // Fit map to markers
+  if (ofs.length) {
+    const bounds = window.L.latLngBounds(ofs.map(o => [o.lat, o.lng]));
+    _leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+  }
+  // Invalidate size after container becomes visible
+  setTimeout(() => _leafletMap.invalidateSize(), 100);
+  // Show "centralizar" button
+  const btnC = document.getElementById('btnCentralizar');
+  if (btnC) btnC.style.display = '';
+}
+
+// ── NOTIFICAÇÃO SONORA ───────────────────────────────────────────
+let _prevLeadCount = 0;
+function playLeadSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.4);
+  } catch(e) { /* AudioContext not available */ }
 }
 
 // ── HISTÓRICO DE BUSCAS ──────────────────────────────────────────
@@ -1870,7 +2112,11 @@ function renderFavoritos() {
 function compartilharOficina(id) {
   const of = getOficina(id) || STATE.oficinas.find(o => o.id === id);
   if (!of) return;
-  const txt = 'Encontrei ' + of.nome + ' no MecBusca! Oficina em ' + (of.bairro||of.cidade||'Cariacica') + '. Acesse: ' + window.location.href;
+  const baseUrl = window.location.href.split('#')[0];
+  const deepLink = baseUrl + '#oficina/' + of.id;
+  const txt = '🔧 Encontrei ' + of.nome + ' no MecBusca! '
+    + 'Oficina em ' + (of.bairro||of.cidade||'Cariacica') + '. '
+    + 'Acesse: ' + deepLink;
   if (navigator.share) {
     navigator.share({ title: of.nome, text: txt }).catch(() => {});
   } else {
@@ -2097,7 +2343,11 @@ function goTo(id) {
   el.style.display = '';
   el.classList.add('active');
   window.scrollTo(0, 0);
-  if (id === 'scCliente') { renderFilters(); runSearch(); renderHistorico(); updateFavCount(); }
+  if (id === 'scCliente') {
+    renderFilters(); runSearch(); renderHistorico(); updateFavCount();
+    // Update URL hash for shareable links
+    if (history.replaceState) history.replaceState(null, '', '#busca');
+  }
   if (id === 'scHome') { buildServicoSelect(); }
   // Close mobile sidebar when navigating
   document.getElementById('painelSidebar')?.classList.remove('open');
@@ -2338,6 +2588,7 @@ async function demoLogin() {
   // Reset state BEFORE loadPainel to avoid finally-block race
   STATE._submitting = false;
   setBtnLoading('btnLogin', 'loginBtnText', 'loginBtnSpinner', false);
+  closeOverlay('scAuth');
   loadPainel();
 }
 
@@ -2389,9 +2640,12 @@ async function doLogout() {
   try {
     await window.FB.logout();
   } catch(e) {}
+  // Cleanup realtime listeners
+  if (window._leadsUnsub) { window._leadsUnsub(); window._leadsUnsub = null; }
   STATE.user = null;
   STATE.oficinaAtual = null;
   STATE.leads = [];
+  STATE._stats = null;
   goTo('scHome');
   toast('Sessão encerrada');
 }
@@ -2531,7 +2785,8 @@ async function finalizarCadastro() {
   setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
   try {
     const id = await window.FB.cadastrarOficina(STATE.onbData);
-    STATE.oficina = { id, ...STATE.onbData, plano: STATE.selectedPlan || 'basico' };
+    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    STATE.oficina = { id, ...STATE.onbData, plano: STATE.selectedPlan || 'basico', trialEnd };
     STATE.oficinaAtual = STATE.oficina;
     toast('🎉 Oficina cadastrada com sucesso!');
     nextStep(4);
@@ -2707,7 +2962,18 @@ function setMode(modo) {
   btn.classList.add('active');
   btn.setAttribute('aria-selected', 'true');
   renderFilters();
-  runSearch();
+  // Show/hide map container
+  const mapaCont = document.getElementById('mapaContainer');
+  const cliBody  = document.querySelector('.cli-body');
+  if (modo === 'mapa') {
+    if (mapaCont) mapaCont.style.display = '';
+    if (cliBody)  cliBody.style.display  = 'none';
+    runSearch().then(() => renderMapa());
+  } else {
+    if (mapaCont) mapaCont.style.display = 'none';
+    if (cliBody)  cliBody.style.display  = '';
+    runSearch();
+  }
 }
 
 function renderFilters() {
@@ -2730,6 +2996,9 @@ function filterChip(el, val) {
 function onSearch() {
   const v = document.getElementById('cliSearch').value;
   document.getElementById('searchClear').style.display = v ? 'block' : 'none';
+  // Hide recent searches while typing
+  const rec = document.getElementById('recentSearches');
+  if (rec) rec.style.display = v ? 'none' : '';
   STATE.filtroChip = v;
   debouncedSearch();
 }
@@ -2780,7 +3049,14 @@ async function loadOficinas() {
     STATE.oficinas = await window.FB.listarOficinas(filtros);
     renderOficinas();
   } catch(e) {
-    list.innerHTML = '<p style="color:var(--t3);font-size:13px;padding:20px 0;">Erro ao carregar oficinas. Tente recarregar a página.</p>';
+    console.error('loadOficinas error:', e);
+    list.innerHTML = '<div class="empty-state">'
+      +'<div class="empty-icon">⚠️</div>'
+      +'<div class="empty-title">Erro ao carregar oficinas</div>'
+      +'<div class="empty-sub">Verifique sua conexão e tente novamente.</div>'
+      +'<div style="margin-top:12px;"><button class="btn btn-ghost btn-sm" style="width:auto;" onclick="loadOficinas()">↻ Tentar novamente</button></div>'
+      +'</div>';
+    document.getElementById('resultsCount').innerHTML = '';
   }
 }
 
@@ -2821,7 +3097,7 @@ function renderOficinas() {
         <div class="of-avatar" aria-hidden="true">${ini}</div>
         <div class="of-info">
           <div class="of-name">
-            ${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${esc(of.nome)}
+            ${of.plano==='pro'?(of._score>=70?'<span class="badge-pro badge-sponsored">📢 Patrocinado</span>':'<span class="badge-pro">⭐ PRO</span>'):''}${esc(of.nome)}
           </div>
           <div style="display:flex;align-items:center;gap:4px;">
             <button class="btn-fav ${isFav(of.id)?'fav-on':''}" onclick="event.stopPropagation();toggleFav('${esc(of.id)}')" aria-label="Favoritar ${esc(of.nome)}" title="Favoritar">
@@ -2939,6 +3215,30 @@ function openBudgetEstab(id, tipo) {
     <p class="budget-note">* Valores estimados. Confirme via WhatsApp.</p>
     ${wppNum?`<a class="btn btn-wpp" href="https://wa.me/55${esc(wppNum)}?text=${msgWpp}" target="_blank" rel="noopener" style="text-decoration:none;display:flex;align-items:center;justify-content:center;gap:8px;">💬 Chamar no WhatsApp</a>`:''}`;
   openModal('budgetModal');
+  // Load recent reviews async
+  loadReviews(id);
+}
+
+async function loadReviews(ofId) {
+  const el = document.getElementById('reviews-list-' + ofId);
+  if (!el) return;
+  try {
+    const reviews = await window.FB.listarAvaliacoes(ofId);
+    if (!reviews.length) {
+      el.textContent = 'Ainda sem avaliações. Seja o primeiro!';
+      return;
+    }
+    el.innerHTML = reviews.slice(0, 3).map(r => {
+      const stars = '★'.repeat(r.nota) + '☆'.repeat(5 - r.nota);
+      const coment = r.comentario ? esc(r.comentario) : '';
+      return '<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--b);">'
+        + '<span style="color:var(--am);font-style:normal;">' + stars + '</span>'
+        + (coment ? '<div style="color:var(--t2);margin-top:3px;font-style:normal;">"' + coment + '"</div>' : '')
+        + '</div>';
+    }).join('');
+  } catch(e) {
+    el.textContent = 'Não foi possível carregar avaliações.';
+  }
 }
 
 // ── SERVIÇOS ─────────────────────────────────────────────────────
@@ -3082,6 +3382,10 @@ function openBudget(id) {
         <button class="btn btn-ghost btn-sm btn-icon" onclick="compartilharOficina('${id}')" title="Compartilhar" aria-label="Compartilhar oficina" style="width:40px;flex-shrink:0;">🔗</button>
       </div>
     </div>
+    <div style="border-top:1px solid var(--b);padding-top:14px;margin-top:14px;" id="reviews-${id}">
+      <div style="font-size:12px;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.07em;">Avaliações recentes</div>
+      <div id="reviews-list-${id}" style="font-size:13px;color:var(--t3);font-style:italic;">Carregando avaliações...</div>
+    </div>
     <div style="border-top:1px solid var(--b);padding-top:14px;margin-top:14px;" id="avalia-section-${id}">
       <div style="font-size:12px;color:var(--t3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.07em;">Avalie esta oficina</div>
       <div class="star-rating" id="stars-${id}" role="radiogroup" aria-label="Nota de 1 a 5 estrelas">
@@ -3215,6 +3519,22 @@ function wppPeca(id) {
 ════════════════════════════════════════════════════════════ -->
 <script>
 function loadPainel() {
+  // Update plan badge with trial info
+  const oficina = STATE.oficinaAtual;
+  if (oficina) {
+    const badgeEl = document.getElementById('planBadgeText');
+    if (badgeEl) {
+      const plano = oficina.plano || 'basico';
+      if (oficina.trialEnd) {
+        const daysLeft = Math.max(0, Math.ceil((new Date(oficina.trialEnd) - Date.now()) / 86400000));
+        badgeEl.textContent = daysLeft > 0
+          ? 'Trial Pro · ' + daysLeft + ' dias restantes'
+          : 'Trial encerrado';
+      } else {
+        badgeEl.textContent = plano === 'pro' ? 'Plano Pro · ativo' : 'Plano Básico';
+      }
+    }
+  }
   if (!STATE.oficinaAtual) {
     STATE.oficinaAtual = STATE.onbData.nome
       ? { ...STATE.onbData, id: 'of001' }
@@ -3235,14 +3555,17 @@ function loadPainel() {
   window._leadsUnsub = window.FB.onLeadsSnapshot(
     STATE.oficinaAtual?.id || 'of001',
     leads => {
-      STATE.leads = leads;
       const novos = leads.filter(l => l.status === 'novo').length;
+      const shouldBeep = novos > _prevLeadCount;
+      _prevLeadCount = novos;
+      STATE.leads = leads;
       const badge = document.getElementById('leadsNavBadge');
       if (badge) {
         badge.textContent = novos;
         badge.setAttribute('aria-label', novos + ' leads novos');
         badge.style.display = novos > 0 ? '' : 'none';
         if (novos > 0) badge.classList.add('badge-pulse');
+        if (shouldBeep) playLeadSound();
       }
       // Refresh leads page if open
       if (document.querySelector('.nav-item.active')?.textContent?.includes('Leads')) {
@@ -3636,7 +3959,7 @@ function renderMetricas(c) {
         ? topServicos.map(([svc, cnt]) => {
           const pct = Math.round((cnt/total)*100);
           return `<div class="conv-row">
-            <div style="font-size:12.5px;color:var(--t2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${svc}</div>
+            <div style="font-size:12.5px;color:var(--t2);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(svc)}</div>
             <div class="conv-bar-bg" style="width:80px;flex:none;"><div class="conv-bar-fill" style="width:${pct}%"></div></div>
             <div style="font-size:12px;color:var(--t3);width:40px;text-align:right;">${cnt}x</div>
           </div>`;
@@ -3663,6 +3986,15 @@ window.addEventListener('fbready', () => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  // URL-based deep linking
+  const hash = window.location.hash;
+  if (hash.startsWith('#oficina/')) {
+    const ofId = hash.replace('#oficina/', '');
+    goTo('scCliente');
+    setTimeout(() => openBudget(ofId), 500);
+  } else if (hash === '#painel') {
+    loadPainel();
+  }
   document.getElementById('loaderMsg').textContent = 'Pronto!';
   setTimeout(() => {
     document.getElementById('scLoader').style.display = 'none';
