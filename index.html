@@ -1546,18 +1546,22 @@ function demoOficinas(filtros = {}) {
     { id:"of001", nome:"Auto Center Vitória", cidade:"Cariacica", bairro:"Campo Grande",
       whatsapp:"27999990001", avaliacao:4.8, totalAvaliacoes:47, distancia:"0,8 km", plano:"pro",
       aberto: hour>=7&&hour<18, horario:"até 18h", tipoVeiculo:["carro"], lat:-20.268, lng:-40.413,
+      stats:{impressoes:890, cliques:245, whatsapp:87, orcamentos:34},
       servicos:[{nome:"Troca de óleo",min:89,max:120,ativo:true},{nome:"Freios dianteiros",min:220,max:350,ativo:true},{nome:"Alinhamento",min:60,max:80,ativo:true},{nome:"Suspensão",min:180,max:320,ativo:true}]},
     { id:"of002", nome:"Oficina do Zé", cidade:"Cariacica", bairro:"Padre Gabriel",
       whatsapp:"27999990002", avaliacao:4.3, totalAvaliacoes:23, distancia:"1,2 km", plano:"basico",
       aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["carro","moto"], lat:-20.271, lng:-40.418,
+      stats:{impressoes:410, cliques:98, whatsapp:32, orcamentos:12},
       servicos:[{nome:"Troca de óleo",min:75,max:95,ativo:true},{nome:"Elétrica automotiva",min:80,max:200,ativo:true}]},
     { id:"of003", nome:"MasterCar Revisões", cidade:"Cariacica", bairro:"Nova Rosa da Penha",
       whatsapp:"27999990003", avaliacao:4.9, totalAvaliacoes:89, distancia:"2,1 km", plano:"pro",
       aberto: hour>=8&&hour<18, horario:"abre 8h", tipoVeiculo:["carro"], lat:-20.262, lng:-40.421,
+      stats:{impressoes:1240, cliques:380, whatsapp:142, orcamentos:67},
       servicos:[{nome:"Troca de óleo",min:110,max:150,ativo:true},{nome:"Revisão completa",min:450,max:750,ativo:true},{nome:"Ar-condicionado",min:120,max:200,ativo:true},{nome:"Suspensão",min:200,max:400,ativo:true}]},
     { id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
       whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km",
       aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","caminhao"], lat:-20.275, lng:-40.408,
+      stats:{impressoes:180, cliques:28, whatsapp:9, orcamentos:2},
       servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]}
   ];
   let r = [...base];
@@ -1864,6 +1868,24 @@ function closeOverlay(id, event) {
   document.body.style.overflow = '';
   // wait for transition then hide
   setTimeout(() => { if (!el.classList.contains('open')) el.style.display = 'none'; }, 300);
+}
+
+// ── GEOCODING (Nominatim / OpenStreetMap) ───────────────────────
+async function geocodificarEndereco(endereco, cidade) {
+  const q = encodeURIComponent([endereco, cidade, 'Espírito Santo', 'Brasil'].filter(Boolean).join(', '));
+  try {
+    const res = await fetch(
+      'https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + q,
+      { headers: { 'Accept-Language': 'pt-BR', 'User-Agent': 'MecBusca/1.0' } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.length) return null;
+    return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+  } catch(e) {
+    console.warn('Geocoding falhou:', e);
+    return null;
+  }
 }
 
 // ── MAPA UTILS ───────────────────────────────────────────────────
@@ -2683,7 +2705,24 @@ async function doPasswordReset() {
 <script>
 STATE.onbData.servicos = [];
 
-function nextStep(to) {
+async function nextStep(to) {
+  // On step 0 → 1: try to geocode address for preview
+  if (to === 1 && STATE.step === 0) {
+    const end = document.getElementById('onbEndereco').value.trim();
+    const cid = document.getElementById('onbCidade').value.trim();
+    if (end && cid) {
+      const statusEl = document.getElementById('geoStatus');
+      if (statusEl) statusEl.textContent = '📍 Geocodificando endereço...';
+      const geo = await geocodificarEndereco(end, cid);
+      if (geo) {
+        STATE.onbData.lat = geo.lat;
+        STATE.onbData.lng = geo.lng;
+        if (statusEl) statusEl.textContent = '✅ Localização encontrada (' + geo.lat.toFixed(4) + ', ' + geo.lng.toFixed(4) + ')';
+      } else {
+        if (statusEl) statusEl.textContent = '⚠️ Endereço não encontrado. Você pode continuar mesmo assim.';
+      }
+    }
+  }
   clearAllErrors();
   if (to === 1) {
     const nome = document.getElementById('onbNome').value.trim();
@@ -2779,9 +2818,15 @@ async function finalizarCadastro() {
   STATE._submitting = true;
   STATE.onbData.plano = STATE.selectedPlan;
   STATE.onbData.ativo = true;
+  STATE.onbData.stats = { impressoes:0, cliques:0, whatsapp:0, orcamentos:0 };
   // Garante que servicos e horarios do onboarding estão no payload
   if (!STATE.onbData.servicos) STATE.onbData.servicos = [];
   if (!STATE.onbData.horarios) STATE.onbData.horarios = [];
+  // Geocodifica endereço → lat/lng automaticamente
+  if (!STATE.onbData.lat && STATE.onbData.endereco) {
+    const geo = await geocodificarEndereco(STATE.onbData.endereco, STATE.onbData.cidade);
+    if (geo) { STATE.onbData.lat = geo.lat; STATE.onbData.lng = geo.lng; }
+  }
   setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
   try {
     const id = await window.FB.cadastrarOficina(STATE.onbData);
@@ -3081,7 +3126,7 @@ function renderOficinas() {
   ofs.forEach(of => window.FB?.trackEvent(of.id, 'impressao'));
   // Dev: log ranking table
   if (ofs.length && window.location.hash === '#debug') {
-    console.table(ofs.map(o => ({ nome:o.nome, plano:o.plano||'—', score:o._score, dist:o._dist?.toFixed?.(1)+'km'||'?', avaliacao:o.avaliacao })));
+    console.table(ofs.map(o => { const s=o.stats||{}; const imp=s.impressoes||0; const cli=s.cliques||0; return { nome:o.nome, plano:o.plano||'—', score:o._score, dist:(o._dist?.toFixed?.(1)||'?')+'km', avaliacao:o.avaliacao, CTR: imp?Math.round(cli/imp*100)+'%':'n/a' }; }));
   }
   list.innerHTML = ofs.map((of, _i) => {
     const svcMatch = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
@@ -3986,6 +4031,39 @@ window.addEventListener('fbready', () => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  // Register Service Worker for offline support
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('data:text/javascript,' + encodeURIComponent(`
+      const CACHE = 'mecbusca-v1';
+      const OFFLINE = [
+        'https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap',
+        'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
+      ];
+      self.addEventListener('install', e => {
+        e.waitUntil(caches.open(CACHE).then(cache => cache.addAll(OFFLINE).catch(()=>{})));
+        self.skipWaiting();
+      });
+      self.addEventListener('activate', e => {
+        e.waitUntil(caches.keys().then(keys =>
+          Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+        ));
+        self.clients.claim();
+      });
+      self.addEventListener('fetch', e => {
+        if (e.request.method !== 'GET') return;
+        e.respondWith(
+          caches.match(e.request).then(cached => {
+            const fresh = fetch(e.request).then(res => {
+              if (res.ok) caches.open(CACHE).then(cache => cache.put(e.request, res.clone()));
+              return res;
+            }).catch(() => cached);
+            return cached || fresh;
+          })
+        );
+      });
+    `)).catch(() => {}); // SW via data: URI — works for same-origin, may be restricted in some browsers
+  }
+
   // URL-based deep linking
   const hash = window.location.hash;
   if (hash.startsWith('#oficina/')) {
