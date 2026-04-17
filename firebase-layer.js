@@ -10,8 +10,10 @@
 //      Use variáveis de ambiente no build ou __FIREBASE_CONFIG__
 //      injetado pelo hosting (ver nota).
 //   4. Separação clara: funções públicas vs. autenticadas.
-//   5. Sistema de planos + ranking por score (v2).
-//      Planos: 'basico' (free) | 'pro' | 'premium'
+//   5. Sistema de planos + ranking por score.
+//      v1 (atual): plano único 'basico' (gratuito) para todos.
+//      Infraestrutura de Pro/Premium mantida no código mas inativa —
+//      ativa via firebase-layer quando monetização for lançada.
 //      Score = proximidade(40) + avaliação(35) + serviço(15) +
 //              plano(10) + engajamento(5) + aberto(5) + vol_aval(5)
 //      listarOficinas() ordena por score após filtros.

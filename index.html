@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MecBusca — Encontre oficinas perto de você</title>
-<!-- CSP definida exclusivamente via header HTTP no firebase.json -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
 <meta name="description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
 <meta name="theme-color" content="#00D084">
 <meta property="og:site_name" content="MecBusca">
@@ -1614,20 +1614,53 @@ import {
 //      }
 //    }
 // ─────────────────────────────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
-  authDomain: "mecbusca.firebaseapp.com",
-  projectId: "mecbusca",
-  storageBucket: "mecbusca.firebasestorage.app",
-  messagingSenderId: "273467472832",
-  appId: "1:273467472832:web:fee239b43f50adae04a625"
-};
+// ── CONFIG DO FIREBASE ──────────────────────────────────────────
+// ⚠️  NUNCA commite chaves reais aqui.
+// Opção A (produção): Firebase Hosting injeta __firebase_config__
+// Opção B (CI/build): defina window.__FIREBASE_CFG__ antes deste script
+// Sem config → modo DEMO ativo automaticamente
+//
+// REGRAS DO FIRESTORE — cole em Firebase Console → Rules → Publicar:
+// ─────────────────────────────────────────────────────────────────
+// rules_version = '2';
+// service cloud.firestore {
+//   match /databases/{database}/documents {
+//     match /oficinas/{id} {
+//       allow read: if true;
+//       allow create: if request.auth != null;
+//       allow update, delete: if request.auth != null
+//                             && request.auth.uid == resource.data.uid;
+//     }
+//     match /oficinas/{id}/avaliacoes/{avalId} {
+//       allow read: if true;
+//       allow create: if request.auth != null;
+//     }
+//     match /leads/{id} {
+//       allow create: if true;
+//       allow read, update: if request.auth != null
+//         && request.auth.uid ==
+//            get(/databases/$(database)/documents/oficinas/$(resource.data.oficinaId)).data.uid;
+//     }
+//     match /users/{uid} {
+//       allow read, write: if request.auth != null && request.auth.uid == uid;
+//     }
+//     match /analytics/{id} { allow create: if true; }
+//   }
+// }
+const firebaseConfig = (() => {
+  if (typeof __firebase_config__ !== 'undefined') {
+    try { return JSON.parse(__firebase_config__); } catch(e) {}
+  }
+  if (window.__FIREBASE_CFG__) return window.__FIREBASE_CFG__;
+  return {};
+})();
 
 // ── Logger condicional (ativo apenas com ?debug=1 na URL) ─────────
 const _DEV = new URLSearchParams(location.search).has('debug');
 const log  = _DEV ? console.log.bind(console)   : () => {};
 const logW = _DEV ? console.warn.bind(console)  : () => {};
 const logE = _DEV ? console.error.bind(console) : () => {};
+window._DEV = _DEV; window.log = log; window.logW = logW; window.logE = logE;
 
 // ── Firebase Status (diagnóstico público) ────────────────────────
 const FB_STATUS = { connected: false, error: null, readAt: null };
@@ -1690,6 +1723,7 @@ function validarNome(nome) {
   const n = sanitize(nome || '', 200).trim();
   return n.length >= 2 && n.length <= 200;
 }
+window.validarWpp = validarWpp; window.validarEmail = validarEmail; window.validarNome = validarNome;
 
 // ── Diagnóstico Firebase (window.__fbDiag) ───────────────────────
 // Uso no console: await window.__fbDiag()
@@ -1771,10 +1805,20 @@ window.FB = {
     const clean = sanitizeData(data);
     const ref = await addDoc(collection(db, "oficinas"), {
       ...clean, ativo: true, uid: user.uid,
+      plano: 'basico', planoAtualizadoEm: serverTimestamp(),
       avaliacoes: 0, totalAvaliacoes: 0, avaliacao: 0,
-      criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp()
+      stats: { impressoes: 0, cliques: 0, whatsapp: 0, orcamentos: 0 },
+      criadoEm: serverTimestamp(), atualizadoEm: serverTimestamp(),
     });
     return ref.id;
+  },
+
+  async getOficinaById(id) {
+    if (!isFirebaseReady) return null;
+    try {
+      const snap = await getDoc(doc(db, "oficinas", id));
+      return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+    } catch(e) { return null; }
   },
 
   async getMinhaOficina(uid) {
@@ -1790,10 +1834,11 @@ window.FB = {
     if (!isFirebaseReady) return true;
     const user = auth.currentUser;
     if (!user) throw new Error("Não autorizado");
-    const clean = sanitizeData(data);
-    await updateDoc(doc(db, "oficinas", oficinaId), {
-      ...clean, atualizadoEm: serverTimestamp()
-    });
+    const snap = await getDoc(doc(db, "oficinas", oficinaId));
+    if (!snap.exists()) throw new Error("Oficina não encontrada");
+    if (snap.data().uid !== user.uid) throw new Error("Sem permissão para editar esta oficina");
+    const { plano, uid, criadoEm, avaliacoes, totalAvaliacoes, avaliacao, ...rest } = sanitizeData(data);
+    await updateDoc(doc(db, "oficinas", oficinaId), { ...rest, atualizadoEm: serverTimestamp() });
     return true;
   },
 
@@ -1904,7 +1949,11 @@ window.FB = {
 
   async atualizarLead(leadId, data) {
     if (!isFirebaseReady) return true;
-    await updateDoc(doc(db, "leads", leadId), { ...sanitizeData(data), atualizadoEm: serverTimestamp() });
+    const user = auth.currentUser;
+    if (!user) throw new Error("Não autorizado");
+    const allowed = ['novo', 'aguardando', 'confirmado', 'cancelado'];
+    if (data.status && !allowed.includes(data.status)) throw new Error("Status inválido");
+    await updateDoc(doc(db, "leads", leadId), { status: data.status, atualizadoEm: serverTimestamp() });
     return true;
   },
 
@@ -2043,15 +2092,10 @@ function demoOficinas(filtros = {}) {
       stats:{impressoes:1240, cliques:380, whatsapp:142, orcamentos:67},
       servicos:[{nome:"Troca de óleo",min:110,max:150,ativo:true},{nome:"Revisão completa",min:450,max:750,ativo:true},{nome:"Ar-condicionado",min:120,max:200,ativo:true},{nome:"Suspensão",min:200,max:400,ativo:true}]},
     { id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
-      whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km", plano:"basico",
+      whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km",
       aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","caminhao"], lat:-20.275, lng:-40.408,
       stats:{impressoes:180, cliques:28, whatsapp:9, orcamentos:2},
-      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]},
-    { id:"of005", nome:"EliteCar Premium", cidade:"Cariacica", bairro:"Campo Grande",
-      whatsapp:"27999990005", avaliacao:4.7, totalAvaliacoes:62, distancia:"1,5 km", plano:"premium",
-      aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","suv"], lat:-20.269, lng:-40.415,
-      stats:{impressoes:2100, cliques:710, whatsapp:230, orcamentos:95},
-      servicos:[{nome:"Troca de óleo",min:99,max:140,ativo:true},{nome:"Revisão completa",min:500,max:800,ativo:true},{nome:"Suspensão",min:250,max:450,ativo:true},{nome:"Freios dianteiros",min:240,max:380,ativo:true}]}
+      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]}
   ];
   let r = [...base];
   if (filtros.servico) {
@@ -2077,12 +2121,11 @@ function demoOficinas(filtros = {}) {
     return { ...o, _dist: dist, _score: calcRankingScore(o, dist, filtros.servico || '') };
   }).sort((a, b) => {
     const diff = b._score - a._score;
-    // Desempate dentro de 2pts: premium > pro > basico
-    if (Math.abs(diff) < 2) {
-      const tier = { premium: 2, pro: 1, basico: 0 };
-      const ta = tier[a.plano] ?? 0;
-      const tb = tier[b.plano] ?? 0;
-      if (tb !== ta) return tb - ta;
+    // Tiebreaker within 5pts: Pro first
+    if (Math.abs(diff) < 5) {
+      const aPro = a.plano === 'pro' ? 1 : 0;
+      const bPro = b.plano === 'pro' ? 1 : 0;
+      if (bPro !== aPro) return bPro - aPro;
     }
     return diff;
   });
@@ -2197,9 +2240,7 @@ function calcRankingScore(o, distKm, query) {
     ? svcs.some(s => s.nome.toLowerCase() === q) ? 15
     : svcs.some(s => s.nome.toLowerCase().includes(q)) ? 8 : 0
     : 0;
-  // Plano: premium=10, pro=8, basico=3, sem plano=0
-  const plano = (o.plano || 'basico').toLowerCase();
-  const planScore = plano === 'premium' ? 10 : plano === 'pro' ? 8 : plano === 'basico' ? 3 : 0;
+  const planScore  = o.plano === 'pro' ? 10 : o.plano === 'basico' ? 3 : 0;
   const openBoost  = o.aberto ? 5 : 0;
   const avalBoost  = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
   // Engajamento: CTR de cliques/impressões — max 5pts (só quando há dados reais suficientes)
@@ -2393,6 +2434,9 @@ function getPerfilUrl(of) {
 
 async function abrirPerfil(ofId) {
   let of = getOficina(ofId);
+  if (!of && window.FB?.ready()) {
+    try { of = await window.FB.getOficinaById(ofId); if (of) STATE.oficinas.push(of); } catch(_) {}
+  }
   if (!of) {
     if (!STATE.oficinas.length) STATE.oficinas = demoOficinas({});
     of = getOficina(ofId);
@@ -2611,7 +2655,7 @@ function renderHistorico() {
   if (!container || !list) return;
   if (!hist.length) { container.style.display = 'none'; return; }
   container.style.display = '';
-  list.innerHTML =   list.innerHTML = hist.map((h, i) =>
+  list.innerHTML = hist.map((h, i) =>
     '<button class="chip hist-item" data-h="' + i + '" style="font-size:11.5px;">'
     + '🕐 ' + esc(h)
     + '<span class="hist-del" data-h="' + i + '" style="margin-left:6px;opacity:0.6;font-size:12px;">×</span>'
@@ -3839,7 +3883,7 @@ function renderCardEstabelecimento(of) {
     <div class="of-services">${svcs}</div>
     <div class="of-actions">
       <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')">💰 Ver orçamento</button>
-      ${of.whatsapp?`<button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();window.open('https://wa.me/55${esc(of.whatsapp.replace(/\D/g,'', 'noopener,noreferrer'))}','_blank','noopener')">💬 WhatsApp</button>`:''}
+      ${of.whatsapp?`<button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();window.open('https://wa.me/55${esc(of.whatsapp.replace(/\D/g,''))}','_blank','noopener,noreferrer')">💬 WhatsApp</button>`:''}
     </div>
   </article>`;
 }
@@ -3980,11 +4024,14 @@ function renderPecas() {
 // ── BUDGET / LEAD MODAL ──────────────────────────────────────────
 function getOficina(id) { return STATE.oficinas.find(o => o.id === id); }
 
-function openBudget(id) {
+async function openBudget(id) {
   window.FB?.trackEvent(id, 'clique');
   Analytics.budgetOpen(id);
-  const of = getOficina(id);
-  if (!of) return;
+  let of = getOficina(id);
+  if (!of && window.FB?.ready()) {
+    try { of = await window.FB.getOficinaById(id); if (of) STATE.oficinas.push(of); } catch(_) {}
+  }
+  if (!of) { toast('Oficina não encontrada', 'error'); return; }
   const q = (STATE.filtroChip||'').toLowerCase();
   const svc = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
 
@@ -4161,7 +4208,8 @@ async function enviarLeadPeca(pecaId) {
 function wppPeca(id) {
   const p = DEMO_PECAS.find(x => x.id === id);
   const msg = encodeURIComponent(`Olá! Vi no MecBusca e gostaria de orçamento para: ${p?.nome||id}.`);
-  window.open(`https://wa.me/5527999990001?text=${msg}`, '_blank', 'noopener');
+  const fornWpp = p?.fornecedorWpp || '5527999990001';
+  window.open(`https://wa.me/${fornWpp}?text=${msg}`, '_blank', 'noopener,noreferrer');
 }
 </script>
 
@@ -4192,6 +4240,9 @@ function loadPainel() {
       ? { ...STATE.onbData, id: 'of001' }
       : { id:'of001', nome:'Auto Center Vitória', email:'admin@autocenter.com' };
   }
+  // Sincroniza serviços reais do Firestore → STATE.painelSvcs
+  const _svcsReais = STATE.oficinaAtual?.servicos;
+  if (Array.isArray(_svcsReais) && _svcsReais.length > 0) STATE.painelSvcs = _svcsReais;
   document.querySelectorAll('.screen').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   const p = document.getElementById('scPainel');
   p.style.display = 'flex';
@@ -4375,7 +4426,7 @@ function renderLeadsListFull(leads) {
           <div class="lead-av" style="background:${LEAD_COLORS[i%4]}" aria-hidden="true">${ini}</div>
           <div class="lead-info">
             <div class="lead-name">${esc(l.nomeCliente)}</div>
-            <div class="lead-svc">${esc(l.servico)} · ${esc(l.carro||'')} · ${esc(l.whatsapp||'')}</div>
+            <div class="lead-svc">${esc(l.servico)} · ${esc(l.carro||'')} · ${l.whatsapp ? '••••-'+esc(String(l.whatsapp).slice(-4)) : '—'}</div>
           </div>
           ${origemLabel}
           <div class="lead-price">${l.valor ? formatCurrency(l.valor) : ''}</div>
@@ -4411,11 +4462,21 @@ function renderSvcPainelList() {
     </div>`).join('');
 }
 
+async function _persistirServicos() {
+  const id = STATE.oficinaAtual?.id;
+  if (!id || !window.FB?.ready() || STATE.user?.isDemo) return;
+  try {
+    await window.FB.atualizarOficina(id, { servicos: STATE.painelSvcs });
+    if (STATE.oficinaAtual) STATE.oficinaAtual.servicos = STATE.painelSvcs;
+  } catch(e) { (window.logW||console.warn)('Erro ao persistir serviços:', e.message); }
+}
+
 function toggleSvc(i, el) {
   STATE.painelSvcs[i].ativo = !STATE.painelSvcs[i].ativo;
   el.classList.toggle('off');
   el.setAttribute('aria-checked', STATE.painelSvcs[i].ativo);
   toast(STATE.painelSvcs[i].ativo ? `"${STATE.painelSvcs[i].nome}" ativado` : `"${STATE.painelSvcs[i].nome}" desativado`);
+  _persistirServicos();
 }
 
 let _editingSvcIdx = -1;
@@ -4461,16 +4522,21 @@ function salvarNovoSvc() {
   }
   closeModal('addSvcModal');
   renderSvcPainelList();
+  _persistirServicos();
 }
 
 // ── HORÁRIOS ─────────────────────────────────────────────────────
 function renderHorariosPainel(c) {
+  // Usa horários salvos da oficina se disponíveis, senão usa o padrão
+  const saved = STATE.oficinaAtual?.horarios;
+  const horarios = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length)
+    ? saved : HORARIOS_PADRAO;
   c.innerHTML = `<div class="card" style="max-width:420px;">
     <div class="card-header"><div class="card-title">Horário de Funcionamento</div></div>
     <div id="painelHorarios" aria-label="Configuração de horários"></div>
     <button class="btn btn-primary" style="margin-top:16px;" onclick="salvarHorarios()">Salvar horários</button>
   </div>`;
-  document.getElementById('painelHorarios').innerHTML = HORARIOS_PADRAO.map((h, i) => `
+  document.getElementById('painelHorarios').innerHTML = horarios.map((h) => `
     <div class="hora-row">
       <div class="hora-day">${h.dia}</div>
       <div class="hora-range">${h.range}</div>
@@ -4478,8 +4544,25 @@ function renderHorariosPainel(c) {
     </div>`).join('');
 }
 
-function salvarHorarios() {
-  toast('Horários salvos!');
+async function salvarHorarios() {
+  const toggles = document.querySelectorAll('#painelHorarios .hora-toggle');
+  const saved = STATE.oficinaAtual?.horarios;
+  const base = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length) ? saved : HORARIOS_PADRAO;
+  const horarios = base.map((h, i) => ({ ...h, on: !toggles[i]?.classList.contains('off') }));
+  const btn = document.querySelector('[onclick="salvarHorarios()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try {
+    const id = STATE.oficinaAtual?.id;
+    if (id && window.FB?.ready() && !STATE.user?.isDemo) {
+      await window.FB.atualizarOficina(id, { horarios });
+    }
+    if (STATE.oficinaAtual) STATE.oficinaAtual.horarios = horarios;
+    toast('✅ Horários salvos!', 'success');
+  } catch(e) {
+    toast('Erro ao salvar: ' + (e.message||''), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar horários'; }
+  }
 }
 
 // ── MÉTRICAS DE NEGÓCIO ───────────────────────────────────────────
@@ -4506,16 +4589,16 @@ function renderMetricas(c) {
   }, {});
   const topServicos = Object.entries(servicosMais).sort((a,b)=>b[1]-a[1]).slice(0, 4);
 
-  // Comparativo simulado (sem dados históricos reais usamos delta fixo)
-  const deltaSemana = '+12%';
-  const deltaMes = '+8%';
+  // Deltas calculados dos leads reais (sem histórico persistido, mostra neutro)
+  const deltaSemana = leads.length > 0 ? '' : '—';
+  const deltaMes    = leads.length > 0 ? '' : '—';
 
   c.innerHTML = `
   <div class="metrics-grid">
     <div class="metric-card"><div class="metric-label">Taxa de conversão</div><div class="metric-value">${conversao}%</div><div class="metric-delta ${conversao>=50?'delta-up':'delta-neutral'}">${confirmados}/${total} leads</div></div>
     <div class="metric-card"><div class="metric-label">Ticket médio</div><div class="metric-value">${formatCurrency(ticket)}</div><div class="metric-delta delta-up">por lead</div></div>
-    <div class="metric-card"><div class="metric-label">Receita total</div><div class="metric-value">${formatCurrency(receita)}</div><div class="metric-delta delta-up">${deltaMes} vs mês anterior</div></div>
-    <div class="metric-card"><div class="metric-label">Crescimento semanal</div><div class="metric-value">${deltaSemana}</div><div class="metric-delta delta-up">vs semana anterior</div></div>
+    <div class="metric-card"><div class="metric-label">Receita estimada</div><div class="metric-value">${formatCurrency(receita)}</div><div class="metric-delta delta-neutral">soma dos leads</div></div>
+    ${leads.length ? `<div class="metric-card"><div class="metric-label">Total de leads</div><div class="metric-value">${leads.length}</div><div class="metric-delta delta-neutral">histórico completo</div></div>` : ''}
   </div>
   <div class="grid2">
     <div class="card">
@@ -4793,10 +4876,17 @@ async function confirmarAgendamento(ofId) {
   const svc  = document.getElementById('schSvc')?.value.trim();
   const dateEl = document.querySelector('.sch-date-btn.selected');
   const slotEl = document.querySelector('.sch-slot.selected');
+  const _vWpp = typeof validarWpp !== 'undefined' ? validarWpp : window.validarWpp;
   if (!nome) { toast('Informe seu nome', 'warning'); return; }
-  if (!validarWpp(wpp)) { toast('WhatsApp inválido', 'warning'); return; }
+  if (!_vWpp || !_vWpp(wpp.replace(/\D/g,''))) { toast('WhatsApp inválido', 'warning'); return; }
+  if (!dateEl) { toast('Escolha uma data', 'warning'); return; }
   if (!slotEl) { toast('Escolha um horário', 'warning'); return; }
-  setBtnLoading('schBtnTxt', 'schBtnTxt', 'schBtnSpin', true);
+  const schBtn = document.querySelector('#sch-body button');
+  const schTxt = document.getElementById('schBtnTxt');
+  const schSpin = document.getElementById('schBtnSpin');
+  if (schBtn) schBtn.disabled = true;
+  if (schTxt) schTxt.style.display = 'none';
+  if (schSpin) schSpin.style.display = 'inline-flex';
   try {
     const agId = await window.FB.criarAgendamento({
       oficinaId: ofId, nomeCliente: nome, whatsapp: wpp.replace(/\D/g,''),
@@ -4810,7 +4900,9 @@ async function confirmarAgendamento(ofId) {
   } catch(e) {
     toast('Erro ao agendar: ' + (e.message||'tente novamente'), 'error');
   } finally {
-    setBtnLoading('schBtnTxt', 'schBtnTxt', 'schBtnSpin', false);
+    if (schBtn) schBtn.disabled = false;
+    if (schTxt) schTxt.style.display = '';
+    if (schSpin) schSpin.style.display = 'none';
   }
 }
 
@@ -4941,7 +5033,7 @@ async function renderPerfil(of) {
 
   // Badges
   const badges = [];
-  if (isPro)           badges.push('<span class="perfil-badge badge-verified">✓ Verificado</span>');
+  if ((of.totalAvaliacoes||0) >= 5) badges.push('<span class="perfil-badge badge-verified">✓ Verificado</span>');
   if (of.buscaEntrega) badges.push('<span class="perfil-badge badge-busca">🚗 Busca e entrega</span>');
   if (of.guincho)      badges.push('<span class="perfil-badge badge-guincho">🚨 Guincho</span>');
   if ((of.totalAvaliacoes||0) >= 20) badges.push('<span class="perfil-badge badge-trusted">🏆 Top avaliado</span>');
@@ -4951,7 +5043,7 @@ async function renderPerfil(of) {
   if (ctr !== null && ctr >= 25) badges.push('<span class="perfil-badge badge-quick">⚡ Alta demanda</span>');
 
   // Stats row
-  const respRate = Math.min(98, 60 + Math.floor(Math.random()*35)); // TODO: real data
+  const respRate = null; // não disponível no perfil público sem acesso aos leads
   const statsRow = `
     <div class="perfil-stat-row">
       <div class="perfil-stat">
@@ -4962,10 +5054,10 @@ async function renderPerfil(of) {
         <div class="perfil-stat-val">${of.totalAvaliacoes||0}</div>
         <div class="perfil-stat-label">Avaliações</div>
       </div>
-      <div class="perfil-stat">
+      ${respRate !== null ? `<div class="perfil-stat">
         <div class="perfil-stat-val">${respRate}%</div>
         <div class="perfil-stat-label">Resposta</div>
-      </div>
+      </div>` : ''}
     </div>`;
 
   // Photos (placeholder or real)
@@ -5151,8 +5243,8 @@ async function renderDashboard(el) {
   const origens = leads.reduce((acc,l) => { const o=l.origem||'busca'; acc[o]=(acc[o]||0)+1; return acc; }, {});
   const origemColors = { busca:'var(--g)', whatsapp:'var(--wpp)', google:'var(--bl)', direto:'var(--pu)' };
 
-  // Taxa de resposta simulada (real: calcular via leads respondidos / recebidos)
-  const respRate = leads.length >= 3 ? Math.min(98, Math.round((confirmados+aguardando)/leads.length*100)+15) : 85;
+  const respondidos = leads.filter(l => l.status !== 'novo').length;
+  const respRate = leads.length > 0 ? Math.round(respondidos / leads.length * 100) : 0;
 
   function kpi(label, value, sub, deltaClass) {
     return `<div class="metric-card" tabindex="0">
@@ -5175,7 +5267,7 @@ async function renderDashboard(el) {
       ${kpi('💰 Receita estimada', formatCurrency(receita), 'Ticket médio '+formatCurrency(ticket))}
       ${kpi('👥 Leads recebidos', leads.length, novos+' novos · '+aguardando+' aguardando')}
       ${kpi('📈 Conversão', conversao+'%', confirmados+' confirmados', conversao>=50?'delta-up':'delta-neutral')}
-      ${kpi('⚡ Taxa de resposta', respRate+'%', 'Meta: >80%', respRate>=80?'delta-up':'delta-down')}
+      ${kpi('⚡ Taxa de resposta', leads.length ? respRate+'%' : '—', leads.length ? respondidos+'/'+leads.length+' respondidos' : 'Sem leads ainda', respRate>=80?'delta-up':leads.length?'delta-down':'delta-neutral')}
     </div>
 
     <div class="grid2" style="margin-bottom:16px;">
@@ -5383,14 +5475,12 @@ window.addEventListener('beforeinstallprompt', e => {
   _deferredInstall = e;
   const banner = document.getElementById('installBanner');
   if (banner) {
-    // Show after 2nd visit
-    try {
-      const visits = parseInt(localStorage.getItem('mb_visits')||'0') + 1;
-      localStorage.setItem('mb_visits', visits);
-      if (visits >= 2) {
-        setTimeout(() => { banner.style.display = 'flex'; }, 5000);
-      }
-    } catch(e) { /* localStorage indisponível (modo privado / iOS) */ }
+    // Show after 30s or after 2nd visit
+    const visits = parseInt(localStorage.getItem('mb_visits')||'0') + 1;
+    localStorage.setItem('mb_visits', visits);
+    if (visits >= 2) {
+      setTimeout(() => { banner.style.display = 'flex'; }, 5000);
+    }
   }
 });
 
