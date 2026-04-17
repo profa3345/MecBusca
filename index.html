@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MecBusca — Encontre oficinas perto de você</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
+<!-- CSP definida exclusivamente via header HTTP no firebase.json -->
 <meta name="description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
 <meta name="theme-color" content="#00D084">
 <meta property="og:site_name" content="MecBusca">
@@ -2043,10 +2043,15 @@ function demoOficinas(filtros = {}) {
       stats:{impressoes:1240, cliques:380, whatsapp:142, orcamentos:67},
       servicos:[{nome:"Troca de óleo",min:110,max:150,ativo:true},{nome:"Revisão completa",min:450,max:750,ativo:true},{nome:"Ar-condicionado",min:120,max:200,ativo:true},{nome:"Suspensão",min:200,max:400,ativo:true}]},
     { id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
-      whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km",
+      whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km", plano:"basico",
       aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","caminhao"], lat:-20.275, lng:-40.408,
       stats:{impressoes:180, cliques:28, whatsapp:9, orcamentos:2},
-      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]}
+      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]},
+    { id:"of005", nome:"EliteCar Premium", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999990005", avaliacao:4.7, totalAvaliacoes:62, distancia:"1,5 km", plano:"premium",
+      aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","suv"], lat:-20.269, lng:-40.415,
+      stats:{impressoes:2100, cliques:710, whatsapp:230, orcamentos:95},
+      servicos:[{nome:"Troca de óleo",min:99,max:140,ativo:true},{nome:"Revisão completa",min:500,max:800,ativo:true},{nome:"Suspensão",min:250,max:450,ativo:true},{nome:"Freios dianteiros",min:240,max:380,ativo:true}]}
   ];
   let r = [...base];
   if (filtros.servico) {
@@ -2072,11 +2077,12 @@ function demoOficinas(filtros = {}) {
     return { ...o, _dist: dist, _score: calcRankingScore(o, dist, filtros.servico || '') };
   }).sort((a, b) => {
     const diff = b._score - a._score;
-    // Tiebreaker within 5pts: Pro first
-    if (Math.abs(diff) < 5) {
-      const aPro = a.plano === 'pro' ? 1 : 0;
-      const bPro = b.plano === 'pro' ? 1 : 0;
-      if (bPro !== aPro) return bPro - aPro;
+    // Desempate dentro de 2pts: premium > pro > basico
+    if (Math.abs(diff) < 2) {
+      const tier = { premium: 2, pro: 1, basico: 0 };
+      const ta = tier[a.plano] ?? 0;
+      const tb = tier[b.plano] ?? 0;
+      if (tb !== ta) return tb - ta;
     }
     return diff;
   });
@@ -2191,7 +2197,9 @@ function calcRankingScore(o, distKm, query) {
     ? svcs.some(s => s.nome.toLowerCase() === q) ? 15
     : svcs.some(s => s.nome.toLowerCase().includes(q)) ? 8 : 0
     : 0;
-  const planScore  = o.plano === 'pro' ? 10 : o.plano === 'basico' ? 3 : 0;
+  // Plano: premium=10, pro=8, basico=3, sem plano=0
+  const plano = (o.plano || 'basico').toLowerCase();
+  const planScore = plano === 'premium' ? 10 : plano === 'pro' ? 8 : plano === 'basico' ? 3 : 0;
   const openBoost  = o.aberto ? 5 : 0;
   const avalBoost  = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
   // Engajamento: CTR de cliques/impressões — max 5pts (só quando há dados reais suficientes)
@@ -5375,12 +5383,14 @@ window.addEventListener('beforeinstallprompt', e => {
   _deferredInstall = e;
   const banner = document.getElementById('installBanner');
   if (banner) {
-    // Show after 30s or after 2nd visit
-    const visits = parseInt(localStorage.getItem('mb_visits')||'0') + 1;
-    localStorage.setItem('mb_visits', visits);
-    if (visits >= 2) {
-      setTimeout(() => { banner.style.display = 'flex'; }, 5000);
-    }
+    // Show after 2nd visit
+    try {
+      const visits = parseInt(localStorage.getItem('mb_visits')||'0') + 1;
+      localStorage.setItem('mb_visits', visits);
+      if (visits >= 2) {
+        setTimeout(() => { banner.style.display = 'flex'; }, 5000);
+      }
+    } catch(e) { /* localStorage indisponível (modo privado / iOS) */ }
   }
 });
 

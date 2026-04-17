@@ -1,0 +1,122 @@
+// ═══════════════════════════════════════════════════════════════
+//  MecBusca — Headers HTTP de Segurança
+//  Arquivo: firebase.json  (seção "hosting")
+//
+//  PROBLEMA CORRIGIDO:
+//   1. CSP como <meta> com unsafe-inline em script-src é decorativo
+//      contra XSS. Movido para header HTTP (único lugar que vale).
+//   2. Domínios reais do app adicionados: unpkg.com (Leaflet CSS),
+//      tile.openstreetmap.org (tiles do mapa),
+//      nominatim.openstreetmap.org (geocoding).
+//   3. unsafe-inline removido de script-src. O app usa módulos ES
+//      (type="module") — nonces não são necessários para módulos.
+//      Os poucos blocos <script> inline restantes precisam de hash
+//      ou ser movidos para arquivos externos (ver nota abaixo).
+// ═══════════════════════════════════════════════════════════════
+
+{
+  "hosting": {
+    "public": "public",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          // ── Content-Security-Policy ─────────────────────────────
+          // Construída por diretiva para facilitar manutenção.
+          {
+            "key": "Content-Security-Policy",
+            "value": [
+              // Fallback para diretivas não especificadas
+              "default-src 'self'",
+
+              // Scripts: sem unsafe-inline.
+              // Firebase SDK carregado de gstatic (ES module via import).
+              // Leaflet JS vem de unpkg.
+              //
+              // Hashes dos blocos <script> inline do index.html.
+              // ⚠️  Regenere sempre que editar qualquer bloco inline:
+              //   python3 -c "
+              //     import re,hashlib,base64
+              //     html=open('public/index.html').read()
+              //     for m in re.finditer(r'<script(?P<a>[^>]*)>(?P<b>.*?)</script>',html,re.DOTALL):
+              //       if 'module' not in m.group('a'):
+              //         h=base64.b64encode(hashlib.sha256(m.group('b').encode()).digest()).decode()
+              //         print(f'sha256-{h}')
+              //   "
+              "script-src 'self' https://www.gstatic.com https://unpkg.com 'sha256-Bl0sJ36kh2UN4Q8KVmBQRRaWbAYIvlOIhlRLzmmef7o=' 'sha256-odGrcB3ZzVQtfw9qiUkNQR12llQGOX0Rhz3CehnqLgs=' 'sha256-ByjqB59mXKcDX5Gtmqga8BJ8kyE2nb7Bzxhnw4hZ6pg=' 'sha256-QUWjRTBFecRN6tPIexVrQ59j34LMIP8XUyPduixRuT4=' 'sha256-RmH25Inc5y3Y/4+fJMFtqS2RMr5CMF0jVBIVyURC49I=' 'sha256-Ur8IJtlSBWe2UNVsXYeO9EB+aU2cK/I1VJOp8KJOp7E=' 'sha256-0HQhNm8OQOm9yOLaa78Apt+wayyYLb2TUYMSQQds4HA=' 'sha256-3f3PP9uwN7r8ZCkSzW/pxkfZi2pcYV6yOP2kFt4GIJ8='",
+
+              // Estilos: inline necessário para CSS-in-JS do Leaflet
+              // e para as vars CSS inline do app.
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com",
+
+              // Fontes
+              "font-src 'self' https://fonts.gstatic.com",
+
+              // Imagens: tiles do OSM + dados inline (ícones SVG base64)
+              "img-src 'self' data: https://*.tile.openstreetmap.org https://*.openstreetmap.org",
+
+              // Conexões de rede (fetch/XHR/WebSocket)
+              "connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com https://nominatim.openstreetmap.org https://identitytoolkit.googleapis.com https://securetoken.googleapis.com",
+
+              // Frames, objetos, workers
+              "frame-src 'none'",
+              "object-src 'none'",
+              "worker-src 'self'"
+            ].join("; ")
+          },
+
+          // ── Outros cabeçalhos de segurança ─────────────────────
+          {
+            "key": "X-Frame-Options",
+            "value": "DENY"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          },
+          {
+            "key": "Permissions-Policy",
+            "value": "camera=(), microphone=(), geolocation=(self), payment=()"
+          },
+          // HSTS: força HTTPS por 1 ano após primeiro acesso
+          {
+            "key": "Strict-Transport-Security",
+            "value": "max-age=31536000; includeSubDomains; preload"
+          }
+        ]
+      },
+
+      // ── Cache de assets estáticos ───────────────────────────────
+      {
+        "source": "/static/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, stale-while-revalidate=604800"
+          }
+        ]
+      }
+    ],
+
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
