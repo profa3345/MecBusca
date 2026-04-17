@@ -292,9 +292,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 
 /* ── HOME FOOTER ── */
 /* ══════════════════════════════════════════════════════
-   FOOTER — Two-row professional layout
-   Linha 1: Logo + tagline  |  colunas de nav
-   Linha 2: copyright       |  badge + tema
+   FOOTER — Clean minimal two-row layout
    ══════════════════════════════════════════════════════ */
 .home-footer{
   position:relative;
@@ -307,24 +305,15 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 }
 .home-footer-inner{
   max-width:960px;margin:0 auto;
-  padding:32px 40px 20px;
+  padding:28px 40px 20px;
 }
-
-/* ── Row 1 ── */
+/* ── Row 1: brand ── */
 .home-footer-row1{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:48px;
-  padding-bottom:24px;
+  padding-bottom:18px;
   border-bottom:1px solid rgba(255,255,255,0.05);
-  flex-wrap:wrap;
 }
-
-/* Brand block */
 .home-footer-brand-block{
-  display:flex;flex-direction:column;gap:6px;
-  min-width:160px;
+  display:flex;flex-direction:column;gap:5px;
 }
 .home-footer-logo-row{
   display:flex;align-items:center;gap:9px;
@@ -334,32 +323,13 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 }
 .home-footer-brand{
   font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
-  color:var(--t);letter-spacing:-0.02em;line-height:1;
+  color:var(--t);letter-spacing:-0.02em;
 }
 .home-footer-brand em{color:var(--g);font-style:normal;}
 .home-footer-tagline{
-  font-size:11.5px;color:var(--t3);line-height:1.5;
-  padding-left:33px;
+  font-size:11.5px;color:var(--t3);padding-left:33px;
 }
-
-/* Nav columns */
-.home-footer-cols{
-  display:flex;gap:40px;flex-wrap:wrap;
-}
-.home-footer-col-title{
-  font-size:10px;font-weight:700;font-family:'Syne',sans-serif;
-  color:var(--t3);text-transform:uppercase;letter-spacing:0.1em;
-  margin-bottom:10px;
-}
-.home-footer-col a{
-  display:block;font-size:12.5px;color:var(--t2);
-  padding:3px 0;cursor:pointer;
-  border:none;background:none;text-align:left;
-  transition:color 0.12s;white-space:nowrap;
-}
-.home-footer-col a:hover{ color:var(--g); }
-
-/* ── Row 2 ── */
+/* ── Row 2: copyright + controls ── */
 .home-footer-row2{
   display:flex;align-items:center;
   justify-content:space-between;
@@ -376,7 +346,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
   font-size:10px;color:var(--t3);
   background:var(--s);border:1px solid var(--b);
   border-radius:6px;padding:3px 9px;
-  letter-spacing:0.04em;font-weight:500;
+  font-weight:500;
 }
 .home-footer-tema{
   display:inline-flex;align-items:center;gap:5px;
@@ -389,14 +359,10 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .home-footer-tema:hover{
   border-color:var(--b2);color:var(--t);background:var(--s2);
 }
-
-/* ── Mobile ── */
 @media(max-width:600px){
-  .home-footer-inner{padding:24px 20px 16px;}
-  .home-footer-row1{gap:24px;}
-  .home-footer-cols{gap:24px;}
-  .home-footer-tagline{display:none;}
+  .home-footer-inner{padding:20px 20px 14px;}
   .home-footer-row2{flex-direction:column;align-items:center;text-align:center;gap:10px;}
+  .home-footer-tagline{display:none;}
 }
 .portal-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rxl);padding:28px 20px;cursor:pointer;transition:all 0.2s;text-align:center;}
 .portal-card.featured{border-color:var(--b2);background:linear-gradient(135deg,var(--s),var(--gg2));}
@@ -1365,10 +1331,8 @@ button,a,[role=button]{min-height:44px;}
   <footer class="home-footer" role="contentinfo" aria-label="Rodapé MecBusca">
     <div class="home-footer-inner">
 
-      <!-- Row 1: brand + nav columns -->
+      <!-- Row 1: brand only -->
       <div class="home-footer-row1">
-
-        <!-- Brand -->
         <div class="home-footer-brand-block">
           <div class="home-footer-logo-row">
             <svg class="home-footer-logo-icon" viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -1381,29 +1345,8 @@ button,a,[role=button]{min-height:44px;}
             </svg>
             <span class="home-footer-brand">Mec<em>Busca</em></span>
           </div>
-          <span class="home-footer-tagline">Marketplace de oficinas · ES</span>
+          <span class="home-footer-tagline">Marketplace de oficinas mecânicas · ES · Brasil</span>
         </div>
-
-        <!-- Nav columns -->
-        <div class="home-footer-cols">
-          <nav aria-label="Plataforma">
-            <div class="home-footer-col-title">Plataforma</div>
-            <a onclick="void(0)" role="button" tabindex="0">Buscar oficinas</a>
-            <a onclick="homeBuscarPeca()" role="button" tabindex="0">Buscar peças</a>
-          </nav>
-          <nav aria-label="Empresas">
-            <div class="home-footer-col-title">Para empresas</div>
-            <a onclick="openOverlay('scOnboarding')" role="button" tabindex="0">Cadastrar oficina</a>
-            <a onclick="goTo('scFornecedor')" role="button" tabindex="0">Cadastrar fornecedor</a>
-            <a onclick="openOverlay('scAuth')" role="button" tabindex="0">Painel</a>
-          </nav>
-          <nav aria-label="Legal">
-            <div class="home-footer-col-title">Legal</div>
-            <a onclick="void(0)" role="button" tabindex="0">Privacidade</a>
-            <a onclick="void(0)" role="button" tabindex="0">Termos de uso</a>
-          </nav>
-        </div>
-
       </div>
 
       <!-- Row 2: copyright + controls -->
