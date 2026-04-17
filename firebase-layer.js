@@ -1,88 +1,55 @@
 // ═══════════════════════════════════════════════════════════════
-//  MecBusca — Camada de Dados Unificada (firebase-layer.js)
+//  MecBusca — Camada de Dados Unificada (firebase-layer.js) v2
 //
-//  Mudanças principais:
-//   1. Modo DEMO/PROD explícito — uma constante, zero ambiguidade.
-//   2. Rate limit migrado para Cloud Functions (server-side).
-//      O rate limit client-side permanece como UX (feedback rápido),
-//      mas não é a barreira de segurança.
-//   3. Nenhuma chave de API ou config sensível no bundle.
-//      Use variáveis de ambiente no build ou __FIREBASE_CONFIG__
-//      injetado pelo hosting (ver nota).
-//   4. Separação clara: funções públicas vs. autenticadas.
-//   5. Sistema de planos + ranking por score.
-//      v1 (atual): plano único 'basico' (gratuito) para todos.
-//      Infraestrutura de Pro/Premium mantida no código mas inativa —
-//      ativa via firebase-layer quando monetização for lançada.
-//      Score = proximidade(40) + avaliação(35) + serviço(15) +
-//              plano(10) + engajamento(5) + aberto(5) + vol_aval(5)
-//      listarOficinas() ordena por score após filtros.
-//      listarOficinasAdmin() expõe scores para debug.
+//  Mudanças v2:
+//   1. Plano inicial sempre GRATUITO (basico).
+//      Sem citação de preços no cadastro — monetização futura.
+//   2. Camada Services/Controllers:
+//      OficinaService  — CRUD de oficinas com cache.
+//      LeadService     — envio e gestão de leads.
+//      SearchController— busca com cache de 1 minuto.
+//      AuthController  — autenticação e estado de sessão.
+//      Expostos via window.Services para migração gradual.
+//   3. Score calculado no client (v1). TODO: migrar para Cloud Function.
+//   4. Rate limit client-side (UX). Rate limit real → Cloud Functions.
 // ═══════════════════════════════════════════════════════════════
 
 // ── 1. MODO DE OPERAÇÃO ──────────────────────────────────────────
-//
-//  DEMO  → nenhuma chamada ao Firestore; dados fictícios locais.
-//  PROD  → Firebase real; requer projeto configurado.
-//
-//  Como ativar PROD:
-//    • Defina window.__MECBUSCA_MODE = 'PROD' ANTES deste script, ou
-//    • Use a variável de build __MODE__ injetada pelo bundler, ou
-//    • Adicione ?mode=prod na URL (só em ambientes de staging).
-//
 const _urlMode  = new URLSearchParams(location.search).get('mode');
 const APP_MODE  = (
   window.__MECBUSCA_MODE ||
   _urlMode?.toUpperCase() ||
-  'DEMO'   // ← padrão seguro: nunca quebra sem Firebase configurado
+  'DEMO'
 );
 const IS_PROD   = APP_MODE === 'PROD';
 const IS_DEMO   = !IS_PROD;
-
 console.info(`[MecBusca] Modo: ${APP_MODE}`);
 
 // ── PLANOS ───────────────────────────────────────────────────────
 //
-//  Use estes valores em qualquer lugar do app (evita strings soltas).
+//  v1: todos entram no plano 'basico' (gratuito).
+//  Infraestrutura Pro/Premium mantida mas INATIVA no cadastro.
+//  Ativa via Cloud Function após confirmação de pagamento.
 //
-//  Firestore: campo `plano` em cada documento da coleção `oficinas`.
-//  Valores válidos: 'basico' | 'pro' | 'premium'
-//  Padrão no cadastro: 'basico' (gratuito, nunca null/undefined).
+//  NOTA: não exibir preços no fluxo de cadastro (v1 = tudo grátis).
 //
 export const PLANOS = Object.freeze({
-  BASICO:  { id: 'basico',  label: 'Grátis',   prioridade: 0,    preco: 0  },
-  PRO:     { id: 'pro',     label: 'Pro',       prioridade: 500,  preco: 49 },
-  PREMIUM: { id: 'premium', label: 'Premium',   prioridade: 1000, preco: 97 },
+  BASICO:  { id: 'basico',  label: 'Grátis',   prioridade: 0,    preco: 0   },
+  PRO:     { id: 'pro',     label: 'Pro',       prioridade: 500,  preco: 49  },
+  PREMIUM: { id: 'premium', label: 'Premium',   prioridade: 1000, preco: 97  },
 });
 
-// Score máximo teórico por plano (para calibração de pesos):
+// Score máximo teórico por plano:
 //   basico:  40+35+15+3+5+5+5 = 108
 //   pro:     40+35+15+8+5+5+5 = 113
-//   premium: 40+35+15+10+5+5+5 = 115
-// A diferença de plano (~2–7pts) é intencional: uma oficina gratuita
-// muito bem avaliada e próxima AINDA supera uma premium mal avaliada.
-// Isso garante credibilidade no ranking para os usuários finais.
+//   premium: 40+35+15+10+5+5+5= 115
+// Diferença intencional: oficina gratuita bem avaliada supera premium mal avaliada.
 
 // ── 2. CONFIG DO FIREBASE ────────────────────────────────────────
-//
-//  Opção A (recomendada para produção):
-//    Injete a config via Firebase Hosting "__firebase_config__"
-//    (https://firebase.google.com/docs/hosting/reserved-urls)
-//    window.__firebase_config__ é preenchido automaticamente.
-//
-//  Opção B (desenvolvimento):
-//    Coloque a config aqui ou em um arquivo .env não commitado.
-//
-//  NUNCA commite apiKey real em repositório público.
-//  A apiKey do Firebase não é um segredo de servidor — ela identifica
-//  o projeto — mas as REGRAS do Firestore é que protegem os dados.
-//
 const firebaseConfig = (() => {
-  // Opção A: config injetada pelo Firebase Hosting
   if (typeof __firebase_config__ !== 'undefined') {
     return JSON.parse(__firebase_config__);
   }
-  // Opção B: fallback de desenvolvimento (substitua pelos valores reais)
   return {
     apiKey:            import.meta?.env?.VITE_FB_API_KEY     || '',
     authDomain:        import.meta?.env?.VITE_FB_AUTH_DOMAIN  || '',
@@ -131,13 +98,10 @@ if (IS_PROD) {
 
 // ── 5. RATE LIMIT CLIENT-SIDE (UX) ──────────────────────────────
 //
-//  ⚠️  Este rate limit protege apenas a experiência do usuário
-//      (evita duplo-clique, feedback imediato).
-//      A barreira real de segurança são as Regras do Firestore
-//      + Cloud Functions com rate limit server-side.
+//  ⚠️  Este rate limit é apenas UX (feedback rápido, anti-duplo-clique).
+//      A barreira real é Cloud Functions + Regras do Firestore.
 //
-//  Para rate limit server-side, implante a Cloud Function abaixo:
-//
+//  TODO (Cloud Functions): migrar para server-side:
 //  exports.enviarLead = functions.https.onCall(async (data, ctx) => {
 //    const ip = ctx.rawRequest.ip;
 //    const ref = admin.firestore().doc(`_ratelimits/lead_${ip}`);
@@ -147,7 +111,7 @@ if (IS_PROD) {
 //      const now = Date.now();
 //      if (now - window < 300_000 && count >= 3)
 //        throw new functions.https.HttpsError('resource-exhausted', 'Limite atingido.');
-//      tx.set(ref, { count: now - window < 300_000 ? count + 1 : 1, window: now });
+//      tx.set(ref, { count: now - window < 300_000 ? count+1 : 1, window: now });
 //      return admin.firestore().collection('leads').add({ ...data, criadoEm: admin.firestore.FieldValue.serverTimestamp() });
 //    });
 //  });
@@ -194,71 +158,35 @@ function validarNome(nome) {
 
 // ── 8. RANKING ENGINE ───────────────────────────────────────────
 //
-//  Mesmo algoritmo do index.html (calcRankingScore), mas aqui é a
-//  fonte canônica — o index.html pode importar ou inline-copiar.
-//
-//  Parâmetros:
-//    o        — objeto oficina do Firestore (campos abaixo)
-//    distKm   — distância do usuário em km (0 se desconhecida)
-//    query    — string de busca do usuário (ex: "troca de oleo")
-//
-//  Campos usados de `o`:
-//    plano           'basico'|'pro'|'premium'  (padrão: 'basico')
-//    avaliacao       0–5
-//    totalAvaliacoes número inteiro
-//    servicos        [{ nome, ativo }]
-//    aberto          boolean
-//    stats           { impressoes, cliques }
+//  TODO (segurança): migrar calcRankingScore para Cloud Function.
+//  Risco atual: usuário pode manipular o score via devtools.
+//  Mitigação v1: o score só determina ordenação visual, não preços.
 //
 function calcRankingScore(o, distKm = 10, query = '') {
-  // Proximidade — peso 40. Distância 0km = 40pts, 20km+ = 0pts.
   const distScore = Math.max(0, 40 - (Math.min(distKm, 20) / 20) * 40);
-
-  // Avaliação — peso 35.
   const avalScore = ((o.avaliacao || 0) / 5) * 35;
-
-  // Match de serviço — peso 15.
   const q = query.toLowerCase().trim();
   const svcs = (o.servicos || []).filter(s => s.ativo);
   const svcScore = q
-    ? svcs.some(s => s.nome.toLowerCase() === q)          ? 15
-    : svcs.some(s => s.nome.toLowerCase().includes(q) ||
-                     q.includes(s.nome.toLowerCase()))    ? 8
+    ? svcs.some(s => s.nome.toLowerCase() === q)                                    ? 15
+    : svcs.some(s => s.nome.toLowerCase().includes(q) || q.includes(s.nome.toLowerCase())) ? 8
     : 0
     : 0;
-
-  // Plano — peso 10.
-  //   premium: 10pts | pro: 8pts | basico: 3pts | sem plano: 0pts
   const plano = (o.plano || 'basico').toLowerCase();
-  const planScore = plano === 'premium' ? 10
-                  : plano === 'pro'     ? 8
-                  : plano === 'basico'  ? 3
-                  : 0;
-
-  // Bônus: está aberto agora — peso 5.
-  const openBoost = o.aberto ? 5 : 0;
-
-  // Bônus: volume de avaliações (reputação) — max 5pts.
-  const avalBoost = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
-
-  // Bônus: engajamento (CTR cliques/impressões) — max 5pts.
-  // Só entra quando há dados reais suficientes (>10 impressões).
+  const planScore = plano === 'premium' ? 10 : plano === 'pro' ? 8 : plano === 'basico' ? 3 : 0;
+  const openBoost  = o.aberto ? 5 : 0;
+  const avalBoost  = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
   const imp = o.stats?.impressoes || 0;
   const cli = o.stats?.cliques    || 0;
-  const engBoost = imp > 10 ? Math.min(5, Math.round((cli / imp) * 50)) : 0;
-
-  return Math.round(
-    (distScore + avalScore + svcScore + planScore + openBoost + avalBoost + engBoost) * 10
-  ) / 10;
+  const engBoost   = imp > 10 ? Math.min(5, Math.round((cli / imp) * 50)) : 0;
+  return Math.round((distScore + avalScore + svcScore + planScore + openBoost + avalBoost + engBoost) * 10) / 10;
 }
 
-// Ordena array de oficinas por score (desc). Muta o array original.
 function ordenarPorScore(oficinas, distFn, query = '') {
   return oficinas
     .map(o => ({ ...o, _score: calcRankingScore(o, distFn(o), query) }))
     .sort((a, b) => {
       const diff = b._score - a._score;
-      // Desempate dentro de 2pts: premium > pro > basico
       if (Math.abs(diff) < 2) {
         const tier = { premium: 2, pro: 1, basico: 0 };
         const ta = tier[a.plano] ?? 0;
@@ -269,13 +197,12 @@ function ordenarPorScore(oficinas, distFn, query = '') {
     });
 }
 
-// ── 9. API PÚBLICA ───────────────────────────────────────────────
+// ── 9. API PÚBLICA (window.FB) ───────────────────────────────────
 window.FB = {
   ready:   () => isFirebaseReady || IS_DEMO,
   isProd:  () => IS_PROD,
   isDemo:  () => IS_DEMO,
 
-  // ── AUTH ───────────────────────────────────────────────────────
   async login(email, password) {
     if (IS_DEMO) throw new Error('Login indisponível em modo DEMO.');
     if (!rateLimitUX('login:' + email, 5, 60_000))
@@ -299,9 +226,7 @@ window.FB = {
     return cred.user;
   },
 
-  async logout() {
-    if (auth) await signOut(auth);
-  },
+  async logout() { if (auth) await signOut(auth); },
 
   async resetPassword(email) {
     if (IS_DEMO) throw new Error('Indisponível em modo DEMO.');
@@ -313,7 +238,7 @@ window.FB = {
   onAuthChange(cb) { return auth ? onAuthStateChanged(auth, cb) : () => cb(null); },
   getCurrentUser() { return auth?.currentUser || null; },
 
-  // ── OFICINAS ───────────────────────────────────────────────────
+  // ── OFICINAS ─────────────────────────────────────────────────
   async cadastrarOficina(data) {
     if (IS_DEMO) return demoSave('oficina', data);
     const user = auth.currentUser;
@@ -326,18 +251,19 @@ window.FB = {
     const clean = sanitizeData(data);
     const ref = await addDoc(collection(db, 'oficinas'), {
       ...clean,
-      ativo:           true,
-      uid:             user.uid,
-      // Plano inicial sempre 'basico' (gratuito).
-      // Atualizado por Cloud Function após pagamento confirmado.
-      plano:           'basico',
+      ativo:            true,
+      uid:              user.uid,
+      // ── Plano inicial: basico (gratuito) ─────────────────────
+      // Nunca mude o plano diretamente do client em produção.
+      // Use a Cloud Function confirmarPlano após pagamento confirmado.
+      plano:            'basico',
       planoAtualizadoEm: serverTimestamp(),
-      avaliacoes:      0,
-      totalAvaliacoes: 0,
-      avaliacao:       0,
-      stats:           { impressoes: 0, cliques: 0, whatsapp: 0, orcamentos: 0 },
-      criadoEm:        serverTimestamp(),
-      atualizadoEm:    serverTimestamp(),
+      avaliacoes:       0,
+      totalAvaliacoes:  0,
+      avaliacao:        0,
+      stats:            { impressoes: 0, cliques: 0, whatsapp: 0, orcamentos: 0 },
+      criadoEm:         serverTimestamp(),
+      atualizadoEm:     serverTimestamp(),
     });
     return ref.id;
   },
@@ -348,6 +274,12 @@ window.FB = {
     if (snap.empty) return null;
     const d = snap.docs[0];
     return { id: d.id, ...d.data() };
+  },
+
+  async getOficinaById(id) {
+    if (IS_DEMO) return demoOficinas({}).find(o => o.id === id) || null;
+    const snap = await getDoc(doc(db, 'oficinas', id));
+    return snap.exists() ? { id: snap.id, ...snap.data() } : null;
   },
 
   async atualizarOficina(oficinaId, data) {
@@ -362,20 +294,16 @@ window.FB = {
   async listarOficinas(filtros = {}, pagSize = 20, lastDoc = null) {
     if (IS_DEMO) return demoOficinas(filtros);
 
-    // Busca paginada no Firestore.
-    // Filtros compound (cidade + plano) exigiriam índice composto —
-    // mantemos filtros client-side para evitar custos de índice no free tier.
     let q = query(
       collection(db, 'oficinas'),
       where('ativo', '==', true),
-      limit(pagSize * 3)   // busca 3× para compensar filtros client-side
+      limit(pagSize * 3)
     );
     if (lastDoc) q = query(q, startAfter(lastDoc));
 
     const snap = await getDocs(q);
     let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
 
-    // ── Filtros client-side ────────────────────────────────────────
     if (filtros.cidade)
       oficinas = oficinas.filter(o =>
         (o.cidade || '').toLowerCase().includes(filtros.cidade.toLowerCase()));
@@ -390,23 +318,15 @@ window.FB = {
       oficinas = oficinas.filter(o =>
         (o.tipoVeiculo || []).includes(filtros.tipoVeiculo));
     if (filtros.servico) {
-      const q = (filtros.servico || '').toLowerCase();
+      const qStr = (filtros.servico || '').toLowerCase();
       oficinas = oficinas.filter(o =>
-        (o.servicos || []).some(s =>
-          s.ativo && s.nome.toLowerCase().includes(q)));
+        (o.servicos || []).some(s => s.ativo && s.nome.toLowerCase().includes(qStr)));
     }
 
-    // ── Ranking por score ──────────────────────────────────────────
-    //
-    //  distFn: retorna a distância em km para cada oficina.
-    //  Se o usuário compartilhou localização → distância real via Haversine.
-    //  Se não → usa o campo `distancia` gravado no Firestore (fallback).
-    //
     const userLat = filtros.lat;
     const userLng = filtros.lng;
     const distFn  = (o) => {
       if (userLat && userLng && o.lat && o.lng) {
-        // Haversine inline (evita dependência externa)
         const R = 6371;
         const dLat = (o.lat - userLat) * Math.PI / 180;
         const dLng = (o.lng - userLng) * Math.PI / 180;
@@ -420,17 +340,9 @@ window.FB = {
     };
 
     const ranked = ordenarPorScore(oficinas, distFn, filtros.servico || '');
-
-    // Respeita o pagSize original após filtros
     return ranked.slice(0, pagSize);
   },
 
-  // ── LISTAR OFICINAS (admin/debug) ───────────────────────────────
-  //
-  //  Igual ao listarOficinas mas retorna _score e _planoLabel
-  //  para facilitar calibração do ranking. Restrito a usuários
-  //  com role='admin' via Regras do Firestore.
-  //
   async listarOficinasAdmin(filtros = {}) {
     if (IS_DEMO) {
       return demoOficinas(filtros).map(o => ({
@@ -452,11 +364,9 @@ window.FB = {
       }));
   },
 
-  // ── UPGRADE DE PLANO ────────────────────────────────────────────
-  //
-  //  ⚠️  Não atualize o plano direto do client em produção.
-  //      Use uma Cloud Function invocada após confirmação de pagamento
-  //      (webhook do Stripe / Mercado Pago), assim:
+  // ── UPGRADE DE PLANO ─────────────────────────────────────────
+  //  ⚠️  NUNCA atualize o plano direto do client em produção.
+  //  Use Cloud Function após confirmação de pagamento:
   //
   //  exports.confirmarPlano = functions.https.onCall(async (data, ctx) => {
   //    if (!ctx.auth) throw new HttpsError('unauthenticated', '...');
@@ -468,8 +378,6 @@ window.FB = {
   //      .update({ plano, planoAtualizadoEm: admin.firestore.FieldValue.serverTimestamp() });
   //    return { ok: true };
   //  });
-  //
-  //  Este método client-side serve apenas para DEV / testes de staging.
   //
   async __devAtualizarPlano(oficinaId, plano) {
     const isLocal = ['localhost','127.0.0.1','0.0.0.0'].includes(location.hostname);
@@ -484,15 +392,8 @@ window.FB = {
     return true;
   },
 
-  // ── LEADS ──────────────────────────────────────────────────────
-  //
-  //  ⚠️  MUDANÇA CRÍTICA:
-  //  O campo `whatsapp` do CLIENTE não é mais retornado ao browser
-  //  diretamente. A leitura de leads é restrita ao dono da oficina
-  //  pelas Regras do Firestore (firestore.rules).
-  //
+  // ── LEADS ─────────────────────────────────────────────────────
   async enviarLead(data) {
-    // UX rate limit (não é a barreira de segurança)
     if (!rateLimitUX('lead:' + data.whatsapp, 3, 300_000))
       throw new Error('Muitas solicitações. Aguarde alguns minutos.');
     if (IS_DEMO) return demoSave('lead', data);
@@ -507,7 +408,6 @@ window.FB = {
 
   async listarLeadsDaOficina(oficinaId) {
     if (IS_DEMO) return demoLeads(oficinaId);
-    // As Regras do Firestore já garantem que só o dono lê.
     const q = query(
       collection(db, 'leads'),
       where('oficinaId', '==', oficinaId),
@@ -525,7 +425,6 @@ window.FB = {
 
   async atualizarLead(leadId, data) {
     if (IS_DEMO) return true;
-    // Só campos de status permitidos (reforço no client; regra real no Firestore)
     const allowed = { status: data.status, atualizadoEm: serverTimestamp() };
     await updateDoc(doc(db, 'leads', leadId), allowed);
     return true;
@@ -541,7 +440,51 @@ window.FB = {
     return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
   },
 
-  // ── ANALYTICS (write-only) ─────────────────────────────────────
+  // ── AVALIAÇÕES ────────────────────────────────────────────────
+  async avaliarOficina(oficinaId, nota, comentario = '') {
+    if (IS_DEMO) return demoSave('avaliacao', { oficinaId, nota, comentario });
+    const user = auth?.currentUser;
+    if (!user) throw new Error('Faça login para avaliar.');
+    if (!rateLimitUX('avaliacao:' + user.uid + ':' + oficinaId, 1, 86_400_000))
+      throw new Error('Você já avaliou esta oficina hoje.');
+
+    // Salva avaliação
+    await addDoc(collection(db, 'oficinas', oficinaId, 'avaliacoes'), {
+      uid: user.uid,
+      nota,
+      comentario: sanitize(comentario, 500),
+      criadoEm: serverTimestamp()
+    });
+
+    // Recalcula média no documento principal via transação
+    await runTransaction(db, async (tx) => {
+      const ofRef  = doc(db, 'oficinas', oficinaId);
+      const ofSnap = await tx.get(ofRef);
+      if (!ofSnap.exists()) throw new Error('Oficina não encontrada');
+      const { avaliacao = 0, totalAvaliacoes = 0 } = ofSnap.data();
+      const novoTotal = totalAvaliacoes + 1;
+      const novaMedia = ((avaliacao * totalAvaliacoes) + nota) / novoTotal;
+      tx.update(ofRef, {
+        avaliacao:       Math.round(novaMedia * 10) / 10,
+        totalAvaliacoes: novoTotal,
+        avaliacoes:      increment(1),
+        atualizadoEm:    serverTimestamp()
+      });
+    });
+  },
+
+  async listarAvaliacoes(oficinaId) {
+    if (IS_DEMO) return demoAvaliacoes(oficinaId);
+    const q = query(
+      collection(db, 'oficinas', oficinaId, 'avaliacoes'),
+      orderBy('criadoEm', 'desc'),
+      limit(20)
+    );
+    const snap = await getDocs(q);
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  },
+
+  // ── ANALYTICS (write-only) ────────────────────────────────────
   async _trackAnalytics(payload) {
     if (IS_DEMO || !isFirebaseReady) return;
     try {
@@ -549,6 +492,19 @@ window.FB = {
         ...sanitizeData(payload), criadoEm: serverTimestamp()
       });
     } catch (e) { /* analytics não pode quebrar o app */ }
+  },
+
+  async trackEvent(oficinaId, tipo) {
+    if (IS_DEMO || !isFirebaseReady) return;
+    try {
+      const campo = tipo === 'impressao' ? 'stats.impressoes'
+                  : tipo === 'clique'    ? 'stats.cliques'
+                  : tipo === 'whatsapp'  ? 'stats.whatsapp'
+                  : tipo === 'orcamento' ? 'stats.orcamentos'
+                  : null;
+      if (!campo) return;
+      await updateDoc(doc(db, 'oficinas', oficinaId), { [campo]: increment(1) });
+    } catch(e) { /* silent */ }
   },
 
   // ── DIAGNÓSTICO ───────────────────────────────────────────────
@@ -563,5 +519,204 @@ window.FB = {
     return result;
   }
 };
+
+// ════════════════════════════════════════════════════════════════
+//  CAMADA DE SERVIÇOS / CONTROLLERS
+//  window.Services — expostos para migração gradual ao app principal.
+//  Cada service será migrado para Cloud Function quando escalar.
+// ════════════════════════════════════════════════════════════════
+
+// ── OficinaService ───────────────────────────────────────────────
+//
+//  Responsabilidade: CRUD de oficinas com cache in-memory (5 min).
+//  TODO (Cloud Function): listar/filtrar oficinas no server para
+//  evitar expor dados não necessários ao client.
+//
+const OficinaService = (() => {
+  const _cache  = new Map(); // key → { data, ts }
+  const TTL_MS  = 5 * 60 * 1000; // 5 minutos
+
+  function _cacheGet(key) {
+    const hit = _cache.get(key);
+    if (!hit) return null;
+    if (Date.now() - hit.ts > TTL_MS) { _cache.delete(key); return null; }
+    return hit.data;
+  }
+  function _cachePut(key, data) { _cache.set(key, { data, ts: Date.now() }); }
+
+  return {
+    // Lista com cache de 5 minutos
+    async listar(filtros = {}) {
+      const key = JSON.stringify(filtros);
+      const hit = _cacheGet(key);
+      if (hit) return hit;
+      const data = await window.FB.listarOficinas(filtros);
+      _cachePut(key, data);
+      return data;
+    },
+
+    // Busca individual com cache
+    async porId(id) {
+      const hit = _cacheGet('id:' + id);
+      if (hit) return hit;
+      const data = await window.FB.getOficinaById(id);
+      if (data) _cachePut('id:' + id, data);
+      return data;
+    },
+
+    // Invalida todo o cache (chamar após cadastro/edição)
+    invalidar() { _cache.clear(); },
+
+    // Cadastrar (invalida cache)
+    async cadastrar(data) {
+      const id = await window.FB.cadastrarOficina(data);
+      this.invalidar();
+      return id;
+    },
+
+    // Atualizar (invalida cache)
+    async atualizar(id, data) {
+      await window.FB.atualizarOficina(id, data);
+      this.invalidar();
+      return true;
+    },
+  };
+})();
+
+// ── LeadService ──────────────────────────────────────────────────
+//
+//  Responsabilidade: envio de leads e gestão de status.
+//  TODO (Cloud Function): enviarLead com rate limit server-side,
+//  envio de notificação push/email para a oficina.
+//
+const LeadService = {
+  async enviar(data) {
+    return window.FB.enviarLead(data);
+  },
+
+  async listar(oficinaId) {
+    return window.FB.listarLeadsDaOficina(oficinaId);
+  },
+
+  async atualizar(leadId, status) {
+    return window.FB.atualizarLead(leadId, { status });
+  },
+
+  onSnapshot(oficinaId, cb) {
+    return window.FB.onLeadsSnapshot(oficinaId, cb);
+  },
+};
+
+// ── SearchController ─────────────────────────────────────────────
+//
+//  Responsabilidade: busca de oficinas com cache de 1 minuto.
+//  Reduz chamadas desnecessárias ao Firestore quando o usuário
+//  filtra rapidamente.
+//
+//  TODO (Cloud Function): implementar busca full-text server-side
+//  (Algolia/Elasticsearch) para escalar além do filtro client-side.
+//
+const SearchController = (() => {
+  const _cache = new Map(); // key → { data, ts }
+  const TTL_MS = 60 * 1000; // 1 minuto
+
+  function _key(filtros) { return JSON.stringify(filtros); }
+  function _get(key) {
+    const h = _cache.get(key);
+    if (!h) return null;
+    if (Date.now() - h.ts > TTL_MS) { _cache.delete(key); return null; }
+    return h.data;
+  }
+  function _put(key, data) { _cache.set(key, { data, ts: Date.now() }); }
+
+  return {
+    // Busca com cache de 1 minuto
+    async buscar(filtros = {}) {
+      const key = _key(filtros);
+      const hit = _get(key);
+      if (hit) {
+        console.info('[SearchController] cache hit:', key.slice(0, 60));
+        return hit;
+      }
+      const data = await window.FB.listarOficinas(filtros);
+      _put(key, data);
+      return data;
+    },
+
+    // Invalida o cache de busca (ex: após novo cadastro)
+    invalidar() { _cache.clear(); },
+
+    // Estatísticas de cache (debug)
+    stats() {
+      const agora = Date.now();
+      return {
+        entradas: _cache.size,
+        validas:  [..._cache.values()].filter(h => agora - h.ts < TTL_MS).length,
+      };
+    },
+  };
+})();
+
+// ── AuthController ───────────────────────────────────────────────
+//
+//  Responsabilidade: estado de sessão e callbacks de auth.
+//  TODO (Cloud Function): validar tokens no servidor para
+//  operações críticas (upgrade de plano, acesso a dados sensíveis).
+//
+const AuthController = (() => {
+  let _user    = null;
+  let _oficina = null;
+  const _listeners = [];
+
+  // Inicializa listener assim que Firebase estiver pronto
+  window.addEventListener('fbready', () => {
+    window.FB.onAuthChange(async (user) => {
+      _user = user;
+      _oficina = user ? await window.FB.getMinhaOficina(user.uid).catch(() => null) : null;
+      _listeners.forEach(fn => fn({ user: _user, oficina: _oficina }));
+    });
+  });
+
+  return {
+    getUser()    { return _user; },
+    getOficina() { return _oficina; },
+    isLogado()   { return !!_user; },
+
+    onChange(fn) {
+      _listeners.push(fn);
+      // Dispara imediatamente com estado atual (se já inicializado)
+      if (_user !== null || _oficina !== null) fn({ user: _user, oficina: _oficina });
+      return () => {
+        const i = _listeners.indexOf(fn);
+        if (i >= 0) _listeners.splice(i, 1);
+      };
+    },
+
+    async login(email, pass) {
+      const user = await window.FB.login(email, pass);
+      return user;
+    },
+
+    async logout() {
+      await window.FB.logout();
+      _user = null; _oficina = null;
+      _listeners.forEach(fn => fn({ user: null, oficina: null }));
+    },
+  };
+})();
+
+// ── Expor via window.Services ────────────────────────────────────
+//
+//  Padrão de migração gradual:
+//    1. Hoje: window.Services.Search.buscar(filtros)
+//    2. Futuro: substitui internamente por Cloud Function call
+//       sem mudar a interface usada pelo app.
+//
+window.Services = Object.freeze({
+  Oficina: OficinaService,
+  Lead:    LeadService,
+  Search:  SearchController,
+  Auth:    AuthController,
+});
 
 window.dispatchEvent(new Event('fbready'));

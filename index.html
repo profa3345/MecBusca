@@ -38,32 +38,49 @@
   --g:#00D084;--gd:#00A868;--gdark:#007A4C;
   --gg:rgba(0,208,132,0.15);--gg2:rgba(0,208,132,0.08);
 
-  /* backgrounds */
-  --bg:#0A0D0B;--bg2:#0F1410;--bg3:#141A15;--bg4:#1A2119;
+  /* backgrounds — richer dark, subtle warm tones */
+  --bg:#080C09;--bg2:#0D1210;--bg3:#121812;--bg4:#192016;
 
-  /* surfaces */
-  --s:#1E2820;--s2:#232E24;
+  /* surfaces — more layered depth */
+  --s:#1A2419;--s2:#1F2C1E;--s3:#243023;
 
-  /* borders */
-  --b:rgba(0,208,132,0.12);--b2:rgba(0,208,132,0.22);
+  /* borders — slightly crisper */
+  --b:rgba(0,208,132,0.10);--b2:rgba(0,208,132,0.22);--b3:rgba(0,208,132,0.35);
 
   /* text */
-  --t:#E8F0E9;--t2:#9DB89E;--t3:#5E7A5F;
+  --t:#EDF2EE;--t2:#9DBBA0;--t3:#5A7A5C;
 
   /* semantics */
   --am:#FFB347;--re:#FF6B6B;--bl:#5B9CF6;--pu:#A78BFA;
 
-  /* radii */
-  --r:10px;--rl:16px;--rxl:22px;
+  /* radii — slightly larger for premium feel */
+  --r:11px;--rl:18px;--rxl:24px;
 
   /* social */
   --wpp:#25D366;
 
   /* transitions */
-  --transition:0.18s ease;
-  --transition-med:0.25s cubic-bezier(.25,.8,.25,1);
+  --transition:0.15s ease;
+  --transition-med:0.22s cubic-bezier(.25,.8,.25,1);
+
+  /* glass effect */
+  --glass:rgba(13,18,16,0.85);
+  --glass-border:rgba(0,208,132,0.15);
+
+  /* shadows */
+  --shadow-sm:0 2px 12px rgba(0,0,0,0.4);
+  --shadow-md:0 8px 32px rgba(0,0,0,0.5);
+  --shadow-lg:0 20px 60px rgba(0,0,0,0.6);
+  --shadow-glow:0 0 24px rgba(0,208,132,0.15);
 }
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);}
+
+/* ── ENTERPRISE NOISE TEXTURE ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+  opacity:0.4;
+}
 </style>
 
 <!-- ══════════════════════════════════════════════════════════
@@ -819,7 +836,269 @@ button,a,[role=button]{min-height:44px;}
 .event-flash{animation:eventFlash 0.5s ease;}
 @keyframes eventFlash{0%{opacity:1;}50%{opacity:0.5;}100%{opacity:1;}}
 </style>
-</head>
+
+<!-- ══════════════════════════════════════════════════════════
+     styles/enterprise.css — Premium design system
+     Objetivo: aparência de produto grande, sofisticado, seguro
+     Sem imagens externas, sem peso extra — CSS puro.
+════════════════════════════════════════════════════════════ -->
+<style id="css-enterprise">
+
+/* ── CARDS DE OFICINA — versão enterprise ── */
+.of-card{
+  background:var(--s);
+  border:1px solid var(--b);
+  border-radius:var(--rl);
+  padding:18px;
+  cursor:pointer;
+  transition:transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  animation:cardIn 0.35s ease both;
+  position:relative;
+  overflow:hidden;
+}
+/* Subtle shimmer line at top of card */
+.of-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent 0%,rgba(0,208,132,0.2) 50%,transparent 100%);
+}
+.of-card:hover{
+  border-color:var(--b2);
+  transform:translateY(-2px);
+  box-shadow:var(--shadow-md),var(--shadow-glow);
+}
+.of-card-pro{
+  border-color:rgba(0,208,132,0.25);
+  background:linear-gradient(135deg,var(--s),rgba(0,208,132,0.04));
+}
+.of-card-pro::before{
+  background:linear-gradient(90deg,transparent 0%,rgba(0,208,132,0.4) 50%,transparent 100%);
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+/* ── AVATAR — enterprise circular with gradient ── */
+.of-avatar{
+  width:48px;height:48px;border-radius:14px;
+  background:linear-gradient(135deg,var(--gdark),var(--g));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:15px;font-weight:800;
+  color:#080C09;flex-shrink:0;
+  box-shadow:0 4px 12px rgba(0,208,132,0.2);
+}
+
+/* ── BUTTONS — enterprise polish ── */
+.btn-primary{
+  background:var(--g);color:#080C09;font-weight:700;width:100%;
+  box-shadow:0 4px 16px rgba(0,208,132,0.25);
+  letter-spacing:0.01em;
+}
+.btn-primary:hover:not(:disabled){
+  background:#1DE898;
+  box-shadow:0 6px 20px rgba(0,208,132,0.35);
+  transform:translateY(-1px);
+}
+.btn-wpp{
+  background:var(--wpp);color:#fff;font-weight:700;
+  box-shadow:0 4px 14px rgba(37,211,102,0.25);
+}
+.btn-wpp:hover:not(:disabled){
+  background:#1ECB5C;
+  box-shadow:0 6px 18px rgba(37,211,102,0.35);
+  transform:translateY(-1px);
+}
+
+/* ── HOME SEARCH BOX — elevated enterprise style ── */
+.home-search-box{
+  background:var(--s);
+  border:1px solid var(--b2);
+  border-radius:var(--rxl);
+  padding:22px;
+  margin-bottom:20px;
+  text-align:left;
+  box-shadow:var(--shadow-sm);
+  backdrop-filter:blur(20px);
+  position:relative;
+  overflow:hidden;
+}
+.home-search-box::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,208,132,0.3),transparent);
+}
+
+/* ── HOME LOGO ── */
+.home-logo{
+  font-family:'Syne',sans-serif;font-size:48px;font-weight:800;margin-bottom:6px;
+  background:linear-gradient(135deg,var(--t) 40%,var(--g) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.home-logo em{
+  -webkit-text-fill-color:var(--g);color:var(--g);font-style:normal;
+}
+
+/* ── CLI HEADER — glass effect ── */
+.cli-header{
+  background:rgba(8,12,9,0.92);
+  border-bottom:1px solid var(--b);
+  padding:14px 20px;
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  position:sticky;top:0;z-index:100;
+}
+
+/* ── MODAL — enterprise elevation ── */
+.modal{
+  background:var(--bg2);
+  border:1px solid var(--b2);
+  border-radius:var(--rxl);
+  padding:28px;width:480px;max-width:95vw;
+  transform:translateY(20px);
+  transition:transform var(--transition-med);
+  position:relative;max-height:90vh;overflow-y:auto;
+  box-shadow:var(--shadow-lg);
+}
+
+/* ── DRAWER — enterprise side panel ── */
+.drawer{
+  background:var(--bg2);
+  width:min(520px,100vw);height:100vh;overflow-y:auto;
+  display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform 0.28s cubic-bezier(.25,.8,.25,1);
+  box-shadow:-20px 0 60px rgba(0,0,0,0.5);
+  border-left:1px solid var(--b2);
+}
+
+/* ── SEARCH BAR — enterprise ── */
+.search-bar{
+  display:flex;align-items:center;gap:10px;
+  background:var(--s);
+  border:1.5px solid var(--b);
+  border-radius:var(--r);padding:10px 14px;
+  transition:border-color 0.15s,box-shadow 0.15s;
+}
+.search-bar:focus-within{
+  border-color:var(--g);
+  box-shadow:0 0 0 3px rgba(0,208,132,0.08);
+}
+
+/* ── FORM INPUTS — enterprise style ── */
+.form-input:focus{
+  border-color:var(--g);
+  box-shadow:0 0 0 3px rgba(0,208,132,0.08);
+}
+
+/* ── STATS / KPI NUMBERS ── */
+.perfil-stat-val,.funil-count,.kpi-val{
+  background:linear-gradient(135deg,var(--t) 0%,var(--g) 150%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+/* ── BADGE PRO — enterprise label ── */
+.badge-pro{
+  display:inline-flex;align-items:center;gap:3px;
+  background:linear-gradient(135deg,rgba(0,208,132,0.15),rgba(0,168,104,0.1));
+  border:1px solid rgba(0,208,132,0.3);
+  color:var(--g);font-size:9px;font-weight:700;
+  padding:2px 8px;border-radius:6px;
+  text-transform:uppercase;letter-spacing:0.05em;
+  margin-right:6px;
+}
+.badge-sponsored{
+  background:linear-gradient(135deg,rgba(255,215,0,0.12),rgba(255,179,71,0.08));
+  border-color:rgba(255,215,0,0.3);color:#FFD700;
+}
+
+/* ── REVIEW CARDS — polish ── */
+.review-card{
+  background:var(--s);
+  border:1px solid var(--b);
+  border-radius:var(--r);
+  padding:14px;margin-bottom:10px;
+  position:relative;
+  transition:border-color 0.15s;
+}
+.review-card:hover{border-color:var(--b2);}
+
+/* ── TOAST — premium style ── */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:rgba(26,36,25,0.95);
+  border:1px solid var(--b2);border-radius:var(--rl);padding:14px 20px;
+  display:flex;align-items:center;gap:12px;font-size:13.5px;color:var(--t);
+  transform:translateX(120%);transition:transform var(--transition-med);
+  z-index:10000;
+  box-shadow:var(--shadow-lg);
+  max-width:340px;overflow:hidden;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+}
+
+/* ── PAINEL SIDEBAR — enterprise navigation ── */
+.painel-sidebar{
+  background:var(--bg2);
+  border-right:1px solid var(--b);
+  box-shadow:4px 0 24px rgba(0,0,0,0.3);
+}
+
+/* ── CHIPS/TAGS — enterprise chips ── */
+.chip{
+  background:var(--s);
+  border:1px solid var(--b);
+  border-radius:20px;
+  padding:6px 14px;font-size:12.5px;
+  color:var(--t2);cursor:pointer;
+  transition:all 0.15s;
+  font-weight:500;
+}
+.chip:hover{border-color:var(--b2);color:var(--t);}
+.chip.active{
+  background:var(--gg);
+  border-color:var(--b2);
+  color:var(--g);
+  box-shadow:0 0 12px rgba(0,208,132,0.1);
+}
+
+/* ── PERFIL HERO — immersive gradient ── */
+.perfil-hero{
+  background:linear-gradient(160deg,var(--bg3) 0%,rgba(0,208,132,0.03) 100%);
+  border-bottom:1px solid var(--b);
+  padding:28px 20px 24px;
+  position:relative;overflow:hidden;
+}
+.perfil-hero::after{
+  content:'';position:absolute;top:-50px;right:-50px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(0,208,132,0.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+
+/* ── LIGHT THEME overrides ── */
+[data-tema="claro"]{
+  --bg:#F4F6F4;--bg2:#EDEFED;--bg3:#E5E8E5;--bg4:#DCDFD8;
+  --s:#FFFFFF;--s2:#F0F3F0;--s3:#E8EBE8;
+  --b:rgba(0,130,70,0.12);--b2:rgba(0,130,70,0.25);
+  --t:#1A2E1A;--t2:#3D5C3D;--t3:#6B8C6B;
+  --glass:rgba(244,246,244,0.9);
+}
+[data-tema="claro"] .of-card,[data-tema="claro"] .modal,
+[data-tema="claro"] .home-search-box{
+  box-shadow:0 2px 16px rgba(0,0,0,0.08);
+}
+[data-tema="claro"] .cli-header{
+  background:rgba(244,246,244,0.92);
+}
+[data-tema="claro"] .home-logo{
+  -webkit-text-fill-color:var(--t);background:none;-webkit-background-clip:initial;
+}
+[data-tema="claro"] .home-logo em{
+  -webkit-text-fill-color:var(--g);
+}
+
+/* ── RESPONSIVE ENTERPRISE ── */
+@media(max-width:520px){
+  .home-logo{font-size:36px;}
+  .of-card{padding:14px;}
+  .modal{padding:20px;}
+}
+</style>
 <body>
 <a href="#main-content" class="skip-link">Pular para o conteúdo</a>
 
@@ -827,10 +1106,22 @@ button,a,[role=button]{min-height:44px;}
      SCREEN: LOADER
 ════════════════════════════════════════════════════════════ -->
 <div id="scLoader" class="screen active" role="status" aria-label="Carregando MecBusca" aria-live="polite">
-  <div class="loader-logo" aria-hidden="true">Mec<em>Busca</em></div>
-  <div class="loader-bar" role="progressbar" aria-label="Inicializando" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"><div class="loader-fill"></div></div>
-  <div class="loader-sub" id="loaderMsg">Inicializando...</div>
-  <button class="loader-retry" id="loaderRetry" onclick="location.reload()" aria-label="Tentar novamente">⟳ Tentar novamente</button>
+  <!-- Loader ambient glow -->
+  <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;">
+    <div style="position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);
+      width:600px;height:400px;
+      background:radial-gradient(ellipse,rgba(0,208,132,0.06) 0%,transparent 70%);
+      filter:blur(60px);"></div>
+  </div>
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <div class="loader-logo" aria-hidden="true" style="text-shadow:0 0 40px rgba(0,208,132,0.4);">Mec<em>Busca</em></div>
+    <div style="font-size:10px;color:var(--t3);letter-spacing:0.15em;text-transform:uppercase;margin-top:-8px;font-weight:600;">Espírito Santo · Brasil</div>
+    <div class="loader-bar" role="progressbar" aria-label="Inicializando" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+      <div class="loader-fill" style="box-shadow:0 0 8px rgba(0,208,132,0.5);"></div>
+    </div>
+    <div class="loader-sub" id="loaderMsg">Inicializando...</div>
+    <button class="loader-retry" id="loaderRetry" onclick="location.reload()" aria-label="Tentar novamente">⟳ Tentar novamente</button>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════════════════════
@@ -897,8 +1188,35 @@ button,a,[role=button]{min-height:44px;}
 ════════════════════════════════════════════════════════════ -->
 <div id="scHome" class="screen">
   <div class="home-hero">
-    <div class="home-wrap">
-      <div class="home-logo">Mec<em>Busca</em></div>
+    <!-- Ambient background glow -->
+    <div style="position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0;">
+      <div style="position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:800px;height:500px;
+        background:radial-gradient(ellipse at center,rgba(0,208,132,0.07) 0%,transparent 70%);
+        filter:blur(40px);"></div>
+      <div style="position:absolute;bottom:0;left:-10%;width:400px;height:300px;
+        background:radial-gradient(ellipse,rgba(167,139,250,0.04) 0%,transparent 70%);
+        filter:blur(60px);"></div>
+    </div>
+
+    <div class="home-wrap" style="position:relative;z-index:1;">
+      <!-- Logo with glow -->
+      <div class="home-logo" style="text-shadow:0 0 60px rgba(0,208,132,0.3);">Mec<em>Busca</em></div>
+
+      <!-- Trust indicators -->
+      <div style="display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:16px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3);">
+          <span style="color:var(--g);font-size:14px;">✓</span> Oficinas verificadas
+        </div>
+        <div style="width:1px;height:14px;background:var(--b);"></div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3);">
+          <span style="color:var(--g);font-size:14px;">✓</span> Orçamento instantâneo
+        </div>
+        <div style="width:1px;height:14px;background:var(--b);"></div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t3);">
+          <span style="color:var(--g);font-size:14px;">✓</span> WhatsApp direto
+        </div>
+      </div>
+
       <div class="home-tagline">Encontre a melhor oficina perto de você.<br>Orçamento instantâneo. WhatsApp direto.</div>
 
       <!-- ABAS DE BUSCA -->
@@ -919,22 +1237,24 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidade">Cidade</label>
-            <select id="hCidade">
+            <select id="hCidade" onchange="homeUpdateBairros()">
               <option value="">Todas as cidades</option>
-              <option value="Cariacica" selected>Cariacica</option>
               <option value="Vitória">Vitória</option>
-              <option value="Serra">Serra</option>
               <option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option>
+              <option value="Serra">Serra</option>
+              <option value="Viana">Viana</option>
+              <option value="Guarapari">Guarapari</option>
+              <option value="Linhares">Linhares</option>
+              <option value="Cachoeiro de Itapemirim">Cachoeiro</option>
+              <option value="Colatina">Colatina</option>
+              <option value="São Mateus">São Mateus</option>
             </select>
           </div>
           <div class="home-field">
             <label for="hBairro">Bairro</label>
             <select id="hBairro">
               <option value="">Todos os bairros</option>
-              <option value="Campo Grande">Campo Grande</option>
-              <option value="Padre Gabriel">Padre Gabriel</option>
-              <option value="Nova Rosa da Penha">Nova Rosa da Penha</option>
-              <option value="Itaquari">Itaquari</option>
             </select>
           </div>
         </div>
@@ -1054,18 +1374,27 @@ button,a,[role=button]{min-height:44px;}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="fCidadeF">Cidade *</label>
-        <select class="form-input" id="fCidadeF">
+        <select class="form-input" id="fCidadeF" onchange="fornUpdateBairros()">
           <option value="">Selecione</option>
-          <option value="Cariacica">Cariacica</option>
           <option value="Vitória">Vitória</option>
-          <option value="Serra">Serra</option>
           <option value="Vila Velha">Vila Velha</option>
+          <option value="Cariacica">Cariacica</option>
+          <option value="Serra">Serra</option>
+          <option value="Viana">Viana</option>
+          <option value="Guarapari">Guarapari</option>
+          <option value="Linhares">Linhares</option>
+          <option value="Cachoeiro de Itapemirim">Cachoeiro</option>
+          <option value="Colatina">Colatina</option>
+          <option value="Outra">Outra cidade</option>
         </select>
         <span class="field-error" id="fCidadeFErr">Cidade obrigatória</span>
       </div>
       <div class="form-group">
         <label class="form-label" for="fBairroF">Bairro</label>
-        <input class="form-input" id="fBairroF" placeholder="Ex: Campo Grande">
+        <select class="form-input" id="fBairroF">
+          <option value="">Selecione a cidade</option>
+        </select>
+        <input class="form-input" id="fBairroFOutro" placeholder="Digite o bairro" style="display:none;margin-top:6px;">
       </div>
     </div>
     <div class="form-group">
@@ -1138,12 +1467,31 @@ button,a,[role=button]{min-height:44px;}
       </div>
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label" for="onbCidade">Cidade</label>
-          <input class="form-input" id="onbCidade" placeholder="Cariacica">
+          <label class="form-label" for="onbCidade">Cidade *</label>
+          <select class="form-input" id="onbCidade" onchange="onbUpdateBairros()" aria-required="true">
+            <option value="">Selecione a cidade</option>
+            <option value="Vitória">Vitória</option>
+            <option value="Vila Velha">Vila Velha</option>
+            <option value="Cariacica">Cariacica</option>
+            <option value="Serra">Serra</option>
+            <option value="Viana">Viana</option>
+            <option value="Guarapari">Guarapari</option>
+            <option value="Fundão">Fundão</option>
+            <option value="Linhares">Linhares</option>
+            <option value="Cachoeiro de Itapemirim">Cachoeiro de Itapemirim</option>
+            <option value="Colatina">Colatina</option>
+            <option value="São Mateus">São Mateus</option>
+            <option value="Aracruz">Aracruz</option>
+            <option value="Outra">Outra cidade do ES</option>
+          </select>
+          <span class="field-error" id="onbCidadeErr">Cidade obrigatória</span>
         </div>
         <div class="form-group">
           <label class="form-label" for="onbBairro">Bairro</label>
-          <input class="form-input" id="onbBairro" placeholder="Campo Grande">
+          <select class="form-input" id="onbBairro" aria-label="Selecione o bairro">
+            <option value="">Selecione a cidade primeiro</option>
+          </select>
+          <input class="form-input" id="onbBairroOutro" placeholder="Digite o nome do bairro" style="display:none;margin-top:6px;" aria-label="Nome do bairro">
         </div>
       </div>
       <div class="form-group">
@@ -1196,31 +1544,52 @@ button,a,[role=button]{min-height:44px;}
       </div>
     </div>
 
-    <!-- STEP 3: Plano -->
+    <!-- STEP 3: Ativação (gratuita) + early-bird -->
     <div class="onb-step" id="step3">
       <div class="step-num">Passo 4 de 4</div>
-      <div class="step-title">Escolha seu plano</div>
-      <div class="step-sub">Cancele quando quiser. Sem contrato de fidelidade.</div>
-      <div class="plan-opts" role="radiogroup" aria-label="Planos disponíveis">
-        <div class="plan-opt" id="planBasico" onclick="selectPlan('basico')" role="radio" aria-checked="false" tabindex="0">
-          <div class="plan-name">Básico</div>
-          <div class="plan-price-big">R$ 47<span>/mês</span></div>
-          <div class="plan-feats">✓ Perfil no app<br>✓ Até 20 leads/mês<br>✓ WhatsApp direto<br>✗ Orçamento automático<br>✗ Destaque na busca</div>
+      <div class="step-title">Tudo pronto! 🎉</div>
+      <div class="step-sub">Seu perfil ficará visível para clientes que buscam oficinas em Vitória e região.</div>
+
+      <!-- Early-bird advantage card -->
+      <div style="background:linear-gradient(135deg,rgba(0,208,132,0.12),rgba(0,208,132,0.04));border:1.5px solid var(--b2);border-radius:var(--rl);padding:20px;margin-bottom:20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+          <div style="font-size:28px;">🚀</div>
+          <div>
+            <div style="font-family:Syne,sans-serif;font-size:17px;font-weight:800;color:var(--t);">Cadastro antecipado — Acesso gratuito</div>
+            <div style="font-size:12px;color:var(--g);font-weight:600;margin-top:2px;">Você está entre os primeiros parceiros do MecBusca</div>
+          </div>
         </div>
-        <div class="plan-opt popular selected" id="planPro" onclick="selectPlan('pro')" role="radio" aria-checked="true" tabindex="0">
-          <div class="popular-tag">Mais popular</div>
-          <div class="plan-name">Pro</div>
-          <div class="plan-price-big">R$ 97<span>/mês</span></div>
-          <div class="plan-feats">✓ Perfil em destaque<br>✓ Leads ilimitados<br>✓ WhatsApp direto<br>✓ Orçamento automático<br>✓ Dashboard completo</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+          <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:4px;">✅</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t);margin-bottom:2px;">Perfil completo</div>
+            <div style="font-size:11px;color:var(--t3);">Visível para clientes</div>
+          </div>
+          <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:4px;">💬</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t);margin-bottom:2px;">Leads diretos</div>
+            <div style="font-size:11px;color:var(--t3);">WhatsApp instantâneo</div>
+          </div>
+          <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:4px;">📊</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t);margin-bottom:2px;">Dashboard</div>
+            <div style="font-size:11px;color:var(--t3);">Gerencie orçamentos</div>
+          </div>
+          <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--r);padding:12px;text-align:center;">
+            <div style="font-size:20px;margin-bottom:4px;">⭐</div>
+            <div style="font-size:12px;font-weight:600;color:var(--t);margin-bottom:2px;">Avaliações reais</div>
+            <div style="font-size:11px;color:var(--t3);">Construa reputação</div>
+          </div>
+        </div>
+        <div style="background:rgba(255,215,0,0.08);border:1px dashed rgba(255,215,0,0.4);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--am);">
+          <strong>🏆 Vantagem de pioneiro:</strong> oficinas que entrarem agora terão posicionamento privilegiado quando o MecBusca expandir para mais cidades. Quem chegar primeiro, fica na frente.
         </div>
       </div>
-      <div style="background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--t2);">
-        💡 <strong style="color:var(--g);">ROI médio:</strong> oficinas no plano Pro recebem R$ 3.800–6.200 extras por mês.
-      </div>
+
       <div style="display:flex;gap:10px;">
         <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 20px;" onclick="nextStep(2)">← Voltar</button>
         <button class="btn btn-primary" id="btnFinalizarCad" onclick="finalizarCadastro()">
-          <span id="finalizarText">🚀 Ativar minha conta</span>
+          <span id="finalizarText">🚀 Ativar minha conta grátis</span>
           <span id="finalizarSpinner" style="display:none;"><span class="spinner"></span></span>
         </button>
       </div>
@@ -1275,22 +1644,24 @@ button,a,[role=button]{min-height:44px;}
     <div class="filters-grid">
       <div class="filter-group">
         <label class="filter-label" for="fCidade">Cidade</label>
-        <select class="filter-select" id="fCidade" onchange="applyAdvFilters()" aria-label="Filtrar por cidade">
+        <select class="filter-select" id="fCidade" onchange="filterUpdateBairros();applyAdvFilters()" aria-label="Filtrar por cidade">
           <option value="">Todas</option>
-          <option value="Cariacica">Cariacica</option>
           <option value="Vitória">Vitória</option>
-          <option value="Serra">Serra</option>
           <option value="Vila Velha">Vila Velha</option>
+          <option value="Cariacica">Cariacica</option>
+          <option value="Serra">Serra</option>
+          <option value="Viana">Viana</option>
+          <option value="Guarapari">Guarapari</option>
+          <option value="Linhares">Linhares</option>
+          <option value="Cachoeiro de Itapemirim">Cachoeiro</option>
+          <option value="Colatina">Colatina</option>
+          <option value="São Mateus">São Mateus</option>
         </select>
       </div>
       <div class="filter-group">
         <label class="filter-label" for="fBairro">Bairro</label>
         <select class="filter-select" id="fBairro" onchange="applyAdvFilters()" aria-label="Filtrar por bairro">
           <option value="">Todos</option>
-          <option value="Campo Grande">Campo Grande</option>
-          <option value="Padre Gabriel">Padre Gabriel</option>
-          <option value="Nova Rosa da Penha">Nova Rosa da Penha</option>
-          <option value="Itaquari">Itaquari</option>
         </select>
       </div>
       <div class="filter-group">
@@ -2274,18 +2645,154 @@ window.seedFirebase = async function() {
 window.dispatchEvent(new Event("fbready"));
 </script>
 
-
 <!-- ══════════════════════════════════════════════════════════
-     state.js — Application state management
+     services.js — Camada Services/Controllers
+     OficinaService, LeadService, SearchController, AuthController
+     Expostos via window.Services para migração gradual.
+     TODO: cada service → Cloud Function quando escalar.
 ════════════════════════════════════════════════════════════ -->
+<script>
+(function() {
+'use strict';
+
+// ── OficinaService ─────────────────────────────────────────────
+// Responsabilidade: CRUD de oficinas com cache in-memory (5 min).
+// TODO (Cloud Function): mover filtros para server-side.
+const OficinaService = (() => {
+  const _cache = new Map();
+  const TTL    = 5 * 60 * 1000;
+
+  function _get(k)    { const h=_cache.get(k); if(!h||Date.now()-h.ts>TTL){_cache.delete(k);return null;} return h.data; }
+  function _set(k,d)  { _cache.set(k,{data:d,ts:Date.now()}); }
+
+  return {
+    async listar(filtros={}) {
+      const k = JSON.stringify(filtros);
+      const hit = _get(k);
+      if (hit) return hit;
+      const d = await window.FB.listarOficinas(filtros);
+      _set(k,d); return d;
+    },
+    async porId(id) {
+      const hit = _get('id:'+id);
+      if (hit) return hit;
+      const d = await window.FB.getOficinaById(id);
+      if (d) _set('id:'+id,d); return d;
+    },
+    invalidar() { _cache.clear(); },
+    async cadastrar(data) {
+      const id = await window.FB.cadastrarOficina(data);
+      this.invalidar(); return id;
+    },
+    async atualizar(id, data) {
+      await window.FB.atualizarOficina(id, data);
+      this.invalidar(); return true;
+    },
+  };
+})();
+
+// ── LeadService ────────────────────────────────────────────────
+// Responsabilidade: envio e gestão de leads.
+// TODO (Cloud Function): enviarLead com rate limit server-side
+//   + notificação push/email para a oficina após envio.
+const LeadService = {
+  async enviar(data)           { return window.FB.enviarLead(data); },
+  async listar(oficinaId)      { return window.FB.listarLeadsDaOficina(oficinaId); },
+  async atualizar(id, status)  { return window.FB.atualizarLead(id, { status }); },
+  onSnapshot(oid, cb)          { return window.FB.onLeadsSnapshot(oid, cb); },
+};
+
+// ── SearchController ───────────────────────────────────────────
+// Responsabilidade: busca com cache de 1 minuto.
+// Reduz chamadas desnecessárias ao Firestore quando o usuário
+// filtra rapidamente (ex: ajustando sliders de filtro).
+//
+// TODO (Cloud Function): busca full-text server-side
+//   via Algolia ou Typesense para escalar além do filtro client-side.
+//   Prioridade: quando base de oficinas > 500 documentos.
+const SearchController = (() => {
+  const _cache = new Map();
+  const TTL    = 60 * 1000; // 1 minuto
+
+  function _key(f)  { return JSON.stringify(f); }
+  function _get(k)  { const h=_cache.get(k); if(!h||Date.now()-h.ts>TTL){_cache.delete(k);return null;} return h.data; }
+  function _set(k,d){ _cache.set(k,{data:d,ts:Date.now()}); }
+
+  return {
+    async buscar(filtros={}) {
+      const k = _key(filtros);
+      const hit = _get(k);
+      if (hit) { log('[SearchController] cache hit'); return hit; }
+      const d = await window.FB.listarOficinas(filtros);
+      _set(k,d); return d;
+    },
+    invalidar() { _cache.clear(); },
+    stats() {
+      const now = Date.now();
+      return { entradas:_cache.size, validas:[..._cache.values()].filter(h=>now-h.ts<TTL).length };
+    },
+  };
+})();
+
+// ── AuthController ─────────────────────────────────────────────
+// Responsabilidade: estado de sessão centralizado e callbacks.
+// TODO (Cloud Function): validar custom claims para ops críticas
+//   (upgrade de plano, acesso a dados de outros usuários).
+const AuthController = (() => {
+  let _user    = null;
+  let _oficina = null;
+  const _cbs   = [];
+
+  window.addEventListener('fbready', () => {
+    window.FB.onAuthChange(async (user) => {
+      _user    = user;
+      _oficina = user
+        ? await window.FB.getMinhaOficina(user.uid).catch(()=>null)
+        : null;
+      _cbs.forEach(fn => fn({ user:_user, oficina:_oficina }));
+    });
+  });
+
+  return {
+    getUser()    { return _user; },
+    getOficina() { return _oficina; },
+    isLogado()   { return !!_user; },
+    onChange(fn) {
+      _cbs.push(fn);
+      if (_user !== undefined) fn({ user:_user, oficina:_oficina });
+      return () => { const i=_cbs.indexOf(fn); if(i>=0) _cbs.splice(i,1); };
+    },
+    async login(email,pass)  { return window.FB.login(email,pass); },
+    async logout()           {
+      await window.FB.logout();
+      _user=null; _oficina=null;
+      _cbs.forEach(fn=>fn({user:null,oficina:null}));
+    },
+  };
+})();
+
+// ── Exposição pública ──────────────────────────────────────────
+// window.Services — interface estável para o app.
+// Internamente substitua cada service por Cloud Function
+// sem precisar alterar chamadas no app.
+window.Services = Object.freeze({
+  Oficina: OficinaService,
+  Lead:    LeadService,
+  Search:  SearchController,
+  Auth:    AuthController,
+});
+
+log('[Services] Camada inicializada:', Object.keys(window.Services));
+})();
+</script>
 <script>
 const STATE = {
   // Auth
   user: null,
   // Onboarding
   step: 0,
-  onbData: { nome:'', cidade:'', bairro:'', endereco:'', wpp:'', email:'', servicos:[], horarios:[], plano:'pro' },
-  selectedPlan: 'pro',
+  onbData: { nome:'', cidade:'', bairro:'', endereco:'', wpp:'', email:'', servicos:[], horarios:[], plano:'basico' },
+  selectedPlan: 'basico',
   // Panel
   _submitting: false,
   _stats: null,
@@ -2897,9 +3404,107 @@ function buildServicoSelect() {
   if (valorAtual) sel.value = valorAtual;
 }
 
+// ── BAIRROS DO ES POR CIDADE ─────────────────────────────────────
+//  Dados: principais bairros das cidades do Espírito Santo.
+//  Ordem: alfabética. Última opção: "Outro" para bairro não listado.
+const ES_BAIRROS = {
+  'Vitória': ['Bento Ferreira','Bonfim','Caratoíra','Centro','Consolação','Enseada do Suá',
+    'Floresta','Forte São João','Fradinhos','Goiabeiras','Ilha de Santa Maria','Itararé',
+    'Jardim Camburi','Jardim da Penha','Jesus de Nazareth','Jucutuquara','Maruípe',
+    'Monte Belo','Nazareth','Parque Moscoso','Piedade','Praia do Canto','Praia do Suá',
+    'República','Resistência','Romão','Santa Cecília','Santa Helena','Santa Lúcia',
+    'Santa Martha','Santa Tereza','Santos Dumont','São Benedito','São Cristóvão',
+    'São Joaquim','São Pedro','Segurança do Lar','Solon Borges','Universitário','Vila Rubim',
+    'Outro'],
+  'Vila Velha': ['Aribiri','Balneário Ponta da Fruta','Barramares','Barra do Jucu',
+    'Coqueiral de Itaparica','Divino Espírito Santo','Boa Vista','Cobilândia','Cobi de Cima',
+    'Itaparica','Jockey de Itaparica','Morada de Laranjeiras','Paul','Praia de Itaparica',
+    'Riviera da Barra','Santa Mônica','São Torquato','Terra Vermelha','Ulisses Guimarães',
+    'Valparaíso','Vila Nova','Outro'],
+  'Cariacica': ['Alto Lage','Aparecida','Bairro Novo','Campo Grande','Cariacica Sede',
+    'Dom Bosco','Flexal','General Osório','Itacibá','Itaquari','Jardim América',
+    'Morada de Laranjeiras','Muniz Freire','Nova Brasília','Nova Rosa da Penha',
+    'Padre Gabriel','Pedreiras','Porto de Santana','Praça Carlos Germano Naumann',
+    'Rio Marinho','Santa Fé','Santo André','São Francisco','Superfície','Vale Encantado',
+    'Outro'],
+  'Serra': ['André Carloni','Balneário de Carapebus','Bairro das Laranjeiras','Boa Vista',
+    'Campinho da Serra','Carapina','Carapina Grande','Centro','Civit I','Civit II',
+    'Colina de Laranjeiras','Feu Rosa','Gironda','Interlagos','Jardim Carapina',
+    'Jardim Limoeiro','Maringá','Manguinhos','Nova Carapina','Nova Lisboa',
+    'Parque Residencial Laranjeiras','Pitanga','Planalto Serrano','Portal de Manguinhos',
+    'Residencial Serra Dourada','Rosário de Fátima','Serra Dourada','Outro'],
+  'Viana': ['Areinha','Aracê','Belém','Centro','Marcílio de Noronha','Morada do Vale',
+    'Nova Bethânia','Padre Gabriel','Primavera','Santa Mônica','São João Bosco','Outro'],
+  'Guarapari': ['Alfredo Chaves','Centro','Kubitschek','Lagoa Funda','Mestre Álvaro',
+    'Muquiçaba','Olaria','Praia das Castanheiras','Praia do Morro','Praia de Setiba',
+    'Santa Mônica','Setiba','Uba','Vilage Sul','Outro'],
+  'Fundão': ['Centro','Fundão','Timbuí','Roda D\'Água','Outro'],
+  'Linhares': ['Bebedouro','Centro','Colatina','Interlagos','Jardim Lagoa Nova',
+    'Jardim Tropical','Nova Linhares','Outro'],
+  'Cachoeiro de Itapemirim': ['Aeroporto','Aquidabã','Centro','Cobilândia',
+    'Independência','Itagimirim','Monte Cristo','Paraíso','Outro'],
+  'Colatina': ['Adalberto Simão Nader','Aparecida','Centro','Governador Lindemberg',
+    'Marista','Nova Esperança','Santa Maria','São Silvano','Outro'],
+  'São Mateus': ['Centro','Guriri','Nova Esperança','São Mateus','Outro'],
+  'Aracruz': ['Barra do Riacho','Centro','Coqueiral','Guaraná','Morobá','Outro'],
+};
+
+// Popula bairros com base na cidade selecionada.
+// selectId = id do <select> de bairro
+// cidadeVal = valor selecionado na cidade
+// outroId   = id do <input> fallback "outro bairro" (opcional)
+function _populateBairros(selectId, cidadeVal, outroId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const bairros = ES_BAIRROS[cidadeVal] || [];
+  if (!bairros.length) {
+    sel.innerHTML = '<option value="">Todos os bairros</option>';
+    if (outroId) {
+      const inp = document.getElementById(outroId);
+      if (inp) { inp.style.display = cidadeVal ? 'block' : 'none'; sel.style.display = 'none'; }
+    }
+    return;
+  }
+  let html = '<option value="">Selecione o bairro</option>';
+  bairros.forEach(b => { html += `<option value="${b === 'Outro' ? '' : b}">${b}</option>`; });
+  sel.innerHTML = html;
+  sel.style.display = '';
+  if (outroId) {
+    const inp = document.getElementById(outroId);
+    if (inp) inp.style.display = 'none';
+    // Quando usuário selecionar "Outro", mostra input livre
+    sel.onchange = function() {
+      if (!this.value && this.options[this.selectedIndex]?.text === 'Outro') {
+        if (inp) { inp.style.display = 'block'; inp.focus(); }
+      } else {
+        if (inp) inp.style.display = 'none';
+      }
+    };
+  }
+}
+
+function homeUpdateBairros() {
+  const cidade = document.getElementById('hCidade')?.value || '';
+  _populateBairros('hBairro', cidade, null);
+}
+
+function onbUpdateBairros() {
+  const cidade = document.getElementById('onbCidade')?.value || '';
+  _populateBairros('onbBairro', cidade, 'onbBairroOutro');
+}
+
+function fornUpdateBairros() {
+  const cidade = document.getElementById('fCidadeF')?.value || '';
+  _populateBairros('fBairroF', cidade, 'fBairroFOutro');
+}
+
+function filterUpdateBairros() {
+  const cidade = document.getElementById('fCidade')?.value || '';
+  _populateBairros('fBairro', cidade, null);
+}
+
 // ── HOME SEARCH ──────────────────────────────────────────────────
 function homeBuscar() {
-  // UX: disable button during transition
   const btn = document.querySelector('.home-search-btn');
   if (btn) { btn.disabled = true; btn.textContent = '🔍 Buscando...'; }
   setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = '🔍 Buscar oficinas'; }}, 1500);
@@ -2908,8 +3513,16 @@ function homeBuscar() {
   const bairro  = document.getElementById('hBairro').value;
 
   document.getElementById('cliSearch').value = servico;
-  if (cidade) document.getElementById('fCidade').value = cidade;
-  if (bairro) document.getElementById('fBairro').value = bairro;
+  if (cidade) {
+    const fCidade = document.getElementById('fCidade');
+    if (fCidade) { fCidade.value = cidade; filterUpdateBairros(); }
+  }
+  if (bairro) {
+    setTimeout(() => {
+      const fb = document.getElementById('fBairro');
+      if (fb) fb.value = bairro;
+    }, 50);
+  }
 
   if (cidade || bairro) {
     document.getElementById('filtersPanel').classList.add('open');
@@ -2918,7 +3531,6 @@ function homeBuscar() {
   }
 
   goTo('scCliente');
-  // Tenta geolocalização antes de buscar
   pedirGeolocalizacao(() => { runSearch(); applyAdvFilters(); });
 }
 
@@ -3366,7 +3978,13 @@ async function nextStep(to) {
     if (!valid) return;
     STATE.onbData.nome = nome;
     STATE.onbData.cidade = document.getElementById('onbCidade').value.trim() || 'Cariacica';
-    STATE.onbData.bairro = document.getElementById('onbBairro').value.trim();
+    // Bairro: lê do select; se "Outro" foi escolhido, lê do input livre
+    const bairroSel = document.getElementById('onbBairro');
+    const bairroOutro = document.getElementById('onbBairroOutro');
+    const bairroOutroVis = bairroOutro && bairroOutro.style.display !== 'none';
+    STATE.onbData.bairro = bairroOutroVis
+      ? (bairroOutro.value.trim())
+      : (bairroSel?.value?.trim() || '');
     STATE.onbData.endereco = document.getElementById('onbEndereco').value.trim();
     STATE.onbData.wpp = wpp.replace(/\D/g,'');
     STATE.onbData.email = document.getElementById('onbEmail').value.trim();
@@ -3449,27 +4067,31 @@ function selectPlan(p) {
 async function finalizarCadastro() {
   if (STATE._submitting) return;
   STATE._submitting = true;
-  STATE.onbData.plano = STATE.selectedPlan;
+  // v1: plano sempre basico (gratuito). Monetização via upgrade posterior.
+  STATE.onbData.plano = 'basico';
   STATE.onbData.ativo = true;
   STATE.onbData.stats = { impressoes:0, cliques:0, whatsapp:0, orcamentos:0 };
-  // Garante que servicos e horarios do onboarding estão no payload
   if (!STATE.onbData.servicos) STATE.onbData.servicos = [];
   if (!STATE.onbData.horarios) STATE.onbData.horarios = [];
-  // Geocodifica endereço → lat/lng automaticamente
   if (!STATE.onbData.lat && STATE.onbData.endereco) {
     const geo = await geocodificarEndereco(STATE.onbData.endereco, STATE.onbData.cidade);
     if (geo) { STATE.onbData.lat = geo.lat; STATE.onbData.lng = geo.lng; }
   }
   setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
   try {
-    const id = await window.FB.cadastrarOficina(STATE.onbData);
-    const trialEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    STATE.oficina = { id, ...STATE.onbData, plano: STATE.selectedPlan || 'basico', trialEnd };
+    // Usa OficinaService se disponível (invalida caches automaticamente)
+    const id = window.Services?.Oficina
+      ? await window.Services.Oficina.cadastrar(STATE.onbData)
+      : await window.FB.cadastrarOficina(STATE.onbData);
+    STATE.oficina = { id, ...STATE.onbData, plano: 'basico' };
     STATE.oficinaAtual = STATE.oficina;
+    // Invalida cache de busca para que novo cadastro apareça imediatamente
+    window.Services?.Search?.invalidar();
     toast('🎉 Oficina cadastrada com sucesso!');
     nextStep(4);
   } catch(e) {
     toast('Erro ao salvar. Tente novamente.', 'error');
+    logE('finalizarCadastro:', e);
   } finally {
     STATE._submitting = false;
     setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', false);
@@ -3736,7 +4358,10 @@ async function loadOficinas() {
     ...(STATE.userLat ? { lat: STATE.userLat, lng: STATE.userLng } : {})
   };
   try {
-    STATE.oficinas = await window.FB.listarOficinas(filtros);
+    // Usa SearchController (cache 1 min) se disponível, fallback para FB direto
+    STATE.oficinas = window.Services?.Search
+      ? await window.Services.Search.buscar(filtros)
+      : await window.FB.listarOficinas(filtros);
     renderOficinas();
   } catch(e) {
     logE('loadOficinas error:', e);
@@ -3796,7 +4421,7 @@ function renderOficinas() {
           </div>
           <div class="of-meta">
             <span class="of-dist">📍 ${of._dist&&of._dist<900?(of._dist<1?"< 1 km":of._dist.toFixed(1)+" km"):esc(of.distancia||of.bairro||of.cidade)}</span>
-            <span class="of-stars" aria-label="${esc(String(of.avaliacao))} estrelas">★ ${esc(String(of.avaliacao||'—'))} <span>(${esc(String(of.avaliacoes||0))})</span></span>
+            <span class="of-stars" aria-label="${esc(String(of.avaliacao))} estrelas">${of.totalAvaliacoes ? ('★ ' + esc(String(of.avaliacao||'—')) + ' <span>(' + esc(String(of.avaliacoes||of.totalAvaliacoes||0)) + ')</span>') : '<span style="font-size:11px;color:var(--t3);font-style:italic;">Esta oficina ainda não tem avaliações</span>'}</span>
             <span class="${statusClass}" aria-live="polite">${statusTxt}</span>
           </div>
         </div>
@@ -3874,7 +4499,7 @@ function renderCardEstabelecimento(of) {
         <div class="of-name">${esc(of.nome)} <span class="tipo-badge">${ti.icon} ${esc(ti.label)}</span></div>
         <div class="of-meta">
           <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade)}</span>
-          <span class="of-stars">★ ${esc(String(of.avaliacao||'—'))} <span>(${esc(String(of.avaliacoes||0))})</span></span>
+          <span class="of-stars">${(of.totalAvaliacoes||of.avaliacoes) ? ('★ ' + esc(String(of.avaliacao||'—')) + ' <span>(' + esc(String(of.avaliacoes||of.totalAvaliacoes||0)) + ')</span>') : '<span style="font-size:11px;color:var(--t3);font-style:italic;">Sem avaliações</span>'}</span>
           <span class="${statusClass}">${statusTxt}</span>
         </div>
       </div>
@@ -3916,7 +4541,11 @@ async function loadReviews(ofId) {
   try {
     const reviews = await window.FB.listarAvaliacoes(ofId);
     if (!reviews.length) {
-      el.textContent = 'Ainda sem avaliações. Seja o primeiro!';
+      el.innerHTML = '<div style="text-align:center;padding:14px 0;">'
+        + '<div style="font-size:22px;margin-bottom:6px;">💬</div>'
+        + '<div style="font-size:13px;color:var(--t3);">Esta oficina ainda não tem avaliações</div>'
+        + '<div style="font-size:11px;color:var(--t3);margin-top:4px;font-style:italic;">Seja o primeiro a avaliar!</div>'
+        + '</div>';
       return;
     }
     el.innerHTML = reviews.slice(0, 3).map(r => {
@@ -5084,7 +5713,7 @@ async function renderPerfil(of) {
         </div>
       </div>
       <div class="perfil-meta">
-        ${of.avaliacao ? `<span class="perfil-pill" aria-label="${of.avaliacao} estrelas"><span style="color:var(--am);">${stars}</span> ${of.avaliacao} (${of.totalAvaliacoes||0})</span>` : ''}
+        ${of.avaliacao && of.totalAvaliacoes ? `<span class="perfil-pill" aria-label="${of.avaliacao} estrelas"><span style="color:var(--am);">${stars}</span> ${of.avaliacao} (${of.totalAvaliacoes||0})</span>` : '<span class="perfil-pill" style="color:var(--t3);font-style:italic;">Esta oficina ainda não tem avaliações</span>'}
         <span class="perfil-pill" style="color:${of.aberto?'var(--g)':'var(--re)'};">
           ${of.aberto ? '🟢 Aberto agora' : '🔴 Fechado'}
         </span>
@@ -5183,7 +5812,7 @@ async function loadPerfilReviews(ofId) {
   try {
     const reviews = await window.FB.listarAvaliacoes(ofId);
     if (!reviews.length) {
-      el.innerHTML = '<div class="empty-state" style="padding:20px 0;"><div class="empty-icon">💬</div><div class="empty-title">Nenhuma avaliação ainda</div><div class="empty-sub">Seja o primeiro a avaliar esta oficina!</div></div>';
+      el.innerHTML = '<div class="empty-state" style="padding:20px 0;"><div class="empty-icon">💬</div><div class="empty-title">Esta oficina ainda não tem avaliações</div><div class="empty-sub">Seja o primeiro a avaliar!</div></div>';
       return;
     }
     el.innerHTML = reviews.slice(0,6).map(r => {
@@ -5333,7 +5962,7 @@ async function renderDashboard(el) {
     <div style="background:linear-gradient(135deg,var(--gg2),rgba(255,215,0,.05));border:1.5px solid rgba(255,215,0,.3);border-radius:var(--rl);padding:20px;margin-top:16px;text-align:center;">
       <div style="font-family:Syne,sans-serif;font-size:18px;font-weight:800;margin-bottom:6px;">🚀 Turbine sua oficina com o Plano Pro</div>
       <div style="font-size:13px;color:var(--t2);margin-bottom:14px;">Topo das buscas · Leads ilimitados · Dashboard completo · Agendamentos</div>
-      <button class="btn btn-primary" style="width:auto;padding:12px 28px;background:#FFD700;color:#0A0D0B;" onclick="showUpgradeCTA()">⭐ Fazer upgrade — R$ 97/mês</button>
+      <button class="btn btn-primary" style="width:auto;padding:12px 28px;background:#FFD700;color:#0A0D0B;" onclick="showUpgradeCTA()">⭐ Conhecer o Plano Pro</button>
     </div>` : ''}`;
 }
 
