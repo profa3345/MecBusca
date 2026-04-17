@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MecBusca — Encontre oficinas perto de você</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.firebaseapp.com https://*.firebaseio.com; script-src 'self' 'unsafe-inline' https://*.googleapis.com https://*.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none';">
 <meta name="description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
 <meta name="theme-color" content="#00D084">
 <meta property="og:site_name" content="MecBusca">
@@ -292,57 +291,112 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 
 
 /* ── HOME FOOTER ── */
+/* ══════════════════════════════════════════════════════
+   FOOTER — Two-row professional layout
+   Linha 1: Logo + tagline  |  colunas de nav
+   Linha 2: copyright       |  badge + tema
+   ══════════════════════════════════════════════════════ */
 .home-footer{
-  border-top:1px solid var(--b);
-  background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);
+  position:relative;
+  background:var(--bg2);
+  border-top:1px solid rgba(0,208,132,0.12);
+}
+.home-footer::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(0,208,132,0.35) 40%,rgba(0,208,132,0.35) 60%,transparent);
+}
+.home-footer-inner{
+  max-width:960px;margin:0 auto;
   padding:32px 40px 20px;
 }
-.home-footer-top{
-  display:flex;align-items:flex-start;justify-content:space-between;
-  gap:32px;padding-bottom:28px;
-  border-bottom:1px solid var(--b);
+
+/* ── Row 1 ── */
+.home-footer-row1{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:48px;
+  padding-bottom:24px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
   flex-wrap:wrap;
 }
-.home-footer-logo-wrap{display:flex;flex-direction:column;gap:10px;max-width:220px;}
-.home-footer-logo{display:flex;align-items:center;gap:10px;cursor:default;}
-.home-footer-logo-icon{width:36px;height:36px;flex-shrink:0;}
-.home-footer-brand{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--t);letter-spacing:-0.02em;line-height:1;}
+
+/* Brand block */
+.home-footer-brand-block{
+  display:flex;flex-direction:column;gap:6px;
+  min-width:160px;
+}
+.home-footer-logo-row{
+  display:flex;align-items:center;gap:9px;
+}
+.home-footer-logo-icon{
+  width:24px;height:24px;flex-shrink:0;
+}
+.home-footer-brand{
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  color:var(--t);letter-spacing:-0.02em;line-height:1;
+}
 .home-footer-brand em{color:var(--g);font-style:normal;}
-.home-footer-tagline{font-size:11.5px;color:var(--t3);line-height:1.5;padding-left:2px;}
-.home-footer-cols{display:flex;gap:48px;flex-wrap:wrap;}
-.home-footer-col{}
+.home-footer-tagline{
+  font-size:11.5px;color:var(--t3);line-height:1.5;
+  padding-left:33px;
+}
+
+/* Nav columns */
+.home-footer-cols{
+  display:flex;gap:40px;flex-wrap:wrap;
+}
 .home-footer-col-title{
-  font-family:'Syne',sans-serif;font-size:10px;font-weight:700;
+  font-size:10px;font-weight:700;font-family:'Syne',sans-serif;
   color:var(--t3);text-transform:uppercase;letter-spacing:0.1em;
-  margin-bottom:12px;
+  margin-bottom:10px;
 }
 .home-footer-col a{
-  display:block;color:var(--t2);cursor:pointer;font-size:13px;font-weight:400;
-  padding:4px 0;transition:color var(--transition);
+  display:block;font-size:12.5px;color:var(--t2);
+  padding:3px 0;cursor:pointer;
   border:none;background:none;text-align:left;
+  transition:color 0.12s;white-space:nowrap;
 }
-.home-footer-col a:hover{color:var(--g);}
-.home-footer-bottom{
-  display:flex;align-items:center;justify-content:space-between;
-  padding-top:18px;gap:16px;flex-wrap:wrap;
+.home-footer-col a:hover{ color:var(--g); }
+
+/* ── Row 2 ── */
+.home-footer-row2{
+  display:flex;align-items:center;
+  justify-content:space-between;
+  padding-top:14px;
+  gap:12px;flex-wrap:wrap;
 }
-.home-footer-copy{font-size:11px;color:var(--t3);letter-spacing:0.02em;}
-.home-footer-bottom-right{display:flex;align-items:center;gap:8px;}
+.home-footer-copy{
+  font-size:11px;color:var(--t3);letter-spacing:0.02em;
+}
+.home-footer-row2-right{
+  display:flex;align-items:center;gap:8px;
+}
 .home-footer-badge{
-  font-size:10px;color:var(--t3);background:var(--s);border:1px solid var(--b);
-  border-radius:6px;padding:3px 9px;letter-spacing:0.04em;
+  font-size:10px;color:var(--t3);
+  background:var(--s);border:1px solid var(--b);
+  border-radius:6px;padding:3px 9px;
+  letter-spacing:0.04em;font-weight:500;
 }
 .home-footer-tema{
-  background:var(--s);border:1px solid var(--b);cursor:pointer;font-size:13px;
-  padding:5px 9px;min-height:auto;border-radius:7px;transition:all var(--transition);
-  line-height:1;color:var(--t2);
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--s);border:1px solid var(--b);
+  cursor:pointer;font-size:11.5px;
+  padding:4px 11px;min-height:auto;border-radius:7px;
+  transition:border-color 0.12s,color 0.12s,background 0.12s;
+  color:var(--t2);font-family:'DM Sans',sans-serif;
 }
-.home-footer-tema:hover{border-color:var(--b2);background:var(--s2);color:var(--t);}
-@media(max-width:640px){
-  .home-footer{padding:24px 20px 16px;}
-  .home-footer-top{flex-direction:column;gap:24px;}
-  .home-footer-cols{gap:28px;}
-  .home-footer-bottom{flex-direction:column;align-items:center;text-align:center;gap:10px;}
+.home-footer-tema:hover{
+  border-color:var(--b2);color:var(--t);background:var(--s2);
+}
+
+/* ── Mobile ── */
+@media(max-width:600px){
+  .home-footer-inner{padding:24px 20px 16px;}
+  .home-footer-row1{gap:24px;}
+  .home-footer-cols{gap:24px;}
+  .home-footer-tagline{display:none;}
+  .home-footer-row2{flex-direction:column;align-items:center;text-align:center;gap:10px;}
 }
 .portal-card{background:var(--s);border:1px solid var(--b);border-radius:var(--rxl);padding:28px 20px;cursor:pointer;transition:all 0.2s;text-align:center;}
 .portal-card.featured{border-color:var(--b2);background:linear-gradient(135deg,var(--s),var(--gg2));}
@@ -832,9 +886,28 @@ button,a,[role=button]{min-height:44px;}
 /* hidden JSON-LD block injected per profile */
 #jsonld-oficina{display:none;}
 
-/* ── ANALYTICS EVENT FEEDBACK ────────────────────────────── */
-.event-flash{animation:eventFlash 0.5s ease;}
-@keyframes eventFlash{0%{opacity:1;}50%{opacity:0.5;}100%{opacity:1;}}
+/* ── SELECTABLE SERVICE / PEÇA CHIPS ─────────────────────── */
+.forn-espec-chip{
+  display:inline-flex;align-items:center;gap:0;cursor:pointer;
+  user-select:none;
+}
+.forn-espec-chip input[type="checkbox"]{
+  display:none; /* hidden — visual handled by span below */
+}
+.forn-espec-chip span{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:500;
+  background:var(--s);border:1.5px solid var(--b);color:var(--t2);
+  transition:all 0.15s;
+}
+.forn-espec-chip:hover span{border-color:var(--b2);color:var(--t);}
+.forn-espec-chip input:checked + span{
+  background:var(--gg);border-color:var(--b2);color:var(--g);
+  box-shadow:0 0 10px rgba(0,208,132,0.1);
+}
+
+/* ── SERVICE SELECT WRAP in onboarding ──────────────────── */
+#nsvcOutroWrap{animation:fadeUp 0.2s ease both;}
 </style>
 
 <!-- ══════════════════════════════════════════════════════════
@@ -1289,70 +1362,61 @@ button,a,[role=button]{min-height:44px;}
     </div>
   </div>
 
-  <footer class="home-footer">
-    <div class="home-footer-top">
+  <footer class="home-footer" role="contentinfo" aria-label="Rodapé MecBusca">
+    <div class="home-footer-inner">
 
-      <!-- Coluna: Logo + tagline -->
-      <div class="home-footer-logo-wrap">
-        <div class="home-footer-logo">
-          <!-- SVG fiel à logo: pin verde com chave de fenda branca -->
-          <svg class="home-footer-logo-icon" viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Círculo verde (cabeça do pin) -->
-            <circle cx="40" cy="38" r="34" fill="#3DD68C"/>
-            <!-- Sombra interna do círculo -->
-            <circle cx="40" cy="38" r="34" fill="url(#pinGrad)" opacity="0.35"/>
-            <!-- Corpo do pin (gota) -->
-            <path d="M40 96 C40 96 8 62 8 38 A32 32 0 0 1 72 38 C72 62 40 96 40 96Z" fill="#3DD68C"/>
-            <path d="M40 96 C40 96 8 62 8 38 A32 32 0 0 1 72 38 C72 62 40 96 40 96Z" fill="url(#pinGrad2)" opacity="0.25"/>
-            <!-- Disco interno escuro (buraco do pin) -->
-            <circle cx="40" cy="38" r="20" fill="#111a12"/>
-            <!-- Chave de fenda branca -->
-            <!-- Cabo vertical -->
-            <rect x="37" y="42" width="6" height="16" rx="2" fill="white"/>
-            <!-- Cabeça da chave (U invertido / arco) -->
-            <path d="M29 32 Q29 20 40 20 Q51 20 51 32 L51 38 Q51 42 47 42 L33 42 Q29 42 29 38 Z" fill="white"/>
-            <!-- Furo do centro da cabeça -->
-            <ellipse cx="40" cy="33" rx="6" ry="8" fill="#111a12"/>
-            <defs>
-              <radialGradient id="pinGrad" cx="35%" cy="30%" r="60%">
-                <stop offset="0%" stop-color="white"/>
-                <stop offset="100%" stop-color="#3DD68C" stop-opacity="0"/>
-              </radialGradient>
-              <linearGradient id="pinGrad2" x1="40" y1="72" x2="40" y2="96" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#000" stop-opacity="0"/>
-                <stop offset="100%" stop-color="#000" stop-opacity="0.3"/>
-              </linearGradient>
-            </defs>
-          </svg>
-          <span class="home-footer-brand">Mec<em>Busca</em></span>
+      <!-- Row 1: brand + nav columns -->
+      <div class="home-footer-row1">
+
+        <!-- Brand -->
+        <div class="home-footer-brand-block">
+          <div class="home-footer-logo-row">
+            <svg class="home-footer-logo-icon" viewBox="0 0 80 96" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle cx="40" cy="38" r="34" fill="#3DD68C"/>
+              <path d="M40 96C40 96 8 62 8 38A32 32 0 0 1 72 38C72 62 40 96 40 96Z" fill="#3DD68C"/>
+              <circle cx="40" cy="38" r="20" fill="#111a12"/>
+              <rect x="37" y="42" width="6" height="16" rx="2" fill="white"/>
+              <path d="M29 32Q29 20 40 20Q51 20 51 32L51 38Q51 42 47 42L33 42Q29 42 29 38Z" fill="white"/>
+              <ellipse cx="40" cy="33" rx="6" ry="8" fill="#111a12"/>
+            </svg>
+            <span class="home-footer-brand">Mec<em>Busca</em></span>
+          </div>
+          <span class="home-footer-tagline">Marketplace de oficinas · ES</span>
         </div>
-        <p class="home-footer-tagline">Marketplace de oficinas mecânicas.<br>Orçamento rápido, WhatsApp direto.</p>
+
+        <!-- Nav columns -->
+        <div class="home-footer-cols">
+          <nav aria-label="Plataforma">
+            <div class="home-footer-col-title">Plataforma</div>
+            <a onclick="void(0)" role="button" tabindex="0">Buscar oficinas</a>
+            <a onclick="homeBuscarPeca()" role="button" tabindex="0">Buscar peças</a>
+          </nav>
+          <nav aria-label="Empresas">
+            <div class="home-footer-col-title">Para empresas</div>
+            <a onclick="openOverlay('scOnboarding')" role="button" tabindex="0">Cadastrar oficina</a>
+            <a onclick="goTo('scFornecedor')" role="button" tabindex="0">Cadastrar fornecedor</a>
+            <a onclick="openOverlay('scAuth')" role="button" tabindex="0">Painel</a>
+          </nav>
+          <nav aria-label="Legal">
+            <div class="home-footer-col-title">Legal</div>
+            <a onclick="void(0)" role="button" tabindex="0">Privacidade</a>
+            <a onclick="void(0)" role="button" tabindex="0">Termos de uso</a>
+          </nav>
+        </div>
+
       </div>
 
-      <!-- Colunas de links -->
-      <div class="home-footer-cols">
-        <div class="home-footer-col">
-          <div class="home-footer-col-title">Plataforma</div>
-          <a onclick="void(0)" role="button">Buscar oficinas</a>
-          <a onclick="homeBuscarPeca()" role="button">Buscar peças</a>
-        </div>
-        <div class="home-footer-col">
-          <div class="home-footer-col-title">Para empresas</div>
-          <a onclick="openOverlay('scOnboarding')" role="button">Cadastrar oficina</a>
-          <a onclick="goTo('scFornecedor')" role="button">Cadastrar fornecedor</a>
-          <a onclick="goTo('scAuth')" role="button">Painel da oficina</a>
+      <!-- Row 2: copyright + controls -->
+      <div class="home-footer-row2">
+        <span class="home-footer-copy">© 2026 MecBusca · Todos os direitos reservados</span>
+        <div class="home-footer-row2-right">
+          <span class="home-footer-badge">🇧🇷 ES · Brasil</span>
+          <button onclick="toggleTema()" id="temaBtn" class="home-footer-tema" title="Alternar tema" aria-label="Alternar tema claro/escuro">
+            <span id="temaBtnIcon">🌙</span> Tema
+          </button>
         </div>
       </div>
 
-    </div>
-
-    <!-- Rodapé inferior -->
-    <div class="home-footer-bottom">
-      <span class="home-footer-copy">© 2025 MecBusca · Todos os direitos reservados</span>
-      <div class="home-footer-bottom-right">
-        <span class="home-footer-badge">ES · Brasil</span>
-        <button onclick="toggleTema()" id="temaBtn" class="home-footer-tema" title="Alternar tema" aria-label="Alternar tema claro/escuro">🌙 Tema</button>
-      </div>
     </div>
   </footer>
 </div>
@@ -1425,11 +1489,44 @@ button,a,[role=button]{min-height:44px;}
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label" for="fEspecF">Especialidades</label>
-      <input class="form-input" id="fEspecF" placeholder="Ex: Freios, filtros, suspensão...">
+      <label class="form-label">Especialidades (selecione as categorias)</label>
+      <div id="fornEspecChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <label class="forn-espec-chip"><input type="checkbox" value="Freios" onchange="fornEspecChange()"><span>🔴 Freios</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Suspensão" onchange="fornEspecChange()"><span>🔧 Suspensão</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Motor" onchange="fornEspecChange()"><span>⚙️ Motor</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Elétrica" onchange="fornEspecChange()"><span>⚡ Elétrica</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Filtros" onchange="fornEspecChange()"><span>🛢️ Filtros</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Pneus" onchange="fornEspecChange()"><span>🔵 Pneus</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Ar-condicionado" onchange="fornEspecChange()"><span>❄️ Ar-condicionado</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Funilaria" onchange="fornEspecChange()"><span>🎨 Funilaria</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="Acessórios" onchange="fornEspecChange()"><span>🔩 Acessórios</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" value="__outro__" onchange="fornEspecChange()"><span>✏️ Outro</span></label>
+      </div>
+      <input class="form-input" id="fEspecF" placeholder="Digite outras especialidades..." style="display:none;margin-top:4px;" aria-label="Outras especialidades">
     </div>
     <div style="background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:10px 14px;margin-bottom:16px;font-size:12.5px;color:var(--t2);">
       🔩 Seu catálogo ficará visível para mecânicos e oficinas cadastradas no MecBusca.
+    </div>
+
+    <!-- Peças que você vende -->
+    <div class="form-group">
+      <label class="form-label">Peças que você vende (selecione)</label>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Filtro de óleo"><span>🛢️ Filtro de óleo</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Pastilha de freio"><span>🔴 Pastilha de freio</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Disco de freio"><span>⚫ Disco de freio</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Amortecedor"><span>🔧 Amortecedor</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Correia dentada"><span>⚙️ Correia dentada</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Vela de ignição"><span>💥 Vela de ignição</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Bateria"><span>🔋 Bateria</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Pneu"><span>🔵 Pneu</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Óleo de motor"><span>🟡 Óleo de motor</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Embreagem"><span>⚙️ Embreagem</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Radiador"><span>🌡️ Radiador</span></label>
+        <label class="forn-espec-chip"><input type="checkbox" name="fPecas" value="Lâmpada automotiva"><span>💡 Lâmpadas</span></label>
+        <label class="forn-espec-chip" id="fPecasOutroChip"><input type="checkbox" name="fPecas" value="__outro__" onchange="fornPecasOutroChange()"><span>✏️ Outra peça</span></label>
+      </div>
+      <input class="form-input" id="fPecasOutroInput" placeholder="Ex: Junta do cabeçote, sensor de oxigênio..." style="display:none;margin-top:4px;" aria-label="Outras peças">
     </div>
     <button class="btn btn-primary" style="background:var(--pu);" onclick="cadastrarFornecedor()">
       <span id="fornecedorBtnText">🔩 Cadastrar fornecedor</span>
@@ -1520,11 +1617,67 @@ button,a,[role=button]{min-height:44px;}
       <div class="step-title">Serviços & preços</div>
       <div class="step-sub">Adicione os serviços que você oferece. Os preços são exibidos direto para o cliente.</div>
       <div class="svc-list" id="onbSvcList" aria-live="polite"></div>
-      <div class="add-svc-row">
-        <div class="form-group" style="margin:0"><input class="form-input" id="nsvcNome" placeholder="Serviço (ex: Troca de óleo)" aria-label="Nome do serviço"></div>
-        <div class="form-group" style="margin:0"><input class="form-input" id="nsvcMin" type="number" placeholder="Mín R$" aria-label="Preço mínimo"></div>
-        <div class="form-group" style="margin:0"><input class="form-input" id="nsvcMax" type="number" placeholder="Máx R$" aria-label="Preço máximo"></div>
-        <button class="add-btn-sm" onclick="addOnbSvc()" aria-label="Adicionar serviço">+</button>
+
+      <!-- Serviço selecionável + campo "Outro" -->
+      <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:16px;margin-bottom:4px;">
+        <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">➕ Adicionar serviço</div>
+        <div style="margin-bottom:10px;">
+          <label class="form-label" for="nsvcSelect">Serviço</label>
+          <select class="form-input" id="nsvcSelect" onchange="onbSvcSelectChange()" aria-label="Selecione o serviço">
+            <option value="">— Selecione o serviço —</option>
+            <optgroup label="Manutenção">
+              <option>Troca de óleo</option>
+              <option>Revisão completa</option>
+              <option>Filtros</option>
+              <option>Velas de ignição</option>
+              <option>Correia dentada</option>
+            </optgroup>
+            <optgroup label="Freios e Suspensão">
+              <option>Freios dianteiros</option>
+              <option>Freios traseiros</option>
+              <option>Alinhamento</option>
+              <option>Balanceamento</option>
+              <option>Suspensão</option>
+              <option>Amortecedor</option>
+            </optgroup>
+            <optgroup label="Motor e Câmbio">
+              <option>Embreagem</option>
+              <option>Câmbio</option>
+              <option>Injeção eletrônica</option>
+            </optgroup>
+            <optgroup label="Elétrica e Ar">
+              <option>Elétrica automotiva</option>
+              <option>Ar-condicionado</option>
+              <option>Bateria</option>
+            </optgroup>
+            <optgroup label="Funilaria e Estética">
+              <option>Funilaria e pintura</option>
+              <option>Polimento</option>
+              <option>Vidros</option>
+            </optgroup>
+            <optgroup label="Outros">
+              <option>Pneus</option>
+              <option>Escapamento</option>
+              <option value="__outro__">✏️ Outro (escrever manualmente)</option>
+            </optgroup>
+          </select>
+        </div>
+        <!-- Campo "Outro" — aparece só quando selecionado -->
+        <div id="nsvcOutroWrap" style="display:none;margin-bottom:10px;">
+          <label class="form-label" for="nsvcNome">Nome do serviço</label>
+          <input class="form-input" id="nsvcNome" placeholder="Ex: Higienização de ar-condicionado" aria-label="Nome do serviço personalizado">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
+          <div>
+            <label class="form-label" for="nsvcMin">Preço mín. (R$)</label>
+            <input class="form-input" id="nsvcMin" type="number" min="0" max="99999" placeholder="Ex: 80" aria-label="Preço mínimo">
+          </div>
+          <div>
+            <label class="form-label" for="nsvcMax">Preço máx. (R$)</label>
+            <input class="form-input" id="nsvcMax" type="number" min="0" max="99999" placeholder="Ex: 150" aria-label="Preço máximo">
+          </div>
+          <button class="add-btn-sm" onclick="addOnbSvc()" aria-label="Adicionar serviço" style="height:41px;">+</button>
+        </div>
       </div>
       <div style="margin-top:20px;display:flex;gap:10px;">
         <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 20px;" onclick="nextStep(0)">← Voltar</button>
@@ -1901,11 +2054,11 @@ button,a,[role=button]{min-height:44px;}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="asvMin">Preço mín (R$)</label>
-        <input class="form-input" id="asvMin" type="number" placeholder="89" min="0">
+        <input class="form-input" id="asvMin" type="number" placeholder="89" min="0" max="99999">
       </div>
       <div class="form-group">
         <label class="form-label" for="asvMax">Preço máx (R$)</label>
-        <input class="form-input" id="asvMax" type="number" placeholder="120" min="0">
+        <input class="form-input" id="asvMax" type="number" placeholder="120" min="0" max="99999">
       </div>
     </div>
     <div style="display:flex;gap:10px;margin-top:4px;">
@@ -2515,6 +2668,19 @@ function demoLeads(id) {
   ];
 }
 function demoMetricas(id) { return calcMetricas(demoLeads(id)); }
+
+// ── demoAvaliacoes — usado por FB.listarAvaliacoes em modo DEMO ──
+function demoAvaliacoes(id) {
+  const now = Math.floor(Date.now()/1000);
+  return [
+    { id:'av1', nota:5, comentario:'Excelente atendimento, rápido e eficiente!',
+      userName:'Carlos M.', criadoEm:{ seconds: now - 86400 } },
+    { id:'av2', nota:4, comentario:'Bom serviço, preço justo.',
+      userName:'Ana P.',    criadoEm:{ seconds: now - 172800 } },
+    { id:'av3', nota:5, comentario:'Super recomendo, profissionais de qualidade.',
+      userName:'Roberto S.',criadoEm:{ seconds: now - 259200 } },
+  ];
+}
 function calcMetricas(leads) {
   const total = leads.length, confirmados = leads.filter(l=>l.status==="confirmado").length;
   const receita = leads.reduce((s,l)=>s+(l.valor||0),0);
@@ -2601,26 +2767,10 @@ function expandirQuery(q) {
 // expandirQuery — internal only (não exposto globalmente)
 
 // ── RANKING ENGINE ───────────────────────────────────────────────
-// score = proximidade(40) + avaliação(35) + match_serviço(15) + plano(10)
-function calcRankingScore(o, distKm, query) {
-  const distScore = Math.max(0, 40 - (Math.min(distKm, 20) / 20) * 40);
-  const avalScore = ((o.avaliacao || 0) / 5) * 35;
-  const q = (query || '').toLowerCase();
-  const svcs = (o.servicos || []).filter(s => s.ativo);
-  const svcScore = q
-    ? svcs.some(s => s.nome.toLowerCase() === q) ? 15
-    : svcs.some(s => s.nome.toLowerCase().includes(q)) ? 8 : 0
-    : 0;
-  const planScore  = o.plano === 'pro' ? 10 : o.plano === 'basico' ? 3 : 0;
-  const openBoost  = o.aberto ? 5 : 0;
-  const avalBoost  = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
-  // Engajamento: CTR de cliques/impressões — max 5pts (só quando há dados reais suficientes)
-  const _imp = (o.stats?.impressoes || 0);
-  const _cli = (o.stats?.cliques    || 0);
-  const engBoost = _imp > 10 ? Math.min(5, Math.round((_cli / _imp) * 50)) : 0;
-  return Math.round((distScore + avalScore + svcScore + planScore + openBoost + avalBoost + engBoost) * 10) / 10;
-}
-// calcRankingScore, demoOficinas — internal only (não expostos globalmente)
+// A definição canônica de calcRankingScore está no bloco Firebase acima
+// (linha ~2xxx). Esta entrada era duplicada e foi removida para evitar
+// divergência silenciosa entre as duas implementações.
+// Referência: calcRankingScore(o, distKm, query) → Number (score 0–115)
 
 // ── SEED FIREBASE (dev only — localhost exclusivo) ────────────────
 window.seedFirebase = async function() {
@@ -2654,6 +2804,10 @@ window.dispatchEvent(new Event("fbready"));
 <script>
 (function() {
 'use strict';
+
+// Alias seguro: usa window.log se disponível, senão silencia.
+// Evita ReferenceError se este script carregar antes do logger principal.
+const _log = (...a) => (typeof window.log === 'function' ? window.log(...a) : void 0);
 
 // ── OficinaService ─────────────────────────────────────────────
 // Responsabilidade: CRUD de oficinas com cache in-memory (5 min).
@@ -2722,7 +2876,7 @@ const SearchController = (() => {
     async buscar(filtros={}) {
       const k = _key(filtros);
       const hit = _get(k);
-      if (hit) { log('[SearchController] cache hit'); return hit; }
+      if (hit) { _log('[SearchController] cache hit'); return hit; }
       const d = await window.FB.listarOficinas(filtros);
       _set(k,d); return d;
     },
@@ -2782,7 +2936,7 @@ window.Services = Object.freeze({
   Auth:    AuthController,
 });
 
-log('[Services] Camada inicializada:', Object.keys(window.Services));
+_log('[Services] Camada inicializada:', Object.keys(window.Services));
 })();
 </script>
 <script>
@@ -2835,6 +2989,24 @@ const HORARIOS_PADRAO = [
 <script>
 // ── NAVIGATION ───────────────────────────────────────────────────
 // ── FORNECEDOR ────────────────────────────────────────────────────
+// ── Fornecedor: toggle campo "Outro" em especialidades ───────────
+function fornEspecChange() {
+  const outroChecked = document.querySelector('#fornEspecChips input[value="__outro__"]')?.checked;
+  const inp = document.getElementById('fEspecF');
+  if (!inp) return;
+  inp.style.display = outroChecked ? 'block' : 'none';
+  if (outroChecked) { inp.value = ''; inp.focus(); }
+}
+
+// ── Fornecedor: toggle campo "Outro" em peças ────────────────────
+function fornPecasOutroChange() {
+  const outroChecked = document.querySelector('input[name="fPecas"][value="__outro__"]')?.checked;
+  const inp = document.getElementById('fPecasOutroInput');
+  if (!inp) return;
+  inp.style.display = outroChecked ? 'block' : 'none';
+  if (outroChecked) { inp.value = ''; inp.focus(); }
+}
+
 async function cadastrarFornecedor() {
   const nome   = document.getElementById('fNome').value.trim();
   const cidade = document.getElementById('fCidadeF').value;
@@ -2849,22 +3021,43 @@ async function cadastrarFornecedor() {
   const spin = document.getElementById('fornecedorSpinner');
   btn.style.display='none'; spin.style.display='';
 
-  // Salva dados do fornecedor (demo: localStorage)
+  // ── Coleta especialidades: chips marcados + campo "Outro" ──────
+  const especChips = [...document.querySelectorAll('#fornEspecChips input:checked')]
+    .map(c => c.value)
+    .filter(v => v !== '__outro__');
+  const especOutro = document.getElementById('fEspecF').value.trim();
+  if (especOutro) especChips.push(especOutro);
+
+  // ── Coleta peças: checkboxes marcados + campo "Outro" ──────────
+  const pecasChips = [...document.querySelectorAll('input[name="fPecas"]:checked')]
+    .map(c => c.value)
+    .filter(v => v !== '__outro__');
+  const pecasOutro = document.getElementById('fPecasOutroInput').value.trim();
+  if (pecasOutro) pecasChips.push(pecasOutro);
+
+  const bairroSel = document.getElementById('fBairroF');
+  const bairroOutro = document.getElementById('fBairroFOutro');
+  const bairro = (bairroOutro && bairroOutro.style.display !== 'none')
+    ? bairroOutro.value.trim()
+    : bairroSel?.value?.trim() || '';
+
   const fornecedor = {
-    nome, cidade,
-    bairro:    document.getElementById('fBairroF').value.trim(),
+    nome, cidade, bairro,
     endereco:  document.getElementById('fEnderecoF').value.trim(),
     whatsapp:  wpp,
     email:     document.getElementById('fEmailF').value.trim(),
-    espec:     document.getElementById('fEspecF').value.trim(),
+    especialidades: especChips,
+    pecas:     pecasChips,
     entrega:   document.getElementById('fEntregaF').value,
     cadastradoEm: new Date().toISOString()
   };
-  try {
-    const lista = JSON.parse(localStorage.getItem('mecbusca_fornecedores') || '[]');
+  // Salva localmente como backup (safeLS é tolerante a SecurityError)
+  const _salvarFornLocal = () => {
+    const lista = safeLS.getJSON('mecbusca_fornecedores', []);
     lista.push(fornecedor);
-    localStorage.setItem('mecbusca_fornecedores', JSON.stringify(lista));
-  } catch(e) {}
+    safeLS.setJSON('mecbusca_fornecedores', lista);
+  };
+  _salvarFornLocal();
 
   try {
     await window.FB.cadastrarFornecedorDB(fornecedor);
@@ -2873,12 +3066,6 @@ async function cadastrarFornecedor() {
     setTimeout(() => closeOverlay('scFornecedor'), 1200);
   } catch(e) {
     btn.style.display=''; spin.style.display='none';
-    // Fallback: salva localmente mesmo sem Firebase
-    try {
-      const lista = JSON.parse(localStorage.getItem('mecbusca_fornecedores') || '[]');
-      lista.push(fornecedor);
-      localStorage.setItem('mecbusca_fornecedores', JSON.stringify(lista));
-    } catch(_) {}
     toast('Cadastro salvo localmente.', 'success');
     setTimeout(() => goTo('scHome'), 1200);
   }
@@ -3032,89 +3219,94 @@ async function renderMapa() {
   if (!container) return;
   container.style.display = '';
 
-  // Load Leaflet JS on demand (lazy)
-  if (!window.L) {
-    await new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-      s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GqaY=';
-      s.crossOrigin = '';
-      s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    });
-  }
-  if (loading) loading.style.display = 'none';
-
-  const lat = STATE.userLat || -20.268;
-  const lng = STATE.userLng || -40.413;
-
-  if (!_leafletMap) {
-    _leafletMap = window.L.map('leafletMap').setView([lat, lng], 13);
-    window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
-      maxZoom: 19
-    }).addTo(_leafletMap);
-  } else {
-    _leafletMap.setView([lat, lng], 13);
-  }
-
-  // Clear old markers
-  _leafletMarkers.forEach(m => m.remove());
-  _leafletMarkers = [];
-
-  // User position marker
-  if (STATE.userLat) {
-    const userIcon = window.L.divIcon({
-      html: '<div style="background:#00D084;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>',
-      iconSize: [16, 16], className: ''
-    });
-    window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon })
-      .addTo(_leafletMap)
-      .bindPopup('📍 Você está aqui');
-    _leafletMarkers.push(window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon }));
-  }
-
-  // Oficina markers
-  const ofs = STATE.oficinas.filter(o => o.lat && o.lng);
-  if (!ofs.length) {
-    const el = document.getElementById('mapLoading');
-    if (el) { el.style.display = 'flex'; el.textContent = '📍 Nenhuma oficina com localização cadastrada ainda.'; }
-  }
-  ofs.forEach(of => {
-    const isPro  = of.plano === 'pro';
-    const color  = isPro ? '#FFD700' : '#00D084';
-    const icon   = window.L.divIcon({
-      html: '<div style="background:' + color + ';color:#000;font-size:11px;font-weight:700;'
-          + 'padding:4px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.35);">'
-          + (isPro ? '⭐ ' : '🔧 ') + esc(of.nome.split(' ')[0])
-          + '</div>',
-      iconAnchor: [0, 0], className: ''
-    });
-    const marker = window.L.marker([of.lat, of.lng], { icon })
-      .addTo(_leafletMap)
-      .bindPopup(
-        '<b>' + esc(of.nome) + '</b><br>'
-        + '★ ' + (of.avaliacao || '—') + ' · ' + (of.bairro || of.cidade || '') + '<br>'
-        + '<button class="map-popup-btn" data-id="' + esc(of.id) + '" style="margin-top:6px;background:#00D084;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;color:#000;">Ver orçamento</button>'
-      )
-      .on('popupopen', () => {
-        document.querySelectorAll('.map-popup-btn').forEach(b => {
-          b.onclick = () => openBudget(b.dataset.id);
-        });
+  try {
+    // Load Leaflet JS on demand (lazy)
+    if (!window.L) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+        s.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GqaY=';
+        s.crossOrigin = '';
+        s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
       });
-    _leafletMarkers.push(marker);
-  });
+    }
+    if (loading) loading.style.display = 'none';
 
-  // Fit map to markers
-  if (ofs.length) {
-    const bounds = window.L.latLngBounds(ofs.map(o => [o.lat, o.lng]));
-    _leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+    const lat = STATE.userLat || -20.268;
+    const lng = STATE.userLng || -40.413;
+
+    if (!_leafletMap) {
+      _leafletMap = window.L.map('leafletMap').setView([lat, lng], 13);
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>',
+        maxZoom: 19
+      }).addTo(_leafletMap);
+    } else {
+      _leafletMap.setView([lat, lng], 13);
+    }
+
+    // Clear old markers
+    _leafletMarkers.forEach(m => m.remove());
+    _leafletMarkers = [];
+
+    // User position marker
+    if (STATE.userLat) {
+      const userIcon = window.L.divIcon({
+        html: '<div style="background:#00D084;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>',
+        iconSize: [16, 16], className: ''
+      });
+      window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon })
+        .addTo(_leafletMap)
+        .bindPopup('📍 Você está aqui');
+      _leafletMarkers.push(window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon }));
+    }
+
+    // Oficina markers
+    const ofs = STATE.oficinas.filter(o => o.lat && o.lng);
+    if (!ofs.length) {
+      const el = document.getElementById('mapLoading');
+      if (el) { el.style.display = 'flex'; el.textContent = '📍 Nenhuma oficina com localização cadastrada ainda.'; }
+    }
+    ofs.forEach(of => {
+      const isPro  = of.plano === 'pro';
+      const color  = isPro ? '#FFD700' : '#00D084';
+      const icon   = window.L.divIcon({
+        html: '<div style="background:' + color + ';color:#000;font-size:11px;font-weight:700;'
+            + 'padding:4px 7px;border-radius:8px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,0.35);">'
+            + (isPro ? '⭐ ' : '🔧 ') + esc(of.nome.split(' ')[0])
+            + '</div>',
+        iconAnchor: [0, 0], className: ''
+      });
+      const marker = window.L.marker([of.lat, of.lng], { icon })
+        .addTo(_leafletMap)
+        .bindPopup(
+          '<b>' + esc(of.nome) + '</b><br>'
+          + '★ ' + (of.avaliacao || '—') + ' · ' + (of.bairro || of.cidade || '') + '<br>'
+          + '<button class="map-popup-btn" data-id="' + esc(of.id) + '" style="margin-top:6px;background:#00D084;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;color:#000;">Ver orçamento</button>'
+        )
+        .on('popupopen', () => {
+          document.querySelectorAll('.map-popup-btn').forEach(b => {
+            b.onclick = () => openBudget(b.dataset.id);
+          });
+        });
+      _leafletMarkers.push(marker);
+    });
+
+    // Fit map to markers
+    if (ofs.length) {
+      const bounds = window.L.latLngBounds(ofs.map(o => [o.lat, o.lng]));
+      _leafletMap.fitBounds(bounds, { padding: [30, 30], maxZoom: 14 });
+    }
+    // Invalidate size after container becomes visible (debounced to avoid rapid calls)
+    clearTimeout(window._mapResizeTimer);
+    window._mapResizeTimer = setTimeout(() => _leafletMap?.invalidateSize(), 120);
+    const btnC = document.getElementById('btnCentralizar');
+    if (btnC) btnC.style.display = '';
+  } catch(e) {
+    logE('[renderMapa] erro:', e);
+    if (loading) { loading.style.display = 'flex'; loading.textContent = '⚠️ Erro ao carregar mapa. Verifique sua conexão.'; }
   }
-  // Invalidate size after container becomes visible
-  setTimeout(() => _leafletMap.invalidateSize(), 100);
-  // Show "centralizar" button
-  const btnC = document.getElementById('btnCentralizar');
-  if (btnC) btnC.style.display = '';
 }
 
 // ── NOTIFICAÇÃO SONORA ───────────────────────────────────────────
@@ -3150,7 +3342,7 @@ function addHistorico(termo) {
     let hist = getHistorico().filter(h => h !== termo);
     hist.unshift(termo);
     hist = hist.slice(0, HIST_MAX);
-    localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+    safeLS.setJSON(HIST_KEY, hist);
     renderHistorico();
   } catch(e) {}
 }
@@ -3186,7 +3378,7 @@ function buscarHistorico(termo) {
 function removerHistorico(termo) {
   try {
     const hist = getHistorico().filter(h => h !== termo);
-    localStorage.setItem(HIST_KEY, JSON.stringify(hist));
+    safeLS.setJSON(HIST_KEY, hist);
     renderHistorico();
   } catch(e) {}
 }
@@ -3281,23 +3473,24 @@ function compartilharOficina(id) {
 function toggleTema() {
   const root = document.documentElement;
   const isLight = root.getAttribute('data-tema') === 'claro';
+  const icon = document.getElementById('temaBtnIcon');
   if (isLight) {
     root.removeAttribute('data-tema');
-    document.getElementById('temaBtn').textContent = '🌙';
-    try { localStorage.setItem('mecbusca_tema', 'escuro'); } catch(e) {}
+    if (icon) icon.textContent = '🌙';
+    safeLS.set('mecbusca_tema', 'escuro');
   } else {
     root.setAttribute('data-tema', 'claro');
-    document.getElementById('temaBtn').textContent = '☀️';
-    try { localStorage.setItem('mecbusca_tema', 'claro'); } catch(e) {}
+    if (icon) icon.textContent = '☀️';
+    safeLS.set('mecbusca_tema', 'claro');
   }
 }
 function initTema() {
   try {
-    const t = localStorage.getItem('mecbusca_tema');
+    const t = safeLS.get('mecbusca_tema');
     if (t === 'claro') {
       document.documentElement.setAttribute('data-tema', 'claro');
-      const btn = document.getElementById('temaBtn');
-      if (btn) btn.textContent = '☀️';
+      const icon = document.getElementById('temaBtnIcon');
+      if (icon) icon.textContent = '☀️';
     }
   } catch(e) {}
 }
@@ -3355,20 +3548,17 @@ const SERVICOS_PADRAO = [
 const LS_KEY_SVCS = 'mecbusca_servicos_extra';
 
 function getServicosExtra() {
-  try { return JSON.parse(localStorage.getItem(LS_KEY_SVCS) || '[]'); }
-  catch { return []; }
+  return safeLS.getJSON(LS_KEY_SVCS, []);
 }
 
 function adicionarServicoAoCatalogo(nome) {
   if (!nome) return;
   const nomeLower = nome.toLowerCase().trim();
-  // Ignora se já existe no padrão
   if (SERVICOS_PADRAO.some(s => s.nome.toLowerCase() === nomeLower)) return;
   const extras = getServicosExtra();
   if (extras.some(s => s.toLowerCase() === nomeLower)) return;
   extras.push(nome.trim());
-  try { localStorage.setItem(LS_KEY_SVCS, JSON.stringify(extras)); } catch(e) { logW('localStorage indisponível'); }
-  // Rebuildamos o select caso a home esteja visível
+  safeLS.setJSON(LS_KEY_SVCS, extras);
   buildServicoSelect();
 }
 
@@ -3587,6 +3777,13 @@ function goTo(id) {
     openOverlay(id);
     return;
   }
+  // ── Cleanup de listeners ao sair do painel ────────────────────
+  // onSnapshot acumula listeners se não cancelado. Cancela sempre
+  // que o usuário navega para fora do painel.
+  if (id !== 'scPainel' && window._leadsUnsub) {
+    window._leadsUnsub();
+    window._leadsUnsub = null;
+  }
   // Fechar qualquer overlay aberto ao navegar
   ['scAuth','scOnboarding','scFornecedor'].forEach(ov => {
     const el = document.getElementById(ov);
@@ -3603,11 +3800,9 @@ function goTo(id) {
   window.scrollTo(0, 0);
   if (id === 'scCliente') {
     renderFilters(); runSearch(); renderHistorico(); updateFavCount();
-    // Update URL hash for shareable links
     if (history.replaceState) history.replaceState(null, '', '#busca');
   }
   if (id === 'scHome') { document.title = 'MecBusca — Encontre oficinas perto de você'; buildServicoSelect(); initTema(); }
-  // Close mobile sidebar when navigating
   document.getElementById('painelSidebar')?.classList.remove('open');
 }
 
@@ -3686,6 +3881,32 @@ function escapeHtml(str) {
 const esc = escapeHtml; // alias for brevity
 
 // ── DEBOUNCE — prevent Firebase read on every keystroke ──────────
+// ── safeLS — localStorage com try/catch ──────────────────────────
+// Safari private mode e alguns ambientes corporativos lançam
+// SecurityError em qualquer acesso ao localStorage.
+const safeLS = {
+  get(key, fallback = null) {
+    try { const v = localStorage.getItem(key); return v !== null ? v : fallback; }
+    catch(e) { return fallback; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(key, val); return true; }
+    catch(e) { logW('[safeLS] set falhou:', key, e.name); return false; }
+  },
+  remove(key) {
+    try { localStorage.removeItem(key); return true; }
+    catch(e) { return false; }
+  },
+  getJSON(key, fallback = null) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch(e) { return fallback; }
+  },
+  setJSON(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch(e) { logW('[safeLS] setJSON falhou:', key, e.name); return false; }
+  },
+};
+
 function debounce(fn, ms) {
   let t;
   return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
@@ -3957,27 +4178,34 @@ async function nextStep(to) {
     if (end && cid) {
       const statusEl = document.getElementById('geoStatus');
       if (statusEl) statusEl.textContent = '📍 Geocodificando endereço...';
-      setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
-    const geo = await geocodificarEndereco(end, cid);
-      if (geo) {
-        STATE.onbData.lat = geo.lat;
-        STATE.onbData.lng = geo.lng;
-        if (statusEl) statusEl.textContent = '✅ Localização encontrada (' + geo.lat.toFixed(4) + ', ' + geo.lng.toFixed(4) + ')';
-      } else {
-        if (statusEl) statusEl.textContent = '⚠️ Endereço não encontrado. Você pode continuar mesmo assim.';
+      try {
+        const geo = await geocodificarEndereco(end, cid);
+        if (geo) {
+          STATE.onbData.lat = geo.lat;
+          STATE.onbData.lng = geo.lng;
+          if (statusEl) statusEl.textContent = '✅ Localização encontrada (' + geo.lat.toFixed(4) + ', ' + geo.lng.toFixed(4) + ')';
+        } else {
+          if (statusEl) statusEl.textContent = '⚠️ Endereço não encontrado. Você pode continuar mesmo assim.';
+        }
+      } catch(e) {
+        logW('[nextStep] geocode falhou:', e.message);
+        const statusEl2 = document.getElementById('geoStatus');
+        if (statusEl2) statusEl2.textContent = '⚠️ Não foi possível geocodificar. Continue assim mesmo.';
       }
     }
   }
   clearAllErrors();
   if (to === 1) {
-    const nome = document.getElementById('onbNome').value.trim();
-    const wpp = document.getElementById('onbWpp').value.trim();
+    const nome   = document.getElementById('onbNome').value.trim();
+    const wpp    = document.getElementById('onbWpp').value.trim();
+    const cidade = document.getElementById('onbCidade').value.trim();
     let valid = true;
-    if (!nome) { showFieldError('onbNome', 'onbNomeErr'); valid = false; }
-    if (!validatePhone(wpp)) { showFieldError('onbWpp', 'onbWppErr'); valid = false; }
+    if (!nome)               { showFieldError('onbNome',   'onbNomeErr');   valid = false; }
+    if (!validatePhone(wpp)) { showFieldError('onbWpp',    'onbWppErr');    valid = false; }
+    if (!cidade)             { showFieldError('onbCidade', 'onbCidadeErr'); valid = false; }
     if (!valid) return;
-    STATE.onbData.nome = nome;
-    STATE.onbData.cidade = document.getElementById('onbCidade').value.trim() || 'Cariacica';
+    STATE.onbData.nome   = nome;
+    STATE.onbData.cidade = cidade;
     // Bairro: lê do select; se "Outro" foi escolhido, lê do input livre
     const bairroSel = document.getElementById('onbBairro');
     const bairroOutro = document.getElementById('onbBairroOutro');
@@ -4028,17 +4256,50 @@ function renderOnbSvcList() {
     </div>`).join('');
 }
 
+// ── Serviço: toggle "Outro" input ────────────────────────────────
+function onbSvcSelectChange() {
+  const sel = document.getElementById('nsvcSelect');
+  const outroWrap = document.getElementById('nsvcOutroWrap');
+  const isOutro = sel.value === '__outro__';
+  outroWrap.style.display = isOutro ? 'block' : 'none';
+  if (isOutro) {
+    document.getElementById('nsvcNome').value = '';
+    document.getElementById('nsvcNome').focus();
+  }
+}
+
 function addOnbSvc() {
-  const n = document.getElementById('nsvcNome').value.trim();
-  const mi = parseInt(document.getElementById('nsvcMin').value) || 0;
-  const ma = parseInt(document.getElementById('nsvcMax').value) || 0;
-  if (!n) { toast('Informe o nome do serviço', 'warning'); return; }
-  STATE.onbData.servicos.push({nome:n,min:mi,max:ma,ativo:true});
-  adicionarServicoAoCatalogo(n); // ← adiciona ao catálogo da home se for novo
-  document.getElementById('nsvcNome').value = '';
+  const sel   = document.getElementById('nsvcSelect');
+  const outro = document.getElementById('nsvcNome');
+  const isOutro = sel.value === '__outro__';
+
+  // Resolve nome: select value ou campo livre
+  let n = isOutro ? outro.value.trim() : sel.value.trim();
+  if (!n || n === '__outro__') {
+    toast('Selecione ou escreva o nome do serviço', 'warning');
+    if (isOutro) outro.focus(); else sel.focus();
+    return;
+  }
+
+  const MAX_PRICE = 99999;
+  const mi = Math.max(0, Math.min(MAX_PRICE, parseInt(document.getElementById('nsvcMin').value) || 0));
+  const ma = Math.max(0, Math.min(MAX_PRICE, parseInt(document.getElementById('nsvcMax').value) || 0));
+  if (ma > 0 && mi > ma) {
+    toast('Preço mínimo não pode ser maior que o máximo', 'warning');
+    document.getElementById('nsvcMin').focus();
+    return;
+  }
+
+  STATE.onbData.servicos.push({ nome: n, min: mi, max: ma, ativo: true });
+  adicionarServicoAoCatalogo(n);
+
+  // Reset
+  sel.value = '';
+  document.getElementById('nsvcOutroWrap').style.display = 'none';
+  outro.value = '';
   document.getElementById('nsvcMin').value = '';
   document.getElementById('nsvcMax').value = '';
-  document.getElementById('nsvcNome').focus();
+  sel.focus();
   renderOnbSvcList();
 }
 
@@ -4056,12 +4317,18 @@ function renderOnbHorarios() {
     </div>`).join('');
 }
 
+// selectPlan — UI visual only. STATE.selectedPlan NÃO é enviado ao Firestore.
+// finalizarCadastro() hardcoda plano:'basico' independente desta seleção.
+// Mantido apenas para compatibilidade de UI futura (upgrade modal).
 function selectPlan(p) {
-  STATE.selectedPlan = p;
-  document.getElementById('planBasico').classList.toggle('selected', p === 'basico');
-  document.getElementById('planBasico').setAttribute('aria-checked', p === 'basico');
-  document.getElementById('planPro').classList.toggle('selected', p === 'pro');
-  document.getElementById('planPro').setAttribute('aria-checked', p === 'pro');
+  STATE.selectedPlan = p; // apenas UI, não usado no cadastro
+  ['planBasico','planPro','planPremium'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const isPlan = id === 'plan' + p.charAt(0).toUpperCase() + p.slice(1);
+    el.classList.toggle('selected', isPlan);
+    el.setAttribute('aria-checked', isPlan);
+  });
 }
 
 async function finalizarCadastro() {
@@ -4325,13 +4592,17 @@ function clearSearch() {
 }
 
 async function runSearch() {
-  // Save to history if user typed something
-  const q = document.getElementById('cliSearch')?.value?.trim();
-  if (q && q.length >= 2) addHistorico(q);
-  if (STATE.modo === 'oficinas') await loadOficinas();
-  else if (STATE.modo === 'tipos') renderTipos();
-  else if (STATE.modo === 'servicos') renderServicosCliente();
-  else renderPecas();
+  try {
+    const q = document.getElementById('cliSearch')?.value?.trim();
+    if (q && q.length >= 2) addHistorico(q);
+    if (STATE.modo === 'oficinas') await loadOficinas();
+    else if (STATE.modo === 'tipos') renderTipos();
+    else if (STATE.modo === 'servicos') renderServicosCliente();
+    else renderPecas();
+  } catch(e) {
+    logE('[runSearch] erro:', e);
+    // loadOficinas já tem seu próprio erro de UI; silencia para os outros modos
+  }
 }
 
 // ── OFICINAS ────────────────────────────────────────────────────
@@ -5132,9 +5403,10 @@ function openAddSvcModal() {
 
 function salvarNovoSvc() {
   clearAllErrors();
-  const n = document.getElementById('asvNome').value.trim();
-  const mi = parseInt(document.getElementById('asvMin').value) || 0;
-  const ma = parseInt(document.getElementById('asvMax').value) || 0;
+  const MAX_PRICE = 99999;
+  const n  = document.getElementById('asvNome').value.trim();
+  const mi = Math.max(0, Math.min(MAX_PRICE, parseInt(document.getElementById('asvMin').value) || 0));
+  const ma = Math.max(0, Math.min(MAX_PRICE, parseInt(document.getElementById('asvMax').value) || 0));
   if (!n) { showFieldError('asvNome', 'asvNomeErr'); return; }
   if (ma > 0 && mi > ma) {
     toast('Preço mínimo não pode ser maior que o máximo', 'warning');
@@ -5654,6 +5926,7 @@ async function renderPerfil(of) {
   if (!el) return;
   el.querySelector('.perfil-skel')?.remove();
 
+  try {
   const ini   = esc((of.nome||'OF').slice(0,2).toUpperCase());
   const svcs  = (of.servicos||[]).filter(s => s.ativo);
   const stars = of.avaliacao
@@ -5779,6 +6052,10 @@ async function renderPerfil(of) {
       else if (action === 'copy')     copiarLinkPerfil(ofId);
     });
   }, 80);
+  } catch(e) {
+    logE('[renderPerfil] erro:', e);
+    if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro ao carregar perfil</div><div class="empty-sub">Tente novamente em alguns instantes.</div></div>';
+  }
 }
 
 function _buildAvaliaSection(perfilEl, ofId) {
@@ -5844,6 +6121,7 @@ async function loadPerfilReviews(ofId) {
 // IMPROVED DASHBOARD — taxa de resposta, serviço top, origem leads
 // ════════════════════════════════════════════════════════════════
 async function renderDashboard(el) {
+  try {
   const leads   = STATE.leads;
   const oficina = STATE.oficinaAtual || {};
   const stats   = STATE._stats || await (window.FB?.getStats(oficina.id) || Promise.resolve({impressoes:0,cliques:0,whatsapp:0,orcamentos:0}));
@@ -5964,6 +6242,10 @@ async function renderDashboard(el) {
       <div style="font-size:13px;color:var(--t2);margin-bottom:14px;">Topo das buscas · Leads ilimitados · Dashboard completo · Agendamentos</div>
       <button class="btn btn-primary" style="width:auto;padding:12px 28px;background:#FFD700;color:#0A0D0B;" onclick="showUpgradeCTA()">⭐ Conhecer o Plano Pro</button>
     </div>` : ''}`;
+  } catch(e) {
+    logE('[renderDashboard] erro:', e);
+    if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro ao carregar dashboard</div><div class="empty-sub">Tente recarregar a página.</div></div>';
+  }
 }
 
 function renderMiniLeadsHtml(leads) {
@@ -6106,7 +6388,7 @@ window.addEventListener('beforeinstallprompt', e => {
   if (banner) {
     // Show after 30s or after 2nd visit
     const visits = parseInt(localStorage.getItem('mb_visits')||'0') + 1;
-    localStorage.setItem('mb_visits', visits);
+    safeLS.set('mb_visits', visits);
     if (visits >= 2) {
       setTimeout(() => { banner.style.display = 'flex'; }, 5000);
     }
@@ -6119,7 +6401,7 @@ document.getElementById('btnInstallYes')?.addEventListener('click', () => {
     _deferredInstall.userChoice.then(r => {
       if (r.outcome === 'accepted') {
         document.getElementById('installBanner').style.display = 'none';
-        try { localStorage.setItem('mb_installed', '1'); } catch(e) {}
+        safeLS.set('mb_installed', '1');
       }
     });
   }
@@ -6127,7 +6409,7 @@ document.getElementById('btnInstallYes')?.addEventListener('click', () => {
 
 document.getElementById('btnInstallNo')?.addEventListener('click', () => {
   document.getElementById('installBanner').style.display = 'none';
-  try { localStorage.setItem('mb_install_dismissed', Date.now()); } catch(e) {}
+  safeLS.set('mb_install_dismissed', String(Date.now()));
 });
 
 window.addEventListener('appinstalled', () => {

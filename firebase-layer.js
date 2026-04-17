@@ -719,4 +719,31 @@ window.Services = Object.freeze({
   Auth:    AuthController,
 });
 
+// ── DEMO STUBS (modo DEMO) ────────────────────────────────────────
+//  Funções auxiliares usadas pelos métodos IS_DEMO acima.
+//  Mantidas aqui para não poluir o bundle de produção.
+//  demoOficinas e demoLeads são definidas no index.html (legacy).
+//  As que não têm contraparte no index.html ficam aqui.
+
+function demoAvaliacoes(oficinaId) {
+  // Retorna avaliações fictícias para o modo demo.
+  // Em produção, substituído por listarAvaliacoes() → Firestore.
+  return [
+    { id: 'av1', nota: 5, comentario: 'Excelente atendimento, rápido e eficiente!',
+      userName: 'Carlos M.', criadoEm: { seconds: Math.floor(Date.now()/1000) - 86400 } },
+    { id: 'av2', nota: 4, comentario: 'Bom serviço, preço justo.',
+      userName: 'Ana P.', criadoEm: { seconds: Math.floor(Date.now()/1000) - 172800 } },
+    { id: 'av3', nota: 5, comentario: 'Super recomendo, profissionais de qualidade.',
+      userName: 'Roberto S.', criadoEm: { seconds: Math.floor(Date.now()/1000) - 259200 } },
+  ];
+}
+
+// Garante que demoSave está disponível se firebase-layer.js for carregado standalone
+if (typeof demoSave === 'undefined') {
+  var _demoId = 9000;
+  function demoSave(col, data) {
+    return 'demo_' + (++_demoId);
+  }
+}
+
 window.dispatchEvent(new Event('fbready'));
