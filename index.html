@@ -141,6 +141,42 @@ body::before{
   border-top-color:#0A0D0B;border-radius:50%;animation:spin 0.8s linear infinite;
 }
 @keyframes spin{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+
+/* ── PROMO FEED CARDS ── */
+.promo-feed-card{
+  background:var(--s);border:1.5px solid var(--b);border-radius:var(--rl);
+  padding:16px;margin-bottom:12px;cursor:pointer;transition:all 0.2s;
+  position:relative;overflow:hidden;animation:fadeUp 0.2s ease both;
+}
+.promo-feed-card:hover{border-color:var(--b2);transform:translateY(-2px);box-shadow:var(--shadow-md);}
+.promo-feed-card.urgente{border-color:rgba(255,107,107,0.5);background:linear-gradient(160deg,var(--s),rgba(255,107,107,0.04));}
+.promo-feed-card.destaque{border-color:rgba(255,179,71,0.45);background:linear-gradient(160deg,var(--s),rgba(255,179,71,0.04));}
+.promo-feed-card.combo{border-color:rgba(91,156,246,0.4);background:linear-gradient(160deg,var(--s),rgba(91,156,246,0.04));}
+.promo-badge{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.08em;border-radius:6px;padding:3px 9px;margin-bottom:8px;}
+.promo-badge.urgente{background:rgba(255,107,107,0.15);color:var(--re);}
+.promo-badge.destaque{background:rgba(255,179,71,0.15);color:var(--am);}
+.promo-badge.combo{background:rgba(91,156,246,0.15);color:var(--bl);}
+.promo-badge.normal{background:var(--gg);color:var(--g);}
+.promo-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--t);margin-bottom:4px;}
+.promo-desc{font-size:12.5px;color:var(--t2);margin-bottom:10px;line-height:1.5;}
+.promo-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:11.5px;color:var(--t3);}
+.promo-urgency{color:var(--re);font-weight:600;}
+.promo-price-old{text-decoration:line-through;color:var(--t3);}
+.promo-price-new{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--g);}
+.promo-strip{position:absolute;top:0;right:0;background:var(--re);color:#fff;font-size:9px;
+  font-weight:800;padding:3px 10px;border-bottom-left-radius:8px;letter-spacing:0.06em;}
+.promo-vagas{background:rgba(255,107,107,0.12);color:var(--re);font-size:11px;font-weight:600;
+  border-radius:6px;padding:2px 8px;display:inline-block;}
+
+/* ── PAINEL PROMO EDITOR ── */
+.promo-editor-card{background:var(--bg3);border:1px solid var(--b);border-radius:var(--rl);padding:16px;margin-bottom:12px;}
+.promo-editor-card.active-promo{border-color:var(--g);background:linear-gradient(160deg,var(--bg3),rgba(0,208,132,0.04));}
+.promo-tipo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.promo-tipo-opt{border:1.5px solid var(--b);border-radius:var(--r);padding:10px;cursor:pointer;transition:all 0.15s;text-align:center;}
+.promo-tipo-opt.sel{border-color:var(--g);background:var(--gg2);}
+.promo-tipo-opt:hover:not(.sel){border-color:var(--b2);}
 
 /* ── FORMS ── */
 .form-group{margin-bottom:16px;position:relative;}
@@ -158,6 +194,15 @@ body::before{
 .form-input.has-error ~ .field-error{display:block;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 select.form-input option{background:var(--bg3);}
+
+/* ── PEÇA SEARCH SELECTS ── */
+#hbox-pecas select{width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border var(--transition);cursor:pointer;appearance:auto;}
+#hbox-pecas select:focus{border-color:var(--g);}
+#hbox-pecas select:disabled{opacity:0.45;cursor:not-allowed;}
+#hbox-pecas select option{background:var(--bg3);}
+#hbox-pecas input{width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13.5px;font-family:'DM Sans',sans-serif;outline:none;transition:border var(--transition);}
+#hbox-pecas input:focus{border-color:var(--g);}
+#hbox-pecas input::placeholder{color:var(--t3);}
 
 /* ── TOAST ── */
 .toast{
@@ -433,10 +478,19 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .success-sub{font-size:14px;color:var(--t2);margin-bottom:32px;line-height:1.6;}
 
 /* HOURS */
-.hora-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b);}
+.hora-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b);}
 .hora-row:last-child{border:none;}
-.hora-day{font-size:12px;color:var(--t2);width:36px;}
+.hora-day{font-size:12px;color:var(--t2);width:36px;font-weight:600;}
 .hora-range{font-size:12.5px;color:var(--t);flex:1;}
+.hora-times{display:flex;align-items:center;gap:6px;flex:1;}
+.hora-time-input{
+  width:72px;padding:5px 7px;background:var(--s);border:1.5px solid var(--b);
+  border-radius:8px;color:var(--t);font-size:12.5px;font-family:'DM Sans',sans-serif;
+  outline:none;transition:border var(--transition);text-align:center;
+}
+.hora-time-input:focus{border-color:var(--g);}
+.hora-time-input:disabled{opacity:0.35;cursor:not-allowed;}
+.hora-sep{font-size:11px;color:var(--t3);}
 .hora-toggle{width:36px;height:20px;background:var(--g);border-radius:10px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
 .hora-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#0A0D0B;transition:left 0.2s;}
 .hora-toggle.off{background:var(--s2);}
@@ -1305,16 +1359,60 @@ button,a,[role=button]{min-height:44px;}
       <!-- BUSCA PEÇAS -->
       <div class="home-search-box" id="hbox-pecas" style="display:none;">
         <div class="home-search-title">🔩 Encontre a peça que você precisa</div>
-        <div class="home-fields">
-          <div class="home-field home-field-full">
-            <label for="hPeca">Peça ou componente</label>
-            <input id="hPeca" type="text" placeholder="Ex: Filtro de óleo, pastilha, amortecedor..." autocomplete="off" onkeydown="if(event.key==='Enter')homeBuscarPeca()">
+
+        <!-- Campo de peça com autocomplete -->
+        <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
+          <label for="hPeca">Peça ou componente</label>
+          <div style="position:relative;">
+            <input id="hPeca" type="text" placeholder="Ex: Filtro de óleo, pastilha, amortecedor..."
+              autocomplete="off"
+              oninput="pecaAutocomplete(this.value)"
+              onkeydown="pecaInputKey(event)"
+              onfocus="pecaAutocomplete(this.value)"
+              style="padding-right:36px;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);font-size:14px;pointer-events:none;">🔍</span>
           </div>
-          <div class="home-field home-field-full">
-            <label for="hVeiculo">Veículo (opcional)</label>
-            <input id="hVeiculo" type="text" placeholder="Ex: Gol 1.0, HB20, Onix..." autocomplete="off" onkeydown="if(event.key==='Enter')homeBuscarPeca()">
+          <div id="pecaSuggestions" style="
+            display:none;position:absolute;left:0;right:0;top:100%;z-index:200;
+            background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);
+            box-shadow:var(--shadow-md);max-height:220px;overflow-y:auto;margin-top:4px;">
           </div>
         </div>
+
+        <!-- Veículo: Marca + Modelo -->
+        <div style="margin-bottom:10px;">
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:7px;text-transform:uppercase;letter-spacing:0.07em;">🚗 Veículo (opcional)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+            <div class="home-field">
+              <label for="hMarca">Marca</label>
+              <select id="hMarca" onchange="pecaUpdateModelos()" style="">
+                <option value="">Selecione a marca</option>
+              </select>
+            </div>
+            <div class="home-field">
+              <label for="hModelo">Modelo</label>
+              <select id="hModelo" onchange="pecaUpdateAnos()" disabled style="">
+                <option value="">Selecione o modelo</option>
+              </select>
+            </div>
+          </div>
+          <!-- Ano fabricação + Ano modelo -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="home-field">
+              <label for="hAnoFab">Ano fabricação</label>
+              <select id="hAnoFab" disabled style="">
+                <option value="">Ano fab.</option>
+              </select>
+            </div>
+            <div class="home-field">
+              <label for="hAnoMod">Ano modelo</label>
+              <select id="hAnoMod" disabled style="">
+                <option value="">Ano mod.</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         <button class="home-search-btn" style="background:var(--pu);" onclick="homeBuscarPeca()">
           🔩 Buscar peças
         </button>
@@ -1471,8 +1569,25 @@ button,a,[role=button]{min-height:44px;}
       </div>
       <input class="form-input" id="fPecasOutroInput" placeholder="Ex: Junta do cabeçote, sensor de oxigênio..." style="display:none;margin-top:4px;" aria-label="Outras peças">
     </div>
+    <!-- Upload de fotos -->
+    <div class="form-group">
+      <label class="form-label">Fotos da loja (opcional)</label>
+      <div id="fornFotosDrop" onclick="document.getElementById('fornFotosInput').click()"
+        style="border:2px dashed var(--b2);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:var(--s);"
+        ondragover="event.preventDefault();this.style.borderColor='var(--g)'"
+        ondragleave="this.style.borderColor=''"
+        ondrop="fornHandleDrop(event)">
+        <div style="font-size:28px;margin-bottom:6px;">📷</div>
+        <div style="font-size:13px;color:var(--t2);">Clique ou arraste fotos aqui</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:4px;">JPG, PNG ou WEBP · Máx. 5MB por foto · até 5 fotos</div>
+      </div>
+      <input type="file" id="fornFotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="fornHandleFiles(this.files)">
+      <div id="fornFotosPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+      <span class="field-error" id="fornFotosErr">Arquivo inválido ou muito grande (máx. 5MB)</span>
+    </div>
+
     <button class="btn btn-primary" style="background:var(--pu);" onclick="cadastrarFornecedor()">
-      <span id="fornecedorBtnText">🔩 Cadastrar fornecedor</span>
+      <span id="fornecedorBtnText">✅ Finalizar cadastro</span>
       <span id="fornecedorSpinner" style="display:none;"><span class="spinner"></span></span>
     </button>
   </div>
@@ -1550,6 +1665,21 @@ button,a,[role=button]{min-height:44px;}
         <label class="form-label" for="onbEmail">Email</label>
         <input class="form-input" id="onbEmail" placeholder="contato@suaoficina.com" type="email" autocomplete="email">
         <span class="field-error" id="onbEmailErr">Email inválido</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Fotos da oficina (opcional)</label>
+        <div id="onbFotosDrop" onclick="document.getElementById('onbFotosInput').click()"
+          style="border:2px dashed var(--b2);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:var(--s);"
+          ondragover="event.preventDefault();this.style.borderColor='var(--g)'"
+          ondragleave="this.style.borderColor=''"
+          ondrop="onbHandleDrop(event)">
+          <div style="font-size:26px;margin-bottom:5px;">📷</div>
+          <div style="font-size:13px;color:var(--t2);">Clique ou arraste fotos aqui</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px;">JPG, PNG ou WEBP · Máx. 5MB por foto · até 5 fotos</div>
+        </div>
+        <input type="file" id="onbFotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="onbHandleFiles(this.files)">
+        <div id="onbFotosPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
+        <span class="field-error" id="onbFotosErr" style="display:none;">Arquivo inválido ou muito grande (máx. 5MB)</span>
       </div>
       <button class="btn btn-primary" onclick="nextStep(1)">Continuar →</button>
     </div>
@@ -1728,6 +1858,7 @@ button,a,[role=button]{min-height:44px;}
     </div>
     <div class="search-modes" role="tablist" aria-label="Tipo de busca">
       <button class="mode-btn active" id="mode-oficinas" onclick="setMode('oficinas')" role="tab" aria-selected="true">🔧 Oficinas</button>
+      <button class="mode-btn" id="mode-ofertas" onclick="setMode('ofertas')" role="tab" aria-selected="false">🔥 Ofertas <span id="ofertasBadge" style="display:none;background:var(--re);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 5px;margin-left:2px;animation:pulse 1.5s infinite;">●</span></button>
       <button class="mode-btn" id="mode-tipos" onclick="setMode('tipos')" role="tab" aria-selected="false">🏪 Tipos</button>
       <button class="mode-btn" id="mode-servicos" onclick="setMode('servicos')" role="tab" aria-selected="false">⚙️ Serviços</button>
       <button class="mode-btn" id="mode-pecas" onclick="setMode('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
@@ -1944,6 +2075,11 @@ button,a,[role=button]{min-height:44px;}
       <div class="nav-item" onclick="painelPage('servicos',this)" role="button" tabindex="0">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
         Serviços & Preços
+      </div>
+      <div class="nav-item" onclick="painelPage('promocoes',this)" role="button" tabindex="0">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        Promoções
+        <span class="nav-badge" id="promoNavBadge" style="display:none;background:var(--re);" aria-label="promoções ativas">0</span>
       </div>
       <div class="nav-label" aria-hidden="true">Gestão</div>
       <div class="nav-item" onclick="painelPage('horarios',this)" role="button" tabindex="0">
@@ -2932,7 +3068,104 @@ const HORARIOS_PADRAO = [
 <script>
 // ── NAVIGATION ───────────────────────────────────────────────────
 // ── FORNECEDOR ────────────────────────────────────────────────────
-// ── Fornecedor: toggle campo "Outro" em especialidades ───────────
+// ── Onboarding (oficina): gerenciamento de fotos ────────────────
+const _onbFotos = [];
+
+function onbHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('onbFotosDrop').style.borderColor = '';
+  onbHandleFiles(e.dataTransfer.files);
+}
+
+function onbHandleFiles(files) {
+  const errEl = document.getElementById('onbFotosErr');
+  errEl.style.display = 'none';
+  const remaining = FORN_FOTO_MAX - _onbFotos.length;
+  let invalid = false;
+  [...files].slice(0, remaining).forEach(file => {
+    if (!file.type.startsWith('image/') || file.size > FORN_FOTO_MAX_BYTES) { invalid = true; return; }
+    const reader = new FileReader();
+    reader.onload = ev => { _onbFotos.push({ file, dataUrl: ev.target.result }); onbRenderFotosPreview(); };
+    reader.readAsDataURL(file);
+  });
+  if (invalid) errEl.style.display = 'block';
+  document.getElementById('onbFotosInput').value = '';
+}
+
+function onbRemoveFoto(idx) {
+  _onbFotos.splice(idx, 1);
+  onbRenderFotosPreview();
+}
+
+function onbRenderFotosPreview() {
+  const el = document.getElementById('onbFotosPreview');
+  if (!el) return;
+  el.innerHTML = _onbFotos.map((f, i) => `
+    <div style="position:relative;width:72px;height:72px;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--b2);flex-shrink:0;">
+      <img src="${f.dataUrl}" style="width:100%;height:100%;object-fit:cover;" alt="Foto ${i+1}">
+      <button onclick="onbRemoveFoto(${i})" title="Remover"
+        style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.7);color:#fff;border:none;
+        border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;min-height:auto;padding:0;">×</button>
+    </div>`).join('');
+  const drop = document.getElementById('onbFotosDrop');
+  if (drop) drop.style.display = _onbFotos.length >= FORN_FOTO_MAX ? 'none' : '';
+}
+
+
+const _fornFotos = []; // { file, dataUrl }
+const FORN_FOTO_MAX = 5;
+const FORN_FOTO_MAX_BYTES = 5 * 1024 * 1024;
+
+function fornHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('fornFotosDrop').style.borderColor = '';
+  fornHandleFiles(e.dataTransfer.files);
+}
+
+function fornHandleFiles(files) {
+  const errEl = document.getElementById('fornFotosErr');
+  errEl.style.display = 'none';
+  const remaining = FORN_FOTO_MAX - _fornFotos.length;
+  let invalid = false;
+  [...files].slice(0, remaining).forEach(file => {
+    if (!file.type.startsWith('image/') || file.size > FORN_FOTO_MAX_BYTES) {
+      invalid = true; return;
+    }
+    const reader = new FileReader();
+    reader.onload = e => {
+      _fornFotos.push({ file, dataUrl: e.target.result });
+      fornRenderFotosPreview();
+    };
+    reader.readAsDataURL(file);
+  });
+  if (invalid) errEl.style.display = 'block';
+  // Reset input so same file can be re-selected if removed
+  document.getElementById('fornFotosInput').value = '';
+}
+
+function fornRemoveFoto(idx) {
+  _fornFotos.splice(idx, 1);
+  fornRenderFotosPreview();
+}
+
+function fornRenderFotosPreview() {
+  const el = document.getElementById('fornFotosPreview');
+  if (!el) return;
+  el.innerHTML = _fornFotos.map((f, i) => `
+    <div style="position:relative;width:72px;height:72px;border-radius:var(--r);overflow:hidden;border:1.5px solid var(--b2);flex-shrink:0;">
+      <img src="${f.dataUrl}" style="width:100%;height:100%;object-fit:cover;" alt="Foto ${i+1}">
+      <button onclick="fornRemoveFoto(${i})" title="Remover foto"
+        style="position:absolute;top:3px;right:3px;background:rgba(0,0,0,0.7);color:#fff;border:none;
+        border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer;
+        display:flex;align-items:center;justify-content:center;min-height:auto;padding:0;">×</button>
+    </div>`).join('');
+  // Show/hide drop zone hint
+  const drop = document.getElementById('fornFotosDrop');
+  if (drop) drop.style.display = _fornFotos.length >= FORN_FOTO_MAX ? 'none' : '';
+}
+
+
 function fornEspecChange() {
   const outroChecked = document.querySelector('#fornEspecChips input[value="__outro__"]')?.checked;
   const inp = document.getElementById('fEspecF');
@@ -2992,6 +3225,7 @@ async function cadastrarFornecedor() {
     especialidades: especChips,
     pecas:     pecasChips,
     entrega:   document.getElementById('fEntregaF').value,
+    fotos:     _fornFotos.map(f => f.dataUrl),
     cadastradoEm: new Date().toISOString()
   };
   // Salva localmente como backup (safeLS é tolerante a SecurityError)
@@ -3005,12 +3239,14 @@ async function cadastrarFornecedor() {
   try {
     await window.FB.cadastrarFornecedorDB(fornecedor);
     btn.style.display=''; spin.style.display='none';
+    _fornFotos.length = 0; fornRenderFotosPreview();
     toast('Fornecedor cadastrado com sucesso! 🔩', 'success');
     setTimeout(() => closeOverlay('scFornecedor'), 1200);
   } catch(e) {
     btn.style.display=''; spin.style.display='none';
+    _fornFotos.length = 0; fornRenderFotosPreview();
     toast('Cadastro salvo localmente.', 'success');
-    setTimeout(() => goTo('scHome'), 1200);
+    setTimeout(() => { closeOverlay('scFornecedor'); }, 1200);
   }
 }
 
@@ -3446,12 +3682,17 @@ function homeSetTab(tab) {
   });
   document.getElementById('hbox-oficinas').style.display = tab === 'oficinas' ? '' : 'none';
   document.getElementById('hbox-pecas').style.display   = tab === 'pecas'    ? '' : 'none';
+  if (tab === 'pecas') pecaInitSelects();
 }
 
 function homeBuscarPeca() {
   const peca    = document.getElementById('hPeca').value.trim();
-  const veiculo = document.getElementById('hVeiculo').value.trim();
-  const q = [peca, veiculo].filter(Boolean).join(' ');
+  const marca   = document.getElementById('hMarca')?.value || '';
+  const modelo  = document.getElementById('hModelo')?.value || '';
+  const anoFab  = document.getElementById('hAnoFab')?.value || '';
+  const anoMod  = document.getElementById('hAnoMod')?.value || '';
+  const partes  = [peca, [marca, modelo].filter(Boolean).join(' '), anoFab].filter(Boolean);
+  const q = partes.join(' ').trim();
   document.getElementById('cliSearch').value = q;
   goTo('scCliente');
   setMode('pecas');
@@ -3744,6 +3985,7 @@ function goTo(id) {
   if (id === 'scCliente') {
     renderFilters(); runSearch(); renderHistorico(); updateFavCount();
     if (history.replaceState) history.replaceState(null, '', '#busca');
+    atualizarBadgeOfertas();
   }
   if (id === 'scHome') { document.title = 'MecBusca — Encontre oficinas perto de você'; buildServicoSelect(); initTema(); }
   document.getElementById('painelSidebar')?.classList.remove('open');
@@ -4168,10 +4410,10 @@ async function nextStep(to) {
     // renderOnbHorarios is called AFTER step activates (below)
   }
   if (to === 3) {
-    const toggles = document.querySelectorAll('#onbHorarios .hora-toggle');
-    STATE.onbData.horarios = HORARIOS_PADRAO.map((h, i) => ({
-      ...h, on: !toggles[i]?.classList.contains('off')
-    }));
+    const saved = STATE.onbData.horarios;
+    const base  = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length)
+      ? saved : HORARIOS_PADRAO;
+    STATE.onbData.horarios = collectHorarios(base, 'onbH');
   }
 
   // Activate the target step FIRST, then render into it
@@ -4251,13 +4493,57 @@ function removeOnbSvc(i) {
   renderOnbSvcList();
 }
 
-function renderOnbHorarios() {
-  document.getElementById('onbHorarios').innerHTML = HORARIOS_PADRAO.map((h, i) => `
-    <div class="hora-row">
+// ── Horários: helper compartilhado ──────────────────────────────
+// Gera as linhas de horário editáveis para onboarding e painel.
+// prefix: string única para diferenciar os inputs de cada contexto.
+function buildHoraRowsHtml(horarios, prefix) {
+  return horarios.map((h, i) => {
+    // Extrai abertura e fechamento do range salvo (ex: "07:30 – 18:00")
+    const parts = (h.range || '').split(/\s*[–-]\s*/);
+    const open  = parts[0] && parts[0] !== 'Fechado' ? parts[0].trim() : '07:30';
+    const close = parts[1] ? parts[1].trim() : '18:00';
+    const isOff = !h.on;
+    return `<div class="hora-row" id="${prefix}row${i}">
       <div class="hora-day">${h.dia}</div>
-      <div class="hora-range">${h.range}</div>
-      <div class="hora-toggle${h.on ? '' : ' off'}" onclick="this.classList.toggle('off')" role="switch" aria-checked="${h.on}" aria-label="Horário ${h.dia} ativo" tabindex="0"></div>
-    </div>`).join('');
+      <div class="hora-times">
+        <input type="time" class="hora-time-input" id="${prefix}open${i}" value="${open}" ${isOff ? 'disabled' : ''} aria-label="Abertura ${h.dia}">
+        <span class="hora-sep">até</span>
+        <input type="time" class="hora-time-input" id="${prefix}close${i}" value="${close}" ${isOff ? 'disabled' : ''} aria-label="Fechamento ${h.dia}">
+      </div>
+      <div class="hora-toggle${isOff ? ' off' : ''}"
+        onclick="horaToggle(this,'${prefix}',${i})"
+        role="switch" aria-checked="${!isOff}" aria-label="Ativar ${h.dia}" tabindex="0"></div>
+    </div>`;
+  }).join('');
+}
+
+function horaToggle(el, prefix, i) {
+  el.classList.toggle('off');
+  const isOff = el.classList.contains('off');
+  el.setAttribute('aria-checked', !isOff);
+  const openI  = document.getElementById(prefix + 'open'  + i);
+  const closeI = document.getElementById(prefix + 'close' + i);
+  if (openI)  openI.disabled  = isOff;
+  if (closeI) closeI.disabled = isOff;
+}
+
+// Lê os valores dos inputs e devolve array de horários no formato padrão
+function collectHorarios(horarios, prefix) {
+  return horarios.map((h, i) => {
+    const toggle = document.querySelector(`#${prefix}row${i} .hora-toggle`);
+    const on     = toggle ? !toggle.classList.contains('off') : h.on;
+    const open   = document.getElementById(prefix + 'open'  + i)?.value || '07:30';
+    const close  = document.getElementById(prefix + 'close' + i)?.value || '18:00';
+    const range  = on ? `${open} – ${close}` : 'Fechado';
+    return { dia: h.dia, range, on };
+  });
+}
+
+function renderOnbHorarios() {
+  const saved = STATE.onbData.horarios;
+  const base  = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length)
+    ? saved : HORARIOS_PADRAO;
+  document.getElementById('onbHorarios').innerHTML = buildHoraRowsHtml(base, 'onbH');
 }
 
 // selectPlan — UI visual only. STATE.selectedPlan NÃO é enviado ao Firestore.
@@ -4281,6 +4567,7 @@ async function finalizarCadastro() {
   STATE.onbData.plano = 'basico';
   STATE.onbData.ativo = true;
   STATE.onbData.stats = { impressoes:0, cliques:0, whatsapp:0, orcamentos:0 };
+  STATE.onbData.fotos = _onbFotos.map(f => f.dataUrl);
   if (!STATE.onbData.servicos) STATE.onbData.servicos = [];
   if (!STATE.onbData.horarios) STATE.onbData.horarios = [];
   if (!STATE.onbData.lat && STATE.onbData.endereco) {
@@ -4295,8 +4582,8 @@ async function finalizarCadastro() {
       : await window.FB.cadastrarOficina(STATE.onbData);
     STATE.oficina = { id, ...STATE.onbData, plano: 'basico' };
     STATE.oficinaAtual = STATE.oficina;
-    // Invalida cache de busca para que novo cadastro apareça imediatamente
     window.Services?.Search?.invalidar();
+    _onbFotos.length = 0;
     toast('🎉 Oficina cadastrada com sucesso!');
     nextStep(4);
   } catch(e) {
@@ -4325,6 +4612,214 @@ const DEMO_PECAS = [
   {id:'p007',nome:'Bateria 60Ah',desc:'Bateria selada 60Ah 500A com 18 meses de garantia',preco:320,precoMax:420,compat:['Universal'],loja:'Baterias Vitória',disponivel:true,icon:'🔋'},
   {id:'p008',nome:'Óleo motor 5W-30 sintético (4L)',desc:'Óleo sintético premium para motores modernos flex',preco:62,precoMax:90,compat:['Universal'],loja:'Distribuidora Vitória',disponivel:true,icon:'🛢️'},
 ];
+
+// ── CATÁLOGO DE VEÍCULOS BRASILEIROS ────────────────────────────
+const VEICULOS_BR = {
+  'Chevrolet': {
+    'Onix':    {inicio:2012, fim:2025},
+    'Cruze':   {inicio:2011, fim:2025},
+    'Tracker': {inicio:2013, fim:2025},
+    'S10':     {inicio:1995, fim:2025},
+    'Spin':    {inicio:2012, fim:2022},
+    'Equinox': {inicio:2018, fim:2025},
+  },
+  'Volkswagen': {
+    'Gol':     {inicio:1980, fim:2023},
+    'Polo':    {inicio:2018, fim:2025},
+    'Voyage':  {inicio:2009, fim:2023},
+    'T-Cross': {inicio:2019, fim:2025},
+    'Virtus':  {inicio:2018, fim:2025},
+    'Nivus':   {inicio:2020, fim:2025},
+    'Fox':     {inicio:2003, fim:2020},
+    'Saveiro': {inicio:1982, fim:2023},
+  },
+  'Fiat': {
+    'Uno':     {inicio:1984, fim:2022},
+    'Palio':   {inicio:1996, fim:2017},
+    'Siena':   {inicio:1997, fim:2015},
+    'Argo':    {inicio:2017, fim:2025},
+    'Cronos':  {inicio:2018, fim:2025},
+    'Pulse':   {inicio:2021, fim:2025},
+    'Mobi':    {inicio:2016, fim:2025},
+    'Toro':    {inicio:2016, fim:2025},
+    'Strada':  {inicio:1998, fim:2025},
+  },
+  'Hyundai': {
+    'HB20':      {inicio:2012, fim:2025},
+    'HB20S':     {inicio:2012, fim:2025},
+    'Creta':     {inicio:2016, fim:2025},
+    'Tucson':    {inicio:2004, fim:2025},
+    'Santa Fe':  {inicio:2001, fim:2025},
+    'i30':       {inicio:2008, fim:2020},
+  },
+  'Toyota': {
+    'Corolla': {inicio:2002, fim:2025},
+    'Hilux':   {inicio:1998, fim:2025},
+    'Yaris':   {inicio:2018, fim:2025},
+    'RAV4':    {inicio:2013, fim:2025},
+    'SW4':     {inicio:2005, fim:2025},
+    'Prius':   {inicio:2012, fim:2023},
+  },
+  'Honda': {
+    'Civic':    {inicio:1992, fim:2025},
+    'HR-V':     {inicio:2015, fim:2025},
+    'City':     {inicio:2009, fim:2025},
+    'Fit':      {inicio:2003, fim:2021},
+    'WR-V':     {inicio:2017, fim:2023},
+    'CR-V':     {inicio:1999, fim:2025},
+  },
+  'Ford': {
+    'Ka':      {inicio:1997, fim:2021},
+    'EcoSport':{inicio:2003, fim:2022},
+    'Ranger':  {inicio:1998, fim:2025},
+    'Fiesta':  {inicio:1996, fim:2019},
+    'Territory':{inicio:2020, fim:2024},
+  },
+  'Renault': {
+    'Kwid':    {inicio:2017, fim:2025},
+    'Sandero': {inicio:2007, fim:2023},
+    'Logan':   {inicio:2007, fim:2022},
+    'Duster':  {inicio:2012, fim:2025},
+    'Captur':  {inicio:2017, fim:2025},
+    'Oroch':   {inicio:2015, fim:2025},
+  },
+  'Jeep': {
+    'Renegade':  {inicio:2015, fim:2025},
+    'Compass':   {inicio:2017, fim:2025},
+    'Commander': {inicio:2021, fim:2025},
+    'Wrangler':  {inicio:1997, fim:2025},
+  },
+  'Nissan': {
+    'March':   {inicio:2011, fim:2021},
+    'Versa':   {inicio:2011, fim:2025},
+    'Kicks':   {inicio:2016, fim:2025},
+    'Frontier':{inicio:2002, fim:2025},
+    'Sentra':  {inicio:2007, fim:2025},
+  },
+};
+
+// ── INICIALIZA SELECTS DE VEÍCULO ────────────────────────────────
+function pecaInitSelects() {
+  const selMarca = document.getElementById('hMarca');
+  if (!selMarca || selMarca._initialized) return;
+  selMarca._initialized = true;
+  Object.keys(VEICULOS_BR).sort().forEach(marca => {
+    const opt = document.createElement('option');
+    opt.value = marca; opt.textContent = marca;
+    selMarca.appendChild(opt);
+  });
+}
+
+function pecaUpdateModelos() {
+  const marca = document.getElementById('hMarca').value;
+  const selMod = document.getElementById('hModelo');
+  const selAnoFab = document.getElementById('hAnoFab');
+  const selAnoMod = document.getElementById('hAnoMod');
+  selMod.innerHTML = '<option value="">Selecione o modelo</option>';
+  selAnoFab.innerHTML = '<option value="">Ano fab.</option>';
+  selAnoMod.innerHTML = '<option value="">Ano mod.</option>';
+  selAnoFab.disabled = true; selAnoMod.disabled = true;
+  if (!marca) { selMod.disabled = true; return; }
+  selMod.disabled = false;
+  const modelos = VEICULOS_BR[marca] || {};
+  Object.keys(modelos).sort().forEach(mod => {
+    const opt = document.createElement('option');
+    opt.value = mod; opt.textContent = mod;
+    selMod.appendChild(opt);
+  });
+}
+
+function pecaUpdateAnos() {
+  const marca = document.getElementById('hMarca').value;
+  const modelo = document.getElementById('hModelo').value;
+  const selAnoFab = document.getElementById('hAnoFab');
+  const selAnoMod = document.getElementById('hAnoMod');
+  selAnoFab.innerHTML = '<option value="">Ano fab.</option>';
+  selAnoMod.innerHTML = '<option value="">Ano mod.</option>';
+  if (!marca || !modelo) { selAnoFab.disabled = true; selAnoMod.disabled = true; return; }
+  const info = VEICULOS_BR[marca]?.[modelo];
+  if (!info) return;
+  selAnoFab.disabled = false; selAnoMod.disabled = false;
+  const anoAtual = new Date().getFullYear();
+  for (let a = info.fim; a >= info.inicio; a--) {
+    const o1 = document.createElement('option'); o1.value = a; o1.textContent = a; selAnoFab.appendChild(o1);
+    const o2 = document.createElement('option'); o2.value = a+1 <= anoAtual+1 ? a+1 : a; o2.textContent = o2.value; selAnoMod.appendChild(o2);
+  }
+}
+
+// ── AUTOCOMPLETE DE PEÇAS ────────────────────────────────────────
+let _pecaSuggIdx = -1;
+function pecaAutocomplete(val) {
+  const box = document.getElementById('pecaSuggestions');
+  if (!box) return;
+  const query = val.trim().toLowerCase();
+  if (!query) { box.style.display = 'none'; _pecaSuggIdx = -1; return; }
+  // Coleta peças de DEMO_PECAS + peças do Firestore se disponíveis
+  const todas = [...(DEMO_PECAS || []), ...(window._PECAS_LIVE || [])];
+  const matches = todas.filter(p =>
+    p.nome.toLowerCase().includes(query) ||
+    (p.desc && p.desc.toLowerCase().includes(query))
+  ).slice(0, 8);
+  if (!matches.length) { box.style.display = 'none'; return; }
+  _pecaSuggIdx = -1;
+  box.innerHTML = matches.map((p, i) => `
+    <div class="peca-sugg-item" data-idx="${i}" data-nome="${p.nome}"
+      onclick="pecaSelectSugg('${p.nome.replace(/'/g,"\\'")}')"
+      onmouseenter="pecaSuggHover(${i})"
+      style="display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background 0.12s;border-bottom:1px solid var(--b);">
+      <span style="font-size:20px;">${p.icon||'🔩'}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;color:var(--t);font-weight:500;">${p.nome}</div>
+        <div style="font-size:11px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.desc||''}</div>
+      </div>
+      <span style="font-size:11px;color:var(--g);font-weight:600;">R$${p.preco}–${p.precoMax}</span>
+    </div>
+  `).join('');
+  box.style.display = 'block';
+}
+
+function pecaSuggHover(idx) {
+  _pecaSuggIdx = idx;
+  document.querySelectorAll('.peca-sugg-item').forEach((el, i) => {
+    el.style.background = i === idx ? 'var(--s2)' : '';
+  });
+}
+
+function pecaSelectSugg(nome) {
+  document.getElementById('hPeca').value = nome;
+  document.getElementById('pecaSuggestions').style.display = 'none';
+  _pecaSuggIdx = -1;
+}
+
+function pecaInputKey(e) {
+  const box = document.getElementById('pecaSuggestions');
+  const items = box ? box.querySelectorAll('.peca-sugg-item') : [];
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    _pecaSuggIdx = Math.min(_pecaSuggIdx + 1, items.length - 1);
+    items.forEach((el, i) => el.style.background = i === _pecaSuggIdx ? 'var(--s2)' : '');
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    _pecaSuggIdx = Math.max(_pecaSuggIdx - 1, -1);
+    items.forEach((el, i) => el.style.background = i === _pecaSuggIdx ? 'var(--s2)' : '');
+  } else if (e.key === 'Enter') {
+    if (_pecaSuggIdx >= 0 && items[_pecaSuggIdx]) {
+      pecaSelectSugg(items[_pecaSuggIdx].dataset.nome);
+    } else {
+      homeBuscarPeca();
+    }
+  } else if (e.key === 'Escape') {
+    box.style.display = 'none';
+  }
+}
+
+// Fecha sugestões ao clicar fora
+document.addEventListener('click', e => {
+  if (!e.target.closest('#hbox-pecas')) {
+    const box = document.getElementById('pecaSuggestions');
+    if (box) box.style.display = 'none';
+  }
+});
 
 const DEMO_SERVICOS_AGRUPADOS = [
   {id:'sv001',nome:'Troca de óleo',cat:'Manutenção',icon:'🛢️',cor:'var(--gg)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:89,max:120,avaliacao:4.8},{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:75,max:95,avaliacao:4.3},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:110,max:150,avaliacao:4.9}]},
@@ -4491,6 +4986,12 @@ function setMode(modo) {
     if (mapaCont) mapaCont.style.display = '';
     if (cliBody)  cliBody.style.display  = 'none';
     runSearch().then(() => renderMapa());
+  } else if (modo === 'ofertas') {
+    if (mapaCont) mapaCont.style.display = 'none';
+    if (cliBody)  cliBody.style.display  = '';
+    renderOfertas();
+    // Pede permissão de notificação quando o user acessa a aba de ofertas
+    pedirPermissaoNotificacao();
   } else {
     if (mapaCont) mapaCont.style.display = 'none';
     if (cliBody)  cliBody.style.display  = '';
@@ -5160,11 +5661,508 @@ async function loadLeadsPainel() {
   }
 }
 
+// ════════════════════════════════════════════════════════════════
+// SISTEMA DE PROMOÇÕES & FEED DE OPORTUNIDADES
+// ════════════════════════════════════════════════════════════════
+
+// ── Estado local de promoções ─────────────────────────────────
+// Em produção isso viria do Firestore collection 'promocoes'
+const _PROMOS_KEY = 'mb_promos_v1';
+
+function promosLoad() {
+  try { return JSON.parse(localStorage.getItem(_PROMOS_KEY) || '[]'); } catch { return []; }
+}
+function promosSave(list) {
+  try { localStorage.setItem(_PROMOS_KEY, JSON.stringify(list)); } catch {}
+}
+
+// Promoções de demo para o feed do cliente
+const DEMO_PROMOS = [
+  {
+    id:'demo1', oficinaId:'of001', oficinaNome:'Auto Center Vitória',
+    bairro:'Praia do Canto', cidade:'Vitória', dist:1.2,
+    tipo:'urgente', emoji:'🔥',
+    titulo:'Troca de óleo com desconto hoje',
+    desc:'Óleo sintético 5W-30 + filtro incluído. Válido apenas hoje.',
+    servico:'Troca de óleo', precoAntigo:120, precoNovo:79,
+    vagas:4, vagasRestantes:2,
+    validade: Date.now() + 8*3600*1000, // 8h
+    score:92, aberto:true,
+  },
+  {
+    id:'demo2', oficinaId:'of002', oficinaNome:'Freios & Suspensão Vitória',
+    bairro:'Jardim Camburi', cidade:'Vitória', dist:2.1,
+    tipo:'destaque', emoji:'⚠️',
+    titulo:'Freios com preço especial — só até sexta',
+    desc:'Pastilhas dianteiras + mão de obra. Peças originais. Agenda limitada.',
+    servico:'Freios dianteiros', precoAntigo:320, precoNovo:219,
+    vagas:6, vagasRestantes:3,
+    validade: Date.now() + 3*24*3600*1000,
+    score:85, aberto:true,
+  },
+  {
+    id:'demo3', oficinaId:'of003', oficinaNome:'Alinhamento Total ES',
+    bairro:'Enseada do Suá', cidade:'Vitória', dist:0.8,
+    tipo:'combo', emoji:'💸',
+    titulo:'Alinhamento + Balanceamento combo',
+    desc:'Combo completo para qualquer carro. Serviço de 30 minutos. Agende agora.',
+    servico:'Alinhamento', precoAntigo:150, precoNovo:99,
+    vagas:null, vagasRestantes:null,
+    validade: Date.now() + 5*24*3600*1000,
+    score:78, aberto:true,
+  },
+  {
+    id:'demo4', oficinaId:'of004', oficinaNome:'Ar Frio Vitória',
+    bairro:'Centro', cidade:'Vitória', dist:3.4,
+    tipo:'normal', emoji:'❄️',
+    titulo:'Revisão de ar-condicionado',
+    desc:'Recarga + verificação completa do sistema. Ideal para o verão.',
+    servico:'Ar-condicionado', precoAntigo:200, precoNovo:149,
+    vagas:8, vagasRestantes:5,
+    validade: Date.now() + 7*24*3600*1000,
+    score:71, aberto:false,
+  },
+];
+
+// Retorna promos ativas (validade futura), priorizadas por: urgência > score > proximidade
+function getPromosAtivas(extra = []) {
+  const agora = Date.now();
+  const todas = [...DEMO_PROMOS, ...extra].filter(p => p.validade > agora);
+  const prioMap = { urgente:3, destaque:2, combo:1, normal:0 };
+  // Se usuário tem localização, calcula dist real
+  todas.forEach(p => {
+    if (STATE.userLat && p.lat && p.lng) {
+      p._dist = haversineKm(STATE.userLat, STATE.userLng, p.lat, p.lng);
+    } else {
+      p._dist = p.dist || 999;
+    }
+  });
+  return todas.sort((a,b) => {
+    const pa = (prioMap[a.tipo]||0)*100 + (a.score||0) - (a._dist||0)*2;
+    const pb = (prioMap[b.tipo]||0)*100 + (b.score||0) - (b._dist||0)*2;
+    return pb - pa;
+  });
+}
+
+function formatUrgencia(validade, vagas) {
+  const diff = validade - Date.now();
+  const horas = Math.floor(diff / 3600000);
+  const dias  = Math.floor(diff / 86400000);
+  let txt = '';
+  if (horas < 2)       txt = '⏰ Últimas horas!';
+  else if (horas < 24) txt = `⏰ Válido por mais ${horas}h`;
+  else if (dias === 1) txt = '📅 Válido até amanhã';
+  else                 txt = `📅 Válido por mais ${dias} dias`;
+  if (vagas !== null && vagas <= 3) txt += ` · 🚨 Só ${vagas} vaga${vagas!==1?'s':''}!`;
+  return txt;
+}
+
+// ── FEED DO CLIENTE ───────────────────────────────────────────
+function renderOfertas() {
+  const list = document.getElementById('resultsList');
+  const extra = promosLoad().filter(p => p.validade > Date.now());
+  const promos = getPromosAtivas(extra);
+
+  document.getElementById('resultsCount').innerHTML =
+    `<strong>${promos.length}</strong> oferta${promos.length!==1?'s':''} ativa${promos.length!==1?'s':''} perto de você`;
+
+  if (!promos.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="empty-icon">🔥</div>
+      <div class="empty-title">Nenhuma promoção ativa agora</div>
+      <div class="empty-sub">Volte mais tarde — novas ofertas aparecem diariamente.</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = promos.map((p, i) => {
+    const urg = formatUrgencia(p.validade, p.vagasRestantes);
+    const descPct = p.precoAntigo ? Math.round((1 - p.precoNovo/p.precoAntigo)*100) : 0;
+    const isUltHoras = (p.validade - Date.now()) < 24*3600*1000;
+    return `<article class="promo-feed-card ${p.tipo}" style="animation-delay:${i*50}ms"
+      onclick="promoClick('${esc(p.id)}','${esc(p.oficinaId)}')"
+      tabindex="0" onkeypress="if(event.key==='Enter')promoClick('${esc(p.id)}','${esc(p.oficinaId)}')"
+      aria-label="${esc(p.titulo)}">
+      ${isUltHoras ? '<div class="promo-strip">HOJE</div>' : ''}
+      <div class="promo-badge ${p.tipo}">${p.emoji} ${p.tipo === 'urgente' ? 'Urgente' : p.tipo === 'destaque' ? 'Destaque' : p.tipo === 'combo' ? 'Combo' : 'Oferta'}</div>
+      <div class="promo-title">${esc(p.titulo)}</div>
+      <div class="promo-desc">${esc(p.desc)}</div>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap;">
+        <div>
+          ${p.precoAntigo ? `<span class="promo-price-old">R$ ${p.precoAntigo}</span> ` : ''}
+          <span class="promo-price-new">R$ ${p.precoNovo}</span>
+          ${descPct > 0 ? `<span style="font-size:11px;background:rgba(0,208,132,0.15);color:var(--g);font-weight:700;border-radius:5px;padding:2px 6px;margin-left:6px;">-${descPct}%</span>` : ''}
+        </div>
+        ${p.vagasRestantes !== null && p.vagasRestantes <= 4 ? `<span class="promo-vagas">🚨 ${p.vagasRestantes} vaga${p.vagasRestantes!==1?'s':''} restante${p.vagasRestantes!==1?'s':''}</span>` : ''}
+      </div>
+      <div class="promo-meta">
+        <span>📍 ${esc(p.oficinaNome)} · ${p._dist < 900 ? (p._dist<1?'< 1 km':p._dist.toFixed(1)+' km') : esc(p.bairro||p.cidade)}</span>
+        <span>${p.aberto ? '<span style="color:var(--g);">● Aberto agora</span>' : '<span style="color:var(--t3);">● Fechado</span>'}</span>
+        <span class="promo-urgency">${urg}</span>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();promoClick('${esc(p.id)}','${esc(p.oficinaId)}')">💰 Aproveitar oferta</button>
+        <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppPromo('${esc(p.id)}')">💬 WhatsApp</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+function promoClick(promoId, oficinaId) {
+  // Abre orçamento/perfil da oficina
+  const of = STATE.oficinas.find(o => o.id === oficinaId);
+  if (of) openBudget(oficinaId);
+  else abrirPerfil(oficinaId);
+}
+
+function wppPromo(promoId) {
+  const p = getPromosAtivas(promosLoad()).find(x => x.id === promoId);
+  if (!p) return;
+  // Tenta achar whatsapp da oficina no STATE
+  const of = STATE.oficinas.find(o => o.id === p.oficinaId);
+  const wpp = of?.whatsapp || of?.wpp || '27999990000';
+  const msg = encodeURIComponent(`Olá! Vi a promoção "${p.titulo}" no MecBusca (R$${p.precoNovo}). Ainda está disponível?`);
+  window.open(`https://wa.me/55${wpp}?text=${msg}`, '_blank');
+  Analytics.track('promo_wpp', { promoId, oficinaId: p.oficinaId });
+}
+
+// ── BADGE & NOTIFICAÇÕES ─────────────────────────────────────
+function atualizarBadgeOfertas() {
+  const ativas = getPromosAtivas(promosLoad().filter(p => p.validade > Date.now()));
+  const badge = document.getElementById('ofertasBadge');
+  if (badge) badge.style.display = ativas.length > 0 ? '' : 'none';
+}
+
+function pedirPermissaoNotificacao() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission().then(perm => {
+      if (perm === 'granted') {
+        toast('🔔 Você receberá alertas de promoções perto de você!', 'success');
+        agendarAlertaPromos();
+      }
+    });
+  } else if (Notification.permission === 'granted') {
+    agendarAlertaPromos();
+  }
+}
+
+function agendarAlertaPromos() {
+  // Dispara notificação se há promo urgente não vista
+  const urgentes = getPromosAtivas([]).filter(p => p.tipo === 'urgente');
+  if (!urgentes.length) return;
+  const p = urgentes[0];
+  const vistas = safeLS.getJSON('mb_promos_vistas', []);
+  if (vistas.includes(p.id)) return;
+  setTimeout(() => {
+    if (Notification.permission === 'granted') {
+      new Notification('🔥 Promoção perto de você — MecBusca', {
+        body: `${p.titulo} · ${p.oficinaNome} · R$${p.precoNovo}`,
+        icon: '/icon-192.png',
+        tag: 'promo-' + p.id,
+        badge: '/icon-48.png',
+      });
+      const vistas2 = safeLS.getJSON('mb_promos_vistas', []);
+      vistas2.push(p.id);
+      safeLS.setJSON('mb_promos_vistas', vistas2.slice(-20));
+    }
+  }, 3000);
+}
+
+// ── PAINEL DO DONO — CRIAR/GERENCIAR PROMOÇÕES ───────────────
+function renderPromocoesPainel(c) {
+  const minhasPromos = promosLoad().filter(p => p.oficinaId === STATE.oficinaAtual?.id);
+  const ativas = minhasPromos.filter(p => p.validade > Date.now());
+  const expiradas = minhasPromos.filter(p => p.validade <= Date.now());
+
+  c.innerHTML = `
+  <div style="max-width:560px;">
+    <!-- STATS ROW -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;">
+      <div class="metric-card" style="text-align:center;">
+        <div class="metric-label">Ativas agora</div>
+        <div class="metric-value" style="font-size:28px;">${ativas.length}</div>
+      </div>
+      <div class="metric-card" style="text-align:center;">
+        <div class="metric-label">Expiradas</div>
+        <div class="metric-value" style="font-size:28px;color:var(--t3);">${expiradas.length}</div>
+      </div>
+      <div class="metric-card" style="text-align:center;">
+        <div class="metric-label">Visibilidade</div>
+        <div class="metric-value" style="font-size:20px;">${ativas.length > 0 ? '🟢 On' : '⚫ Off'}</div>
+      </div>
+    </div>
+
+    <!-- CRIAR NOVA PROMO -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🔥 Nova promoção</div>
+          <div class="card-sub">Apareça em destaque no feed de oportunidades dos clientes</div>
+        </div>
+      </div>
+
+      <!-- Tipo -->
+      <div style="margin-bottom:14px;">
+        <div class="form-label">Tipo de oferta</div>
+        <div class="promo-tipo-grid">
+          <div class="promo-tipo-opt sel" id="ptipoUrgente" onclick="selecionarTipoPromo('urgente')">
+            <div style="font-size:20px;">🔥</div>
+            <div style="font-size:12px;font-weight:700;color:var(--re);">Urgente</div>
+            <div style="font-size:10px;color:var(--t3);">Aparece primeiro · badge vermelho</div>
+          </div>
+          <div class="promo-tipo-opt" id="ptipoDestaque" onclick="selecionarTipoPromo('destaque')">
+            <div style="font-size:20px;">⚠️</div>
+            <div style="font-size:12px;font-weight:700;color:var(--am);">Destaque</div>
+            <div style="font-size:10px;color:var(--t3);">Alta visibilidade · badge amarelo</div>
+          </div>
+          <div class="promo-tipo-opt" id="ptipoCombo" onclick="selecionarTipoPromo('combo')">
+            <div style="font-size:20px;">💸</div>
+            <div style="font-size:12px;font-weight:700;color:var(--bl);">Combo</div>
+            <div style="font-size:10px;color:var(--t3);">Pacote múltiplos serviços</div>
+          </div>
+          <div class="promo-tipo-opt" id="ptipoNormal" onclick="selecionarTipoPromo('normal')">
+            <div style="font-size:20px;">🏷️</div>
+            <div style="font-size:12px;font-weight:700;color:var(--g);">Oferta</div>
+            <div style="font-size:10px;color:var(--t3);">Promoção padrão</div>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" id="pTipo" value="urgente">
+
+      <div class="form-group">
+        <label class="form-label" for="pTitulo">Título da promoção *</label>
+        <input class="form-input" id="pTitulo" placeholder="Ex: Troca de óleo com desconto hoje">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="pDesc">Descrição</label>
+        <input class="form-input" id="pDesc" placeholder="Detalhes da oferta, o que está incluso...">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="pServico">Serviço</label>
+          <select class="form-input" id="pServico">
+            <option value="">— Selecione —</option>
+            ${(STATE.oficinaAtual?.servicos||STATE.painelSvcs||[]).map(s => `<option>${esc(s.nome)}</option>`).join('')}
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="pValidade">Validade</label>
+          <select class="form-input" id="pValidade">
+            <option value="2">2 horas (urgente)</option>
+            <option value="8" selected>Hoje (8h)</option>
+            <option value="24">24 horas</option>
+            <option value="72">3 dias</option>
+            <option value="168">1 semana</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="pPrecoAntigo">Preço original (R$)</label>
+          <input class="form-input" id="pPrecoAntigo" type="number" min="0" placeholder="150">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="pPrecoNovo">Preço promocional (R$) *</label>
+          <input class="form-input" id="pPrecoNovo" type="number" min="0" placeholder="99">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="pVagas">Vagas disponíveis (opcional)</label>
+        <input class="form-input" id="pVagas" type="number" min="1" max="99" placeholder="Ex: 5 (deixe em branco para ilimitado)">
+      </div>
+
+      <!-- Preview ao vivo -->
+      <div style="margin-bottom:14px;">
+        <div class="form-label" style="margin-bottom:8px;">Preview — como aparece no feed</div>
+        <div id="promoPreview" style="opacity:0.85;pointer-events:none;"></div>
+      </div>
+
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 16px;" onclick="promoPreviewUpdate()">👁 Atualizar preview</button>
+        <button class="btn btn-primary" style="flex:1;background:var(--re);" onclick="publicarPromo()">
+          <span id="promoBtnTxt">🔥 Publicar promoção</span>
+          <span id="promoSpinner" style="display:none;"><span class="spinner"></span></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- PROMOS ATIVAS -->
+    ${ativas.length ? `<div class="card">
+      <div class="card-header"><div class="card-title">✅ Promoções ativas (${ativas.length})</div></div>
+      ${ativas.map(p => promoAdminCard(p)).join('')}
+    </div>` : ''}
+
+    <!-- PROMOS EXPIRADAS -->
+    ${expiradas.length ? `<div class="card" style="margin-top:14px;">
+      <div class="card-header"><div class="card-title" style="color:var(--t3);">Expiradas (${expiradas.length})</div></div>
+      ${expiradas.slice(0,3).map(p => promoAdminCard(p, true)).join('')}
+    </div>` : ''}
+  </div>`;
+
+  // Auto-preview
+  promoPreviewUpdate();
+  // Inputs atualizam preview em tempo real
+  ['pTitulo','pDesc','pPrecoAntigo','pPrecoNovo','pVagas','pValidade'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', promoPreviewUpdate);
+    document.getElementById(id)?.addEventListener('change', promoPreviewUpdate);
+  });
+}
+
+function promoAdminCard(p, expirada=false) {
+  const urg = expirada ? '⏰ Expirada' : formatUrgencia(p.validade, p.vagasRestantes);
+  return `<div class="promo-editor-card ${!expirada?'active-promo':''}">
+    <div style="display:flex;align-items:flex-start;gap:10px;">
+      <div style="font-size:22px;">${p.emoji||'🏷️'}</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;color:var(--t);font-size:13.5px;">${esc(p.titulo)}</div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:2px;">${urg}</div>
+        <div style="font-size:12px;color:var(--g);font-weight:600;margin-top:4px;">
+          ${p.precoAntigo?`<span style="text-decoration:line-through;color:var(--t3);margin-right:6px;">R$${p.precoAntigo}</span>`:''}R$${p.precoNovo}
+        </div>
+      </div>
+      ${!expirada ? `<button onclick="encerrarPromo('${p.id}')" style="background:none;border:1px solid var(--b);border-radius:6px;padding:4px 8px;color:var(--t3);cursor:pointer;font-size:11px;min-height:auto;">Encerrar</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function selecionarTipoPromo(tipo) {
+  document.getElementById('pTipo').value = tipo;
+  ['urgente','destaque','combo','normal'].forEach(t => {
+    document.getElementById('ptipo'+t.charAt(0).toUpperCase()+t.slice(1))?.classList.toggle('sel', t===tipo);
+  });
+  promoPreviewUpdate();
+}
+
+function promoPreviewUpdate() {
+  const el = document.getElementById('promoPreview');
+  if (!el) return;
+  const tipo      = document.getElementById('pTipo')?.value || 'urgente';
+  const titulo    = document.getElementById('pTitulo')?.value || 'Título da promoção';
+  const desc      = document.getElementById('pDesc')?.value || 'Descrição da oferta...';
+  const precoV    = parseFloat(document.getElementById('pPrecoNovo')?.value) || 99;
+  const precoA    = parseFloat(document.getElementById('pPrecoAntigo')?.value) || 0;
+  const horas     = parseInt(document.getElementById('pValidade')?.value) || 8;
+  const vagas     = parseInt(document.getElementById('pVagas')?.value) || null;
+  const emojiMap  = { urgente:'🔥', destaque:'⚠️', combo:'💸', normal:'🏷️' };
+  const mockPromo = {
+    tipo, emoji: emojiMap[tipo], titulo, desc,
+    precoNovo: precoV, precoAntigo: precoA || null,
+    validade: Date.now() + horas*3600*1000,
+    vagasRestantes: vagas,
+    oficinaNome: STATE.oficinaAtual?.nome || 'Sua oficina',
+    bairro: STATE.oficinaAtual?.bairro || '',
+    _dist: 0.5, aberto: true, id:'preview',
+  };
+  // Mini render inline
+  const urg = formatUrgencia(mockPromo.validade, mockPromo.vagasRestantes);
+  const descPct = mockPromo.precoAntigo ? Math.round((1 - mockPromo.precoNovo/mockPromo.precoAntigo)*100) : 0;
+  el.innerHTML = `<div class="promo-feed-card ${tipo}" style="margin-bottom:0;cursor:default;">
+    <div class="promo-badge ${tipo}">${mockPromo.emoji} ${tipo === 'urgente' ? 'Urgente' : tipo === 'destaque' ? 'Destaque' : tipo === 'combo' ? 'Combo' : 'Oferta'}</div>
+    <div class="promo-title">${esc(titulo)}</div>
+    <div class="promo-desc">${esc(desc)}</div>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+      <div>
+        ${mockPromo.precoAntigo ? `<span class="promo-price-old">R$ ${mockPromo.precoAntigo}</span> ` : ''}
+        <span class="promo-price-new">R$ ${precoV}</span>
+        ${descPct > 0 ? `<span style="font-size:11px;background:rgba(0,208,132,0.15);color:var(--g);font-weight:700;border-radius:5px;padding:2px 6px;margin-left:6px;">-${descPct}%</span>` : ''}
+      </div>
+      ${vagas && vagas <= 4 ? `<span class="promo-vagas">🚨 ${vagas} vagas restantes</span>` : ''}
+    </div>
+    <div class="promo-meta">
+      <span>📍 ${esc(mockPromo.oficinaNome)}</span>
+      <span class="promo-urgency">${urg}</span>
+    </div>
+  </div>`;
+}
+
+async function publicarPromo() {
+  const titulo = document.getElementById('pTitulo')?.value.trim();
+  const precoV = parseFloat(document.getElementById('pPrecoNovo')?.value);
+  if (!titulo) { toast('Preencha o título da promoção', 'error'); return; }
+  if (!precoV || precoV <= 0) { toast('Preencha o preço promocional', 'error'); return; }
+
+  const tipo   = document.getElementById('pTipo')?.value || 'urgente';
+  const horas  = parseInt(document.getElementById('pValidade')?.value) || 8;
+  const emojiMap = { urgente:'🔥', destaque:'⚠️', combo:'💸', normal:'🏷️' };
+  const promo = {
+    id: 'promo_' + Date.now(),
+    oficinaId:    STATE.oficinaAtual?.id || 'local',
+    oficinaNome:  STATE.oficinaAtual?.nome || 'Minha oficina',
+    bairro:       STATE.oficinaAtual?.bairro || '',
+    cidade:       STATE.oficinaAtual?.cidade || '',
+    lat:          STATE.oficinaAtual?.lat || null,
+    lng:          STATE.oficinaAtual?.lng || null,
+    tipo, emoji:  emojiMap[tipo],
+    titulo,
+    desc:         document.getElementById('pDesc')?.value.trim() || '',
+    servico:      document.getElementById('pServico')?.value || '',
+    precoAntigo:  parseFloat(document.getElementById('pPrecoAntigo')?.value) || null,
+    precoNovo:    precoV,
+    vagas:        parseInt(document.getElementById('pVagas')?.value) || null,
+    vagasRestantes: parseInt(document.getElementById('pVagas')?.value) || null,
+    validade:     Date.now() + horas * 3600 * 1000,
+    score:        STATE.oficinaAtual?._score || 70,
+    aberto:       true,
+    criadaEm:     Date.now(),
+  };
+
+  const btn  = document.getElementById('promoBtnTxt');
+  const spin = document.getElementById('promoSpinner');
+  btn.style.display='none'; spin.style.display='';
+  await new Promise(r => setTimeout(r, 800)); // UX delay
+
+  const lista = promosLoad();
+  lista.push(promo);
+  promosSave(lista);
+
+  // Tenta salvar no Firestore também
+  try {
+    if (window.FB?.ready()) {
+      await window.FB.cadastrarFornecedorDB({ ...promo, _tipo: 'promocao' });
+    }
+  } catch { /* offline — salvo local */ }
+
+  btn.style.display=''; spin.style.display='none';
+
+  // Atualiza badge na aba
+  atualizarBadgeOfertas();
+
+  // Atualiza badge do nav
+  const promoAtivas = promosLoad().filter(p => p.validade > Date.now() && p.oficinaId === STATE.oficinaAtual?.id);
+  const pBadge = document.getElementById('promoNavBadge');
+  if (pBadge) { pBadge.textContent = promoAtivas.length; pBadge.style.display = promoAtivas.length ? '' : 'none'; }
+
+  toast('🔥 Promoção publicada! Clientes já podem ver no feed.', 'success');
+  Analytics.track('promo_publicada', { tipo, titulo, horas });
+
+  // Dispara notificação se permitida
+  if (Notification.permission === 'granted') {
+    new Notification('✅ Promoção ativa — MecBusca', {
+      body: `"${titulo}" está no ar. Clientes próximos estão sendo notificados.`,
+      icon: '/icon-192.png', tag: 'promo-pub',
+    });
+  }
+
+  // Re-renderiza painel
+  setTimeout(() => painelPage('promocoes', null), 600);
+}
+
+function encerrarPromo(id) {
+  const lista = promosLoad().map(p => p.id === id ? { ...p, validade: Date.now() - 1 } : p);
+  promosSave(lista);
+  atualizarBadgeOfertas();
+  toast('Promoção encerrada.', 'warning');
+  painelPage('promocoes', null);
+}
+
 function painelPage(name, navEl) {
   const titles = {
     dashboard:'Dashboard', leads:'Leads & Contatos',
     servicos:'Serviços & Preços', horarios:'Horários de Funcionamento',
-    metricas:'Métricas de Negócio'
+    metricas:'Métricas de Negócio', promocoes:'🔥 Promoções & Ofertas'
   };
   document.getElementById('painelTitle').textContent = titles[name] || name;
   document.querySelectorAll('#scPainel .nav-item').forEach(n => n.classList.remove('active'));
@@ -5176,6 +6174,7 @@ function painelPage(name, navEl) {
   else if (name === 'servicos') renderServicos(c);
   else if (name === 'horarios') renderHorariosPainel(c);
   else if (name === 'metricas') renderMetricas(c);
+  else if (name === 'promocoes') renderPromocoesPainel(c);
   // Close mobile sidebar after navigation
   document.getElementById('painelSidebar')?.classList.remove('open');
 }
@@ -5371,28 +6370,20 @@ function salvarNovoSvc() {
 
 // ── HORÁRIOS ─────────────────────────────────────────────────────
 function renderHorariosPainel(c) {
-  // Usa horários salvos da oficina se disponíveis, senão usa o padrão
   const saved = STATE.oficinaAtual?.horarios;
   const horarios = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length)
     ? saved : HORARIOS_PADRAO;
-  c.innerHTML = `<div class="card" style="max-width:420px;">
+  c.innerHTML = `<div class="card" style="max-width:460px;">
     <div class="card-header"><div class="card-title">Horário de Funcionamento</div></div>
-    <div id="painelHorarios" aria-label="Configuração de horários"></div>
+    <div id="painelHorarios" aria-label="Configuração de horários">${buildHoraRowsHtml(horarios, 'pnlH')}</div>
     <button class="btn btn-primary" style="margin-top:16px;" onclick="salvarHorarios()">Salvar horários</button>
   </div>`;
-  document.getElementById('painelHorarios').innerHTML = horarios.map((h) => `
-    <div class="hora-row">
-      <div class="hora-day">${h.dia}</div>
-      <div class="hora-range">${h.range}</div>
-      <div class="hora-toggle${h.on?'':' off'}" onclick="this.classList.toggle('off');this.setAttribute('aria-checked',!this.classList.contains('off'))" role="switch" aria-checked="${h.on}" aria-label="Horário ${h.dia}" tabindex="0"></div>
-    </div>`).join('');
 }
 
 async function salvarHorarios() {
-  const toggles = document.querySelectorAll('#painelHorarios .hora-toggle');
   const saved = STATE.oficinaAtual?.horarios;
   const base = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length) ? saved : HORARIOS_PADRAO;
-  const horarios = base.map((h, i) => ({ ...h, on: !toggles[i]?.classList.contains('off') }));
+  const horarios = collectHorarios(base, 'pnlH');
   const btn = document.querySelector('[onclick="salvarHorarios()"]');
   if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
   try {
@@ -6225,18 +7216,16 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// Patch openModal to apply focus trap
+// Patch openModal to apply focus trap (accessibility)
+// NOTE: the original openModal already calls trapFocus, so we just ensure
+// the _origOpenModal reference exists — this patch is safe to keep for future overrides.
 const _origOpenModal = window.openModal;
 window.openModal = function(id) {
   if (_origOpenModal) _origOpenModal(id);
   else {
     const el = document.getElementById(id);
-    if (el) el.classList.add('open');
+    if (el) { el.classList.add('open'); setTimeout(() => trapFocus(el), 100); }
   }
-  setTimeout(() => {
-    const el = document.getElementById(id);
-    if (el) trapFocus(el);
-  }, 50);
 };
 
 
@@ -6305,7 +7294,7 @@ window.Analytics = Analytics;
   background:linear-gradient(135deg,#0F1F10,#0A2010);
   border-top:1px solid rgba(0,208,132,0.4);
   padding:14px 20px;z-index:20000;
-  display:none;align-items:center;gap:12px;">
+  align-items:center;gap:12px;">
   <img src="/icon-48.png" width="40" height="40" style="border-radius:10px;" alt="MecBusca">
   <div style="flex:1;">
     <div style="font-family:Syne,sans-serif;font-weight:700;color:#fff;font-size:14px;">Instalar MecBusca</div>
