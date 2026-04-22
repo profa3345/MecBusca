@@ -33,16 +33,33 @@
        IS_PROD  = APP_MODE === 'PROD'
        Em modo DEMO: FB.register() → throw "Cadastro indisponível em modo DEMO."
      ════════════════════════════════════════════════════════════ -->
-<script>window.__MECBUSCA_MODE = 'PROD';</script>
 <script>
-window.__FIREBASE_CFG__ = {
-  apiKey:            "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
-  authDomain:        "mecbusca.firebaseapp.com",
-  projectId:         "mecbusca",
-  storageBucket:     "mecbusca.firebasestorage.app",
-  messagingSenderId: "273467472832",
-  appId:             "1:273467472832:web:fee239b43f50adae04a625"
-};
+// MODO: controlado aqui (server-rendered em produção).
+// Alterar via DevTools não tem efeito real — Firestore Rules bloqueiam
+// qualquer escrita não autenticada independente deste valor.
+(function() {
+  var _m = 'PROD';
+  Object.defineProperty(window, '__MECBUSCA_MODE', {
+    get: function() { return _m; },
+    set: function() {}, // silently ignores overwrite attempts
+    configurable: false
+  });
+  // Firebase config — exposta aqui por design (chave pública do Firebase).
+  // Segurança real = Firestore Rules + App Check, não ocultar a chave.
+  // Veja: https://firebase.google.com/docs/projects/api-keys
+  Object.defineProperty(window, '__FIREBASE_CFG__', {
+    value: Object.freeze({
+      apiKey:            "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
+      authDomain:        "mecbusca.firebaseapp.com",
+      projectId:         "mecbusca",
+      storageBucket:     "mecbusca.firebasestorage.app",
+      messagingSenderId: "273467472832",
+      appId:             "1:273467472832:web:fee239b43f50adae04a625"
+    }),
+    writable: false,
+    configurable: false
+  });
+})();
 </script>
 
 <!-- FIX: loggers globais declarados ANTES de qualquer módulo ES,
