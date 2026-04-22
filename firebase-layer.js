@@ -146,7 +146,8 @@ function sanitizeData(obj) {
 // ── 7. VALIDADORES ───────────────────────────────────────────────
 function validarWpp(wpp) {
   const digits = String(wpp || '').replace(/\D/g, '');
-  return /^\d{2}9\d{8}$/.test(digits);
+  // Celular: DDD(2) + 9 + 8 dígitos = 11 | Fixo: DDD(2) + 8 dígitos = 10
+  return /^\d{10,11}$/.test(digits);
 }
 function validarEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(email || '').trim());
@@ -437,7 +438,17 @@ window.FB = {
       where('oficinaId', '==', oficinaId),
       orderBy('criadoEm', 'desc')
     );
-    return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return onSnapshot(
+      q,
+      snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      (error) => {
+        if (
+          error.code === 'permission-denied' ||
+          error.code === 'unauthenticated'
+        ) return;
+        console.warn('[onLeadsSnapshot error]', error.code, error.message);
+      }
+    );
   },
 
   // ── AVALIAÇÕES ────────────────────────────────────────────────
@@ -738,12 +749,23 @@ function demoAvaliacoes(oficinaId) {
   ];
 }
 
-// Garante que demoSave está disponível se firebase-layer.js for carregado standalone
-if (typeof demoSave === 'undefined') {
-  var _demoId = 9000;
-  function demoSave(col, data) {
-    return 'demo_' + (++_demoId);
-  }
+// Módulo ES tem escopo isolado — funções do index.html só são acessíveis via window.*
+// Wrappers locais que delegam para window.* com fallback seguro
+let _demoId = 9000;
+
+function demoSave(col, data) {
+  if (typeof window.demoSave === 'function') return window.demoSave(col, data);
+  return 'demo_' + (++_demoId);
+}
+
+function demoLeads(oficinaId) {
+  if (typeof window.demoLeads === 'function') return window.demoLeads(oficinaId);
+  return [];
+}
+
+function demoOficinas(filtros) {
+  if (typeof window.demoOficinas === 'function') return window.demoOficinas(filtros);
+  return [];
 }
 
 window.dispatchEvent(new Event('fbready'));

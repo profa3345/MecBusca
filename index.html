@@ -2944,8 +2944,9 @@ function sanitizeData(obj) {
 function validarWpp(wpp) {
   if (!wpp) return false;
   const digits = String(wpp).replace(/\D/g, '');
-  // Aceita celular BR: 2 dígitos DDD + 9 + 8 dígitos = 11 total
-  return /^\d{2}9\d{8}$/.test(digits);
+  // Celular BR: DDD (2) + 9 + 8 dígitos = 11 total
+  // Fixo BR:   DDD (2) + 8 dígitos       = 10 total (ex: 2733001000)
+  return /^\d{2}9\d{8}$/.test(digits) || /^\d{2}[2-5]\d{7}$/.test(digits);
 }
 function validarEmail(email) {
   if (!email) return false;
@@ -3224,23 +3225,47 @@ window.FB = {
     if (!user) throw new Error("Não autorizado");
     const allowed = ['novo', 'aguardando', 'confirmado', 'cancelado'];
     if (data.status && !allowed.includes(data.status)) throw new Error("Status inválido");
+    // FIX SEGURANÇA: verifica que o lead pertence à oficina do usuário autenticado
+    // antes de permitir qualquer atualização
+    const leadSnap = await getDoc(doc(db, "leads", leadId));
+    if (!leadSnap.exists()) throw new Error("Lead não encontrado");
+    const oficinaSnap = await getDoc(doc(db, "oficinas", leadSnap.data().oficinaId));
+    if (!oficinaSnap.exists() || oficinaSnap.data().uid !== user.uid) {
+      throw new Error("Sem permissão para alterar este lead");
+    }
     await updateDoc(doc(db, "leads", leadId), { status: data.status, atualizadoEm: serverTimestamp() });
     return true;
   },
 
   onLeadsSnapshot(oficinaId, cb) {
     if (!isFirebaseReady) return () => {};
+    // IDs demo/falsos nunca existem no Firestore — evita query desnecessária
+    if (!oficinaId || oficinaId.startsWith('of00') || oficinaId.startsWith('demo_')) {
+      cb([]); return () => {};
+    }
     const q = query(collection(db, "leads"), where("oficinaId","==",oficinaId), orderBy("criadoEm","desc"));
-    return onSnapshot(q, snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return onSnapshot(
+      q,
+      snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+      err => {
+        // PERMISSION_DENIED é esperado logo após cadastro — regras pendentes ou token propagando
+        // Não lançamos toast: o AuthController vai re-disparar quando o token propagar
+        logW('[onLeadsSnapshot] erro no listener (normal após cadastro):', err.code);
+        cb([]);
+      }
+    );
   },
 
   // ── FORNECEDORES ─────────────────────────────────────────────
   async cadastrarFornecedorDB(data) {
     if (!isFirebaseReady) return null;
+    // FIX SEGURANÇA: exige autenticação para evitar spam de bots
+    const user = auth.currentUser;
+    if (!user) throw new Error("Faça login para cadastrar seu negócio.");
     if (!rateLimit('fornecedor', 3, 300000)) throw new Error("Limite atingido. Tente em 5 minutos.");
     const clean = sanitizeData(data);
     const ref = await addDoc(collection(db, "fornecedores"), {
-      ...clean, ativo: true, criadoEm: serverTimestamp()
+      ...clean, ativo: true, uid: user.uid, criadoEm: serverTimestamp()
     });
     return ref.id;
   },
@@ -4141,10 +4166,12 @@ async function renderMapa() {
         html: '<div style="background:#00D084;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>',
         iconSize: [16, 16], className: ''
       });
-      window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon })
+      // FIX: criava 2 markers — um adicionado ao mapa, outro só na array sem .addTo()
+      // Agora: cria um único marker, adiciona ao mapa E ao array de limpeza
+      const userMarker = window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon })
         .addTo(_leafletMap)
         .bindPopup('📍 Você está aqui');
-      _leafletMarkers.push(window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon }));
+      _leafletMarkers.push(userMarker);
     }
 
     // Oficina markers
@@ -5798,6 +5825,25 @@ async function finalizarCadastro() {
           // evitando a race condition com auth.currentUser
           _registeredUser = await window.FB.register(email, senhaTemp, STATE.onbData.nome || '');
           STATE._senhaTemp = senhaTemp;
+
+          // FIX CRÍTICO: aguarda o token de auth propagar antes de escrever no Firestore.
+          // Firebase Auth é assíncrono internamente — auth.currentUser pode ser null
+          // por até ~500ms após createUserWithEmailAndPassword retornar.
+          // Aguardamos o onAuthStateChanged disparar com o user real.
+          if (_registeredUser) {
+            await new Promise((resolve) => {
+              const unsub = window.FB.onAuthChange((user) => {
+                if (user && user.uid === _registeredUser.uid) {
+                  unsub();
+                  resolve(user);
+                }
+              });
+              // Timeout de segurança: 3s — nunca trava o fluxo
+              setTimeout(() => { try { unsub(); } catch(e) {} resolve(_registeredUser); }, 3000);
+            });
+            // Garante STATE.user para loadPainel não tratar como anônimo
+            STATE.user = _registeredUser;
+          }
         } catch(regErr) {
           if (regErr.code === 'auth/email-already-in-use') {
             STATE._submitting = false;
@@ -5816,12 +5862,18 @@ async function finalizarCadastro() {
 
     // FIX: passa _registeredUser diretamente — sem depender de auth.currentUser async
     const currentUser = _registeredUser || window.FB?.getCurrentUser();
+    // Garante STATE.user antes de chamar loadPainel (evita flash de "anônimo")
+    if (currentUser && !STATE.user) STATE.user = currentUser;
+
     const id = window.FB?.ready()
       ? await window.FB.cadastrarOficina(STATE.onbData, currentUser)
       : demoSave('oficina', STATE.onbData);
 
     STATE.oficina     = { id, ...STATE.onbData, plano: 'basico' };
     STATE.oficinaAtual = STATE.oficina;
+    // Sinaliza para loadPainel que é um cadastro novo — atrasa o listener de leads
+    // para dar tempo ao token de auth propagar no Firestore
+    STATE._freshRegistration = true;
     window.Services?.Search?.invalidar();
     _onbFotos.length = 0;
 
@@ -7238,27 +7290,42 @@ function loadPainel() {
   preloadPainelData();
   // Wire realtime listener for new leads
   if (window._leadsUnsub) window._leadsUnsub(); // cleanup previous
-  window._leadsUnsub = window.FB.onLeadsSnapshot(
-    STATE.oficinaAtual?.id || 'of001',
-    leads => {
-      const novos = leads.filter(l => l.status === 'novo').length;
-      const shouldBeep = novos > _prevLeadCount;
-      _prevLeadCount = novos;
-      STATE.leads = leads;
-      const badge = document.getElementById('leadsNavBadge');
-      if (badge) {
-        badge.textContent = novos;
-        badge.setAttribute('aria-label', novos + ' leads novos');
-        badge.style.display = novos > 0 ? '' : 'none';
-        if (novos > 0) badge.classList.add('badge-pulse');
-        if (shouldBeep) playLeadSound();
+
+  // FIX RACE CONDITION: após um cadastro novo, o token de auth pode não estar
+  // completamente propagado no Firestore por 500–2000ms.
+  // Aguardamos um ciclo antes de abrir o listener para evitar PERMISSION_DENIED.
+  const _leadListenId = STATE.oficina?.id || STATE.oficinaAtual?.id;
+  const _startListener = () => {
+    if (!_leadListenId || _leadListenId.startsWith('of00') || _leadListenId.startsWith('demo_')) return;
+    window._leadsUnsub = window.FB.onLeadsSnapshot(
+      _leadListenId,
+      leads => {
+        const novos = leads.filter(l => l.status === 'novo').length;
+        const shouldBeep = novos > _prevLeadCount;
+        _prevLeadCount = novos;
+        STATE.leads = leads;
+        const badge = document.getElementById('leadsNavBadge');
+        if (badge) {
+          badge.textContent = novos;
+          badge.setAttribute('aria-label', novos + ' leads novos');
+          badge.style.display = novos > 0 ? '' : 'none';
+          if (novos > 0) badge.classList.add('badge-pulse');
+          if (shouldBeep) playLeadSound();
+        }
+        // Refresh leads page if open
+        if (document.querySelector('.nav-item.active')?.textContent?.includes('Leads')) {
+          loadLeadsPainel();
+        }
       }
-      // Refresh leads page if open
-      if (document.querySelector('.nav-item.active')?.textContent?.includes('Leads')) {
-        loadLeadsPainel();
-      }
-    }
-  );
+    );
+  };
+  // Se acabou de cadastrar (_registeredUser presente), aguarda 2s para o token propagar
+  if (STATE._freshRegistration) {
+    delete STATE._freshRegistration;
+    setTimeout(_startListener, 2000);
+  } else {
+    _startListener();
+  }
 }
 
 // Preload stats when painel opens
@@ -7273,9 +7340,21 @@ async function loadLeadsPainel() {
   try {
     STATE.leads = await window.FB.listarLeadsDaOficina(STATE.oficinaAtual?.id||'of001');
     const novos = STATE.leads.filter(l => l.status === 'novo').length;
-    document.getElementById('leadsNavBadge').textContent = novos;
-    document.getElementById('leadsNavBadge').setAttribute('aria-label', novos + ' leads novos');
+    const badge = document.getElementById('leadsNavBadge');
+    if (badge) {
+      badge.textContent = novos;
+      badge.setAttribute('aria-label', novos + ' leads novos');
+      badge.style.display = novos > 0 ? '' : 'none';
+    }
   } catch(e) {
+    // PERMISSION_DENIED é esperado logo após cadastro quando as Firestore Rules
+    // ainda não foram configuradas no console, ou quando o token de auth ainda
+    // está propagando. Não mostramos toast — apenas logamos silenciosamente.
+    if (e.code === 'permission-denied' || (e.message && e.message.includes('permission'))) {
+      logW('[loadLeadsPainel] sem permissão — rules pendentes ou token propagando:', e.code);
+      STATE.leads = [];
+      return;
+    }
     if (e.message && e.message.startsWith('MISSING_INDEX')) {
       // Mostrar aviso claro dentro do painel
       const content = document.getElementById('painelContent');
@@ -7295,7 +7374,10 @@ async function loadLeadsPainel() {
       toast('Índice do Firestore não criado. Veja as instruções no painel.', 'warning');
     } else {
       logW('Erro ao carregar leads', e);
-      toast('Erro ao carregar leads. Verifique sua conexão.', 'error');
+      // Só mostra toast se não for erro de auth transitório
+      if (e.code !== 'unauthenticated') {
+        toast('Erro ao carregar leads. Verifique sua conexão.', 'error');
+      }
     }
   }
 }
