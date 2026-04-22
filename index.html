@@ -2709,6 +2709,25 @@ button,a,[role=button]{min-height:44px;}
         <input class="form-input" id="asvMax" type="number" placeholder="120" min="0" max="99999">
       </div>
     </div>
+    <div class="form-group" style="margin-top:4px;">
+      <label class="form-label">📷 Foto do serviço <span style="font-weight:400;color:var(--t3)">(opcional)</span></label>
+      <div id="asvFotoDrop" onclick="document.getElementById('asvFotoInput').click()"
+        style="border:2px dashed var(--b2);border-radius:var(--r);padding:12px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:var(--bg3);position:relative;"
+        ondragover="event.preventDefault();this.style.borderColor='var(--g)'"
+        ondragleave="this.style.borderColor=''"
+        ondrop="asvHandleDrop(event)">
+        <div id="asvFotoPreviewWrap" style="display:none;position:relative;display:none;">
+          <img id="asvFotoImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;display:block;">
+          <button type="button" onclick="asvRemoveFoto(event)" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;line-height:1;">×</button>
+        </div>
+        <div id="asvFotoPlaceholder">
+          <div style="font-size:22px;margin-bottom:4px;">📷</div>
+          <div style="font-size:12px;color:var(--t2);">Clique ou arraste uma foto</div>
+          <div style="font-size:10px;color:var(--t3);margin-top:2px;">JPG, PNG, WEBP · Máx. 5MB</div>
+        </div>
+      </div>
+      <input type="file" id="asvFotoInput" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="asvHandleFile(this.files[0])">
+    </div>
     <div style="display:flex;gap:10px;margin-top:4px;">
       <button class="btn btn-ghost" style="flex:1" onclick="closeModal('addSvcModal')">Cancelar</button>
       <button class="btn btn-primary" style="flex:1" id="btnSalvarSvc" onclick="salvarNovoSvc()">
@@ -2944,9 +2963,8 @@ function sanitizeData(obj) {
 function validarWpp(wpp) {
   if (!wpp) return false;
   const digits = String(wpp).replace(/\D/g, '');
-  // Celular BR: DDD (2) + 9 + 8 dígitos = 11 total
-  // Fixo BR:   DDD (2) + 8 dígitos       = 10 total (ex: 2733001000)
-  return /^\d{2}9\d{8}$/.test(digits) || /^\d{2}[2-5]\d{7}$/.test(digits);
+  // Celular: DDD(2) + 9 + 8 dígitos = 11 | Fixo: DDD(2) + 8 dígitos = 10
+  return /^\d{10,11}$/.test(digits);
 }
 function validarEmail(email) {
   if (!email) return false;
@@ -3223,35 +3241,30 @@ window.FB = {
     if (!isFirebaseReady) return true;
     const user = auth.currentUser;
     if (!user) throw new Error("Não autorizado");
+    // Fix 5: verifica ownership antes de gravar
+    const oficRef  = doc(db, 'oficinas', user.uid);
+    const oficSnap = await getDoc(oficRef);
+    if (!oficSnap.exists() || oficSnap.data().uid !== user.uid) {
+      throw new Error("permission-denied");
+    }
     const allowed = ['novo', 'aguardando', 'confirmado', 'cancelado'];
     if (data.status && !allowed.includes(data.status)) throw new Error("Status inválido");
-    // FIX SEGURANÇA: verifica que o lead pertence à oficina do usuário autenticado
-    // antes de permitir qualquer atualização
-    const leadSnap = await getDoc(doc(db, "leads", leadId));
-    if (!leadSnap.exists()) throw new Error("Lead não encontrado");
-    const oficinaSnap = await getDoc(doc(db, "oficinas", leadSnap.data().oficinaId));
-    if (!oficinaSnap.exists() || oficinaSnap.data().uid !== user.uid) {
-      throw new Error("Sem permissão para alterar este lead");
-    }
     await updateDoc(doc(db, "leads", leadId), { status: data.status, atualizadoEm: serverTimestamp() });
     return true;
   },
 
   onLeadsSnapshot(oficinaId, cb) {
     if (!isFirebaseReady) return () => {};
-    // IDs demo/falsos nunca existem no Firestore — evita query desnecessária
-    if (!oficinaId || oficinaId.startsWith('of00') || oficinaId.startsWith('demo_')) {
-      cb([]); return () => {};
-    }
     const q = query(collection(db, "leads"), where("oficinaId","==",oficinaId), orderBy("criadoEm","desc"));
     return onSnapshot(
       q,
       snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
-      err => {
-        // PERMISSION_DENIED é esperado logo após cadastro — regras pendentes ou token propagando
-        // Não lançamos toast: o AuthController vai re-disparar quando o token propagar
-        logW('[onLeadsSnapshot] erro no listener (normal após cadastro):', err.code);
-        cb([]);
+      (error) => {
+        if (
+          error.code === 'permission-denied' ||
+          error.code === 'unauthenticated'
+        ) return;
+        console.warn('[leadsSnapshot]', error.code, error.message);
       }
     );
   },
@@ -3259,13 +3272,12 @@ window.FB = {
   // ── FORNECEDORES ─────────────────────────────────────────────
   async cadastrarFornecedorDB(data) {
     if (!isFirebaseReady) return null;
-    // FIX SEGURANÇA: exige autenticação para evitar spam de bots
     const user = auth.currentUser;
-    if (!user) throw new Error("Faça login para cadastrar seu negócio.");
+    if (!user) throw new Error('Usuário não autenticado.');
     if (!rateLimit('fornecedor', 3, 300000)) throw new Error("Limite atingido. Tente em 5 minutos.");
     const clean = sanitizeData(data);
     const ref = await addDoc(collection(db, "fornecedores"), {
-      ...clean, ativo: true, uid: user.uid, criadoEm: serverTimestamp()
+      ...clean, uid: user.uid, ativo: true, criadoEm: serverTimestamp()
     });
     return ref.id;
   },
@@ -3721,6 +3733,7 @@ const STATE = {
   selectedPlan: 'basico',
   // Panel
   _submitting: false,
+  _freshRegistration: false,
   _stats: null,
   oficinaAtual: null,
   leads: [],
@@ -4166,8 +4179,6 @@ async function renderMapa() {
         html: '<div style="background:#00D084;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);"></div>',
         iconSize: [16, 16], className: ''
       });
-      // FIX: criava 2 markers — um adicionado ao mapa, outro só na array sem .addTo()
-      // Agora: cria um único marker, adiciona ao mapa E ao array de limpeza
       const userMarker = window.L.marker([STATE.userLat, STATE.userLng], { icon: userIcon })
         .addTo(_leafletMap)
         .bindPopup('📍 Você está aqui');
@@ -5826,24 +5837,14 @@ async function finalizarCadastro() {
           _registeredUser = await window.FB.register(email, senhaTemp, STATE.onbData.nome || '');
           STATE._senhaTemp = senhaTemp;
 
-          // FIX CRÍTICO: aguarda o token de auth propagar antes de escrever no Firestore.
-          // Firebase Auth é assíncrono internamente — auth.currentUser pode ser null
-          // por até ~500ms após createUserWithEmailAndPassword retornar.
-          // Aguardamos o onAuthStateChanged disparar com o user real.
-          if (_registeredUser) {
-            await new Promise((resolve) => {
-              const unsub = window.FB.onAuthChange((user) => {
-                if (user && user.uid === _registeredUser.uid) {
-                  unsub();
-                  resolve(user);
-                }
-              });
-              // Timeout de segurança: 3s — nunca trava o fluxo
-              setTimeout(() => { try { unsub(); } catch(e) {} resolve(_registeredUser); }, 3000);
+          // Fix 3: aguarda auth state ser confirmado antes de gravar no Firestore
+          await new Promise((resolve, reject) => {
+            const unsub = window.FB.onAuthChange((user) => {
+              if (user) { unsub(); resolve(user); }
             });
-            // Garante STATE.user para loadPainel não tratar como anônimo
-            STATE.user = _registeredUser;
-          }
+            // timeout de segurança — evita promise pendurada
+            setTimeout(() => { unsub(); reject(new Error('auth-timeout')); }, 8000);
+          });
         } catch(regErr) {
           if (regErr.code === 'auth/email-already-in-use') {
             STATE._submitting = false;
@@ -5862,22 +5863,17 @@ async function finalizarCadastro() {
 
     // FIX: passa _registeredUser diretamente — sem depender de auth.currentUser async
     const currentUser = _registeredUser || window.FB?.getCurrentUser();
-    // Garante STATE.user antes de chamar loadPainel (evita flash de "anônimo")
-    if (currentUser && !STATE.user) STATE.user = currentUser;
-
     const id = window.FB?.ready()
       ? await window.FB.cadastrarOficina(STATE.onbData, currentUser)
       : demoSave('oficina', STATE.onbData);
 
     STATE.oficina     = { id, ...STATE.onbData, plano: 'basico' };
     STATE.oficinaAtual = STATE.oficina;
-    // Sinaliza para loadPainel que é um cadastro novo — atrasa o listener de leads
-    // para dar tempo ao token de auth propagar no Firestore
-    STATE._freshRegistration = true;
     window.Services?.Search?.invalidar();
     _onbFotos.length = 0;
 
     // nextStep(3) só após sucesso confirmado
+    STATE._freshRegistration = true;
     await nextStep(3);
 
     // Enviar email de redefinição DEPOIS do cadastro completo — fire-and-forget
@@ -6923,9 +6919,14 @@ function renderServicosCliente() {
         <button class="btn btn-wpp" style="padding:4px 10px;font-size:11px;width:auto;flex-shrink:0;min-height:auto;" onclick="event.stopPropagation();wppOficinaDirecto('${o.id}','${s.nome}')">WhatsApp</button>
       </div>`;
     }).join('');
+    // Use photo from the first oficina that has it, else default icon
+    const _svcFoto = s.oficinas.find(o => o.foto)?.foto || null;
     return `<article class="svc-card">
       <div class="svc-card-top">
-        <div class="svc-card-icon" style="background:${s.cor};" aria-hidden="true">${s.icon}</div>
+        ${_svcFoto
+          ? `<img src="${_svcFoto}" class="svc-card-icon" style="object-fit:cover;" alt="${s.nome}" aria-hidden="true">`
+          : `<div class="svc-card-icon" style="background:${s.cor};" aria-hidden="true">${s.icon}</div>`
+        }
         <div style="flex:1;">
           <div class="svc-card-name">${s.nome}</div>
           <div class="svc-card-cat">${s.cat} · ${s.oficinas.length} oficina${s.oficinas.length!==1?'s':''}</div>
@@ -7250,6 +7251,9 @@ function wppPeca(id) {
 ════════════════════════════════════════════════════════════ -->
 <script>
 function loadPainel() {
+  // Fix 4: se cadastro recém-feito, atrasa apenas o listener de leads (não bloqueia abertura do painel)
+  const freshDelay = STATE._freshRegistration ? 2000 : 0;
+  STATE._freshRegistration = false;
   // Update plan badge with trial info
   const oficina = STATE.oficinaAtual;
   if (oficina) {
@@ -7286,46 +7290,34 @@ function loadPainel() {
   document.getElementById('painelEmail').textContent = STATE.user?.email || STATE.oficinaAtual.email || '';
   document.getElementById('painelAvatar').textContent = (STATE.oficinaAtual.nome||'AC').slice(0,2).toUpperCase();
   painelPage('dashboard', document.querySelector('#scPainel .nav-item'));
-  loadLeadsPainel();
+  // Fix 4: atrasa listener de leads se token ainda propagando após cadastro
+  setTimeout(() => loadLeadsPainel(), freshDelay);
   preloadPainelData();
   // Wire realtime listener for new leads
   if (window._leadsUnsub) window._leadsUnsub(); // cleanup previous
-
-  // FIX RACE CONDITION: após um cadastro novo, o token de auth pode não estar
-  // completamente propagado no Firestore por 500–2000ms.
-  // Aguardamos um ciclo antes de abrir o listener para evitar PERMISSION_DENIED.
-  const _leadListenId = STATE.oficina?.id || STATE.oficinaAtual?.id;
-  const _startListener = () => {
-    if (!_leadListenId || _leadListenId.startsWith('of00') || _leadListenId.startsWith('demo_')) return;
-    window._leadsUnsub = window.FB.onLeadsSnapshot(
-      _leadListenId,
-      leads => {
-        const novos = leads.filter(l => l.status === 'novo').length;
-        const shouldBeep = novos > _prevLeadCount;
-        _prevLeadCount = novos;
-        STATE.leads = leads;
-        const badge = document.getElementById('leadsNavBadge');
-        if (badge) {
-          badge.textContent = novos;
-          badge.setAttribute('aria-label', novos + ' leads novos');
-          badge.style.display = novos > 0 ? '' : 'none';
-          if (novos > 0) badge.classList.add('badge-pulse');
-          if (shouldBeep) playLeadSound();
-        }
-        // Refresh leads page if open
-        if (document.querySelector('.nav-item.active')?.textContent?.includes('Leads')) {
-          loadLeadsPainel();
-        }
+  setTimeout(() => {
+  window._leadsUnsub = window.FB.onLeadsSnapshot(
+    STATE.oficinaAtual?.id || 'of001',
+    leads => {
+      const novos = leads.filter(l => l.status === 'novo').length;
+      const shouldBeep = novos > _prevLeadCount;
+      _prevLeadCount = novos;
+      STATE.leads = leads;
+      const badge = document.getElementById('leadsNavBadge');
+      if (badge) {
+        badge.textContent = novos;
+        badge.setAttribute('aria-label', novos + ' leads novos');
+        badge.style.display = novos > 0 ? '' : 'none';
+        if (novos > 0) badge.classList.add('badge-pulse');
+        if (shouldBeep) playLeadSound();
       }
-    );
-  };
-  // Se acabou de cadastrar (_registeredUser presente), aguarda 2s para o token propagar
-  if (STATE._freshRegistration) {
-    delete STATE._freshRegistration;
-    setTimeout(_startListener, 2000);
-  } else {
-    _startListener();
-  }
+      // Refresh leads page if open
+      if (document.querySelector('.nav-item.active')?.textContent?.includes('Leads')) {
+        loadLeadsPainel();
+      }
+    }
+  );
+  }, freshDelay); // Fix 4: delay só se token ainda propagando
 }
 
 // Preload stats when painel opens
@@ -7340,21 +7332,9 @@ async function loadLeadsPainel() {
   try {
     STATE.leads = await window.FB.listarLeadsDaOficina(STATE.oficinaAtual?.id||'of001');
     const novos = STATE.leads.filter(l => l.status === 'novo').length;
-    const badge = document.getElementById('leadsNavBadge');
-    if (badge) {
-      badge.textContent = novos;
-      badge.setAttribute('aria-label', novos + ' leads novos');
-      badge.style.display = novos > 0 ? '' : 'none';
-    }
+    document.getElementById('leadsNavBadge').textContent = novos;
+    document.getElementById('leadsNavBadge').setAttribute('aria-label', novos + ' leads novos');
   } catch(e) {
-    // PERMISSION_DENIED é esperado logo após cadastro quando as Firestore Rules
-    // ainda não foram configuradas no console, ou quando o token de auth ainda
-    // está propagando. Não mostramos toast — apenas logamos silenciosamente.
-    if (e.code === 'permission-denied' || (e.message && e.message.includes('permission'))) {
-      logW('[loadLeadsPainel] sem permissão — rules pendentes ou token propagando:', e.code);
-      STATE.leads = [];
-      return;
-    }
     if (e.message && e.message.startsWith('MISSING_INDEX')) {
       // Mostrar aviso claro dentro do painel
       const content = document.getElementById('painelContent');
@@ -7373,11 +7353,12 @@ async function loadLeadsPainel() {
       }
       toast('Índice do Firestore não criado. Veja as instruções no painel.', 'warning');
     } else {
+      if (
+        e.code === 'permission-denied' ||
+        e.code === 'unauthenticated'
+      ) return;   // silencioso — token ainda propagando
       logW('Erro ao carregar leads', e);
-      // Só mostra toast se não for erro de auth transitório
-      if (e.code !== 'unauthenticated') {
-        toast('Erro ao carregar leads. Verifique sua conexão.', 'error');
-      }
+      toast('Erro ao carregar leads. Verifique sua conexão.', 'error');
     }
   }
 }
@@ -8018,6 +7999,7 @@ function renderSvcPainelList() {
   if (!el) return;
   el.innerHTML = STATE.painelSvcs.map((s, i) => `
     <div class="svc-panel-row">
+      ${s.foto ? `<img src="${s.foto}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;border:1px solid var(--b);flex-shrink:0;" alt="${esc(s.nome)}">` : '<div style="width:38px;height:38px;border-radius:6px;background:var(--bg3);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔧</div>'}
       <div style="flex:1;font-size:13.5px;color:var(--t)">${esc(s.nome)}</div>
       <div style="font-size:13px;font-weight:600;color:var(--g);min-width:100px;text-align:right">R$ ${s.min}–${s.max}</div>
       <div class="svc-toggle${s.ativo?'':' off'}" onclick="toggleSvc(${i},this)" role="switch" aria-checked="${s.ativo}" aria-label="${esc(s.nome)} ${s.ativo?'ativo':'inativo'}" tabindex="0"></div>
@@ -8051,7 +8033,71 @@ function editSvc(i) {
   document.getElementById('asvMin').value = s.min;
   document.getElementById('asvMax').value = s.max;
   document.getElementById('addSvcTitle').textContent = 'Editar Serviço';
+  asvSetFotoUI(s.foto || null);
   openModal('addSvcModal');
+}
+
+// ── Foto do serviço ─────────────────────────────────────────────
+let _asvFotoData = null; // base64 da foto atual no modal
+
+function asvCompressAndSet(file) {
+  if (!file || !file.type.startsWith('image/')) { toast('Arquivo inválido', 'warning'); return; }
+  if (file.size > 5 * 1024 * 1024) { toast('Foto muito grande. Máx. 5MB', 'warning'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const MAX = 800;
+      const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      _asvFotoData = canvas.toDataURL('image/jpeg', 0.82);
+      const imgEl = document.getElementById('asvFotoImg');
+      const wrap  = document.getElementById('asvFotoPreviewWrap');
+      const ph    = document.getElementById('asvFotoPlaceholder');
+      if (imgEl) imgEl.src = _asvFotoData;
+      if (wrap)  { wrap.style.display = 'block'; }
+      if (ph)    ph.style.display = 'none';
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function asvHandleFile(file) { asvCompressAndSet(file); }
+function asvHandleDrop(e) {
+  e.preventDefault();
+  document.getElementById('asvFotoDrop').style.borderColor = '';
+  const file = e.dataTransfer?.files?.[0];
+  if (file) asvCompressAndSet(file);
+}
+function asvRemoveFoto(e) {
+  e.stopPropagation();
+  _asvFotoData = null;
+  const imgEl = document.getElementById('asvFotoImg');
+  const wrap  = document.getElementById('asvFotoPreviewWrap');
+  const ph    = document.getElementById('asvFotoPlaceholder');
+  if (imgEl) imgEl.src = '';
+  if (wrap)  wrap.style.display = 'none';
+  if (ph)    ph.style.display = '';
+  document.getElementById('asvFotoInput').value = '';
+}
+function asvSetFotoUI(dataUrl) {
+  _asvFotoData = dataUrl || null;
+  const imgEl = document.getElementById('asvFotoImg');
+  const wrap  = document.getElementById('asvFotoPreviewWrap');
+  const ph    = document.getElementById('asvFotoPlaceholder');
+  if (dataUrl) {
+    if (imgEl) imgEl.src = dataUrl;
+    if (wrap)  wrap.style.display = 'block';
+    if (ph)    ph.style.display = 'none';
+  } else {
+    if (imgEl) imgEl.src = '';
+    if (wrap)  wrap.style.display = 'none';
+    if (ph)    ph.style.display = '';
+  }
 }
 
 function openAddSvcModal() {
@@ -8060,6 +8106,7 @@ function openAddSvcModal() {
   document.getElementById('asvMin').value = '';
   document.getElementById('asvMax').value = '';
   document.getElementById('addSvcTitle').textContent = 'Novo Serviço';
+  asvSetFotoUI(null);
   clearAllErrors();
   openModal('addSvcModal');
 }
@@ -8089,10 +8136,10 @@ function salvarNovoSvc() {
   }
 
   if (_editingSvcIdx >= 0) {
-    STATE.painelSvcs[_editingSvcIdx] = { ...STATE.painelSvcs[_editingSvcIdx], nome: n, min: mi, max: ma || mi };
+    STATE.painelSvcs[_editingSvcIdx] = { ...STATE.painelSvcs[_editingSvcIdx], nome: n, min: mi, max: ma || mi, foto: _asvFotoData !== undefined ? _asvFotoData : STATE.painelSvcs[_editingSvcIdx].foto };
     toast(`"${n}" atualizado!`);
   } else {
-    STATE.painelSvcs.push({nome:n, min:mi, max:ma||mi, ativo:true});
+    STATE.painelSvcs.push({nome:n, min:mi, max:ma||mi, ativo:true, foto: _asvFotoData || null});
     adicionarServicoAoCatalogo(n);
     toast(`"${n}" adicionado!`);
   }
