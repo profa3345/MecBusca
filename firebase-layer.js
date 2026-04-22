@@ -74,6 +74,9 @@ import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
   signOut, onAuthStateChanged, sendPasswordResetEmail, updateProfile
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFunctions, httpsCallable
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
 
 // ── 4. INICIALIZAÇÃO ─────────────────────────────────────────────
 const FB_STATUS = { connected: false, mode: APP_MODE, error: null };
@@ -90,6 +93,10 @@ if (IS_PROD) {
     isFirebaseReady = true;
     FB_STATUS.connected = true;
     console.info('✅ Firebase (PROD) conectado');
+    // Cloud Functions — região southamerica-east1
+    try {
+      window._fbFunctions = getFunctions(app, 'southamerica-east1');
+    } catch(e) { console.warn('Functions não disponível:', e.message); }
   } catch (e) {
     FB_STATUS.error = e.message;
     console.warn('Firebase não inicializado — operando em modo DEMO', e);
@@ -296,6 +303,17 @@ window.FB = {
 
   async listarOficinas(filtros = {}, pagSize = 20, lastDoc = null) {
     if (IS_DEMO) return demoOficinas(filtros);
+    // Usa Cloud Function (ranking server-side) quando disponível
+    if (window._fbFunctions) {
+      try {
+        const fn = httpsCallable(window._fbFunctions, 'buscarOficinas');
+        const res = await fn(filtros);
+        return res.data.oficinas || [];
+      } catch(e) {
+        console.warn('[listarOficinas] Cloud Function falhou, usando fallback local:', e.code);
+        // Fallback para query direta se a CF não estiver deployada ainda
+      }
+    }
 
     let q = query(
       collection(db, 'oficinas'),
@@ -403,6 +421,17 @@ window.FB = {
     const clean = sanitizeData(data);
     if (!validarNome(clean.nomeCliente)) throw new Error('Nome do cliente inválido.');
     if (!validarWpp(clean.whatsapp))     throw new Error('WhatsApp inválido.');
+    // Usa Cloud Function (rate limit real server-side) quando disponível
+    if (window._fbFunctions) {
+      try {
+        const fn = httpsCallable(window._fbFunctions, 'enviarLead');
+        const res = await fn(clean);
+        return res.data.id;
+      } catch(e) {
+        if (e.code === 'resource-exhausted') throw new Error('Muitas solicitações. Aguarde alguns minutos.');
+        console.warn('[enviarLead] Cloud Function falhou, usando fallback:', e.code);
+      }
+    }
     const ref = await addDoc(collection(db, 'leads'), {
       ...clean, status: 'novo', criadoEm: serverTimestamp()
     });
