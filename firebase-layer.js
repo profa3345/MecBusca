@@ -50,13 +50,15 @@ const firebaseConfig = (() => {
   if (typeof __firebase_config__ !== 'undefined') {
     return JSON.parse(__firebase_config__);
   }
+  // Vercel hosting: config injetada via window.__FIREBASE_CFG__ no index.html
+  if (window.__FIREBASE_CFG__) return window.__FIREBASE_CFG__;
   return {
-    apiKey:            import.meta?.env?.VITE_FB_API_KEY     || '',
-    authDomain:        import.meta?.env?.VITE_FB_AUTH_DOMAIN  || '',
-    projectId:         import.meta?.env?.VITE_FB_PROJECT_ID   || '',
-    storageBucket:     import.meta?.env?.VITE_FB_STORAGE      || '',
-    messagingSenderId: import.meta?.env?.VITE_FB_SENDER_ID    || '',
-    appId:             import.meta?.env?.VITE_FB_APP_ID       || '',
+    apiKey:            "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
+    authDomain:        "mecbusca.firebaseapp.com",
+    projectId:         "mecbusca",
+    storageBucket:     "mecbusca.firebasestorage.app",
+    messagingSenderId: "273467472832",
+    appId:             "1:273467472832:web:fee239b43f50adae04a625",
   };
 })();
 

@@ -34,6 +34,16 @@
        Em modo DEMO: FB.register() → throw "Cadastro indisponível em modo DEMO."
      ════════════════════════════════════════════════════════════ -->
 <script>window.__MECBUSCA_MODE = 'PROD';</script>
+<script>
+window.__FIREBASE_CFG__ = {
+  apiKey:            "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
+  authDomain:        "mecbusca.firebaseapp.com",
+  projectId:         "mecbusca",
+  storageBucket:     "mecbusca.firebasestorage.app",
+  messagingSenderId: "273467472832",
+  appId:             "1:273467472832:web:fee239b43f50adae04a625"
+};
+</script>
 
 <!-- FIX: loggers globais declarados ANTES de qualquer módulo ES,
      evitando ReferenceError: logE is not defined em scripts normais.
@@ -3465,6 +3475,12 @@ function demoAvaliacoes(id) {
       userName:'Roberto S.',criadoEm:{ seconds: now - 259200 } },
   ];
 }
+// Expõe funções demo via window para que firebase-layer.js (módulo ES) as acesse
+window.demoSave      = demoSave;
+window.demoOficinas  = demoOficinas;
+window.demoLeads     = demoLeads;
+window.demoAvaliacoes = demoAvaliacoes;
+
 function calcMetricas(leads) {
   const total = leads.length, confirmados = leads.filter(l=>l.status==="confirmado").length;
   const receita = leads.reduce((s,l)=>s+(l.valor||0),0);
