@@ -1,0 +1,18 @@
+{
+  "name": "MecBusca",
+  "short_name": "MecBusca",
+  "description": "Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080C09",
+  "theme_color": "#00D084",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg viewBox='0 0 96 96' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='48' cy='46' r='40' fill='%2300D084'/%3E%3Cpath d='M48 96C48 96 10 62 10 46A38 38 0 0 1 86 46C86 62 48 96 48 96Z' fill='%2300D084'/%3E%3Ccircle cx='48' cy='46' r='24' fill='%23111a12'/%3E%3Crect x='45' y='50' width='6' height='18' rx='2' fill='white'/%3E%3Cpath d='M35 38Q35 24 48 24Q61 24 61 38L61 46Q61 50 57 50L39 50Q35 50 35 46Z' fill='white'/%3E%3Cellipse cx='48' cy='40' rx='7' ry='9' fill='%23111a12'/%3E%3C/svg%3E",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

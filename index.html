@@ -76,6 +76,9 @@
 })();
 </script>
 
+<!-- Manifest PWA — servido pelo Firebase Hosting (public/manifest.json) -->
+<!-- O script abaixo injeta via Blob como fallback se o arquivo não existir -->
+<link rel="manifest" href="/manifest.json">
 <!-- Fix 2: Ícones inline como SVG data URI — zero dependências de arquivos externos -->
 <script>
 (function(){
@@ -94,7 +97,7 @@
     name: "MecBusca",
     short_name: "MecBusca",
     description: "Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto.",
-    start_url: "/",
+    start_url: "./",
     display: "standalone",
     background_color: "#080C09",
     theme_color: "#00D084",
@@ -2826,18 +2829,10 @@ import {
 // 5. Regras do Firestore — veja bloco completo abaixo (versão segura)
 // ─────────────────────────────────────────────────────────────────
 // ── CONFIG DO FIREBASE ──────────────────────────────────────────
-// ⚠️  NUNCA commite chaves reais aqui.
-// Fix 6: Firebase config real injetada — projeto mecbusca
-window.__FIREBASE_CFG__ = {
-  apiKey: "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
-  authDomain: "mecbusca.firebaseapp.com",
-  projectId: "mecbusca",
-  storageBucket: "mecbusca.firebasestorage.app",
-  messagingSenderId: "273467472832",
-  appId: "1:273467472832:web:fee239b43f50adae04a625"
-};
+// A config já foi definida via Object.defineProperty no <head> (writable:false).
+// NÃO reatribua window.__FIREBASE_CFG__ aqui — causaria TypeError em modo PROD.
 // Opção A (produção): Firebase Hosting injeta __firebase_config__
-// Opção B (CI/build): defina window.__FIREBASE_CFG__ antes deste script
+// Opção B (CI/build): window.__FIREBASE_CFG__ definido no <head> via Object.defineProperty
 // Sem config → modo DEMO ativo automaticamente
 //
 // ═══════════════════════════════════════════════════════════════════
@@ -3044,6 +3039,26 @@ window.__fbDiag = async function() {
   return result;
 };
 
+// ── calcularAberto — BUG FIX: campo 'aberto' não era salvo no cadastro ──────────
+// Converte o array de horários { dia, range, on } em boolean "está aberto agora?".
+// Chamado ao cadastrar e ao atualizar horários da oficina.
+// Ex: [{ dia:'Seg', range:'07:30 – 18:00', on:true }]
+function calcularAberto(horarios) {
+  if (!Array.isArray(horarios) || !horarios.length) return false;
+  const now  = new Date();
+  const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+  const diaHoje = dias[now.getDay()];
+  const h = horarios.find(d => d.dia === diaHoje && d.on);
+  if (!h) return false;
+  // Formato esperado: "07:30 – 18:00" ou "07:30 - 18:00" (hífen simples ou travessão)
+  const match = (h.range || '').match(/(\d{1,2}):(\d{2})\s*[–\-]\s*(\d{1,2}):(\d{2})/);
+  if (!match) return false;
+  const abre  = parseInt(match[1]) * 60 + parseInt(match[2]);
+  const fecha = parseInt(match[3]) * 60 + parseInt(match[4]);
+  const agora = now.getHours() * 60 + now.getMinutes();
+  return agora >= abre && agora < fecha;
+}
+
 // ── Firebase Public API ───────────────────────────────────────────
 window.FB = {
   ready: () => isFirebaseReady,
@@ -3110,8 +3125,14 @@ window.FB = {
     const existing = await this.getMinhaOficina(user.uid);
     if (existing) return existing.id;
     const clean = sanitizeData(data);
+    // BUG FIX: calcular se está aberto agora com base nos horários cadastrados.
+    // Sem isso, o campo 'aberto' ficava undefined → oficina nunca aparecia como aberta
+    // e o filtro 'apenasAberta' nunca a incluía.
+    const _aberto = calcularAberto(clean.horarios || []);
+
     const ref = await addDoc(collection(db, "oficinas"), {
       ...clean, ativo: true, uid: user.uid,
+      aberto: _aberto,
       plano: 'basico', planoAtualizadoEm: serverTimestamp(),
       avaliacoes: 0, totalAvaliacoes: 0, avaliacao: 0,
       stats: { impressoes: 0, cliques: 0, whatsapp: 0, orcamentos: 0 },
@@ -3151,6 +3172,9 @@ window.FB = {
       if (!snap.exists()) throw new Error("Oficina não encontrada");
       if (snap.data().uid !== user.uid) throw new Error("Sem permissão para editar esta oficina");
       const { plano, uid, criadoEm, avaliacoes, totalAvaliacoes, avaliacao, ...rest } = sanitizeData(data);
+      // BUG FIX: recalcula 'aberto' sempre que horários são atualizados.
+      // Sem isso, o campo 'aberto' nunca era atualizado após o cadastro.
+      if (rest.horarios) rest.aberto = calcularAberto(rest.horarios);
       await updateDoc(doc(db, "oficinas", oficinaId), { ...rest, atualizadoEm: serverTimestamp() });
       return true;
     } catch(e) {
@@ -3161,7 +3185,11 @@ window.FB = {
 
   async listarOficinas(filtros = {}, pagSize = 20, lastDoc = null) {
     if (!isFirebaseReady) return demoOficinas(filtros);
-    let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize));
+    // BUG FIX: busca 5x o pagSize antes de filtrar client-side.
+    // Com limit(pagSize=20) direto, filtros client-side podiam retornar 0 resultados
+    // mesmo com oficinas válidas no Firestore (elas simplesmente não chegavam ao client).
+    const fetchLimit = Math.max(pagSize * 5, 100);
+    let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(fetchLimit));
     if (lastDoc) q = query(q, startAfter(lastDoc));
     const snap = await getDocs(q);
     let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
