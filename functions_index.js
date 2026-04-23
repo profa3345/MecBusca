@@ -54,22 +54,33 @@ async function checkRateLimit(key, maxCalls, windowMs) {
 
 // ── 1. RANKING SERVER-SIDE ───────────────────────────────────────
 /**
- * buscarOficinas — substitui window.FB.listarOficinas() no client.
+ * buscarOficinas — substitui window.FB.listarOficinas() e window.FB.listarOficinasAdmin() no client.
  * Calcula score no server, evitando manipulação via DevTools.
  *
- * Chamada pelo client:
+ * Chamada pelo client (busca pública):
  *   const fn = httpsCallable(functions, 'buscarOficinas');
  *   const { data } = await fn({ servico: 'Troca de óleo', lat: -20.2, lng: -40.4 });
+ *
+ * Chamada pelo painel admin (sem limite de resultados):
+ *   const { data } = await fn({ admin: true });
+ *   // Requer usuário autenticado — verificado via req.auth.
  */
 exports.buscarOficinas = onCall({ region: 'southamerica-east1' }, async (req) => {
-  const { servico = '', lat, lng, cidade, bairro, avaliacaoMin, apenasAberta, tipoVeiculo } = req.data;
+  const { servico = '', lat, lng, cidade, bairro, avaliacaoMin, apenasAberta, tipoVeiculo, admin = false } = req.data;
 
   // Rate limit: 60 buscas por minuto por usuário/IP
   const uid = req.auth?.uid || req.rawRequest?.ip || 'anon';
   const allowed = await checkRateLimit(`busca_${uid}`, 60, 60_000);
   if (!allowed) throw new HttpsError('resource-exhausted', 'Muitas buscas. Aguarde 1 minuto.');
 
-  let q = db.collection('oficinas').where('ativo', '==', true).limit(60);
+  // Modo admin: requer autenticação — retorna todos os resultados sem slice(20)
+  if (admin && !req.auth?.uid) {
+    throw new HttpsError('unauthenticated', 'Admin requer autenticação.');
+  }
+
+  // Limite base: 60 para buscas públicas, 500 para admin
+  const queryLimit = admin ? 500 : 60;
+  let q = db.collection('oficinas').where('ativo', '==', true).limit(queryLimit);
 
   if (cidade) q = q.where('cidade', '==', cidade);
 
@@ -142,7 +153,7 @@ exports.buscarOficinas = onCall({ region: 'southamerica-east1' }, async (req) =>
       }
       return diff;
     })
-    .slice(0, 20);
+    .slice(0, admin ? 500 : 20);
 
   return { oficinas: ranked };
 });

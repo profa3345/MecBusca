@@ -1,17 +1,23 @@
 // ═══════════════════════════════════════════════════════════════
-//  MecBusca — Camada de Dados Unificada (firebase-layer.js) v2
+//  MecBusca — Camada de Dados Unificada (firebase-layer.js) v3
+//
+//  Mudanças v3:
+//   1. Score de ranking REMOVIDO do client.
+//      calcRankingScore() e ordenarPorScore() eliminados.
+//      Toda ordenação vem da Cloud Function buscarOficinas.
+//   2. listarOficinasAdmin() migrado para Cloud Function
+//      (flag admin:true → sem limite de 20 resultados).
+//   3. Fallback local mantido APENAS para dev/emulador local
+//      e marcado explicitamente como inseguro para produção.
 //
 //  Mudanças v2:
 //   1. Plano inicial sempre GRATUITO (basico).
-//      Sem citação de preços no cadastro — monetização futura.
 //   2. Camada Services/Controllers:
 //      OficinaService  — CRUD de oficinas com cache.
 //      LeadService     — envio e gestão de leads.
 //      SearchController— busca com cache de 1 minuto.
 //      AuthController  — autenticação e estado de sessão.
-//      Expostos via window.Services para migração gradual.
-//   3. Score calculado no client (v1). TODO: migrar para Cloud Function.
-//   4. Rate limit client-side (UX). Rate limit real → Cloud Functions.
+//   3. Rate limit client-side (UX). Rate limit real → Cloud Functions.
 // ═══════════════════════════════════════════════════════════════
 
 // ── 1. MODO DE OPERAÇÃO ──────────────────────────────────────────
@@ -168,44 +174,22 @@ function validarNome(nome) {
 
 // ── 8. RANKING ENGINE ───────────────────────────────────────────
 //
-//  TODO (segurança): migrar calcRankingScore para Cloud Function.
-//  Risco atual: usuário pode manipular o score via devtools.
-//  Mitigação v1: o score só determina ordenação visual, não preços.
+//  ✅ v3: calcRankingScore e ordenarPorScore REMOVIDOS do client.
 //
-function calcRankingScore(o, distKm = 10, query = '') {
-  const distScore = Math.max(0, 40 - (Math.min(distKm, 20) / 20) * 40);
-  const avalScore = ((o.avaliacao || 0) / 5) * 35;
-  const q = query.toLowerCase().trim();
-  const svcs = (o.servicos || []).filter(s => s.ativo);
-  const svcScore = q
-    ? svcs.some(s => s.nome.toLowerCase() === q)                                    ? 15
-    : svcs.some(s => s.nome.toLowerCase().includes(q) || q.includes(s.nome.toLowerCase())) ? 8
-    : 0
-    : 0;
-  const plano = (o.plano || 'basico').toLowerCase();
-  const planScore = plano === 'premium' ? 10 : plano === 'pro' ? 8 : plano === 'basico' ? 3 : 0;
-  const openBoost  = o.aberto ? 5 : 0;
-  const avalBoost  = Math.min(5, Math.floor((o.totalAvaliacoes || 0) / 10));
-  const imp = o.stats?.impressoes || 0;
-  const cli = o.stats?.cliques    || 0;
-  const engBoost   = imp > 10 ? Math.min(5, Math.round((cli / imp) * 50)) : 0;
-  return Math.round((distScore + avalScore + svcScore + planScore + openBoost + avalBoost + engBoost) * 10) / 10;
-}
-
-function ordenarPorScore(oficinas, distFn, query = '') {
-  return oficinas
-    .map(o => ({ ...o, _score: calcRankingScore(o, distFn(o), query) }))
-    .sort((a, b) => {
-      const diff = b._score - a._score;
-      if (Math.abs(diff) < 2) {
-        const tier = { premium: 2, pro: 1, basico: 0 };
-        const ta = tier[a.plano] ?? 0;
-        const tb = tier[b.plano] ?? 0;
-        if (tb !== ta) return tb - ta;
-      }
-      return diff;
-    });
-}
+//  O score é calculado exclusivamente na Cloud Function buscarOficinas
+//  (southamerica-east1). Isso elimina a possibilidade de manipulação
+//  via DevTools, pois o client nunca recebe dados brutos suficientes
+//  para recalcular a ordenação.
+//
+//  Algoritmo de score (referência — vive em functions/index.js):
+//    distância  → 0-40 pts  (haversine, máx 20 km)
+//    avaliação  → 0-35 pts  (média / 5 * 35)
+//    serviço    → 0-15 pts  (match exato=15, parcial=8)
+//    plano      → 0-10 pts  (premium=10, pro=8, basico=3)
+//    aberto     → 0-5  pts
+//    volume av. → 0-5  pts  (floor(total/10), máx 5)
+//    engajamento→ 0-5  pts  (cliques/impressoes * 50, se imp>10)
+//
 
 // ── 9. API PÚBLICA (window.FB) ───────────────────────────────────
 window.FB = {
@@ -344,24 +328,12 @@ window.FB = {
         (o.servicos || []).some(s => s.ativo && s.nome.toLowerCase().includes(qStr)));
     }
 
-    const userLat = filtros.lat;
-    const userLng = filtros.lng;
-    const distFn  = (o) => {
-      if (userLat && userLng && o.lat && o.lng) {
-        const R = 6371;
-        const dLat = (o.lat - userLat) * Math.PI / 180;
-        const dLng = (o.lng - userLng) * Math.PI / 180;
-        const a = Math.sin(dLat/2)**2 +
-                  Math.cos(userLat * Math.PI/180) *
-                  Math.cos(o.lat   * Math.PI/180) *
-                  Math.sin(dLng/2)**2;
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      }
-      return parseFloat((o.distancia || '10').replace(',', '.'));
-    };
-
-    const ranked = ordenarPorScore(oficinas, distFn, filtros.servico || '');
-    return ranked.slice(0, pagSize);
+    // ⚠️  FALLBACK LOCAL — sem score composto (v3).
+    //     Ordenação simples por avaliação. Use apenas em dev/emulador.
+    //     Em produção, garanta que a CF esteja deployada para score real.
+    return oficinas
+      .sort((a, b) => (b.avaliacao || 0) - (a.avaliacao || 0))
+      .slice(0, pagSize);
   },
 
   async listarOficinasAdmin(filtros = {}) {
@@ -373,12 +345,34 @@ window.FB = {
     }
     const user = auth?.currentUser;
     if (!user) throw new Error('Não autenticado');
+
+    // ✅ v3: usa Cloud Function com flag admin:true
+    // → sem limit(20), retorna todos os resultados ordenados server-side
+    if (window._fbFunctions) {
+      try {
+        const fn  = httpsCallable(window._fbFunctions, 'buscarOficinas');
+        const res = await fn({ ...filtros, admin: true });
+        return (res.data.oficinas || []).map(o => ({
+          ...o,
+          _planoLabel: PLANOS[o.plano?.toUpperCase()]?.label ?? o.plano,
+        }));
+      } catch (e) {
+        console.warn('[listarOficinasAdmin] Cloud Function falhou, usando fallback local:', e.code);
+        // Fallback abaixo — usado apenas quando CF não está deployada (dev local)
+      }
+    }
+
+    // ⚠️  FALLBACK LOCAL — inseguro para produção.
+    //     Sem score composto. Use apenas em dev/emulador.
+    //     Em produção, garanta que a CF esteja deployada.
     const snap = await getDocs(
       query(collection(db, 'oficinas'), where('ativo', '==', true), limit(200))
     );
-    const oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
-    const distFn = (o) => parseFloat((o.distancia || '10').replace(',', '.'));
-    return ordenarPorScore(oficinas, distFn, '')
+    const oficinas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    // Ordenação simples por avaliação (fallback sem score server-side)
+    return oficinas
+      .sort((a, b) => (b.avaliacao || 0) - (a.avaliacao || 0))
       .map(o => ({
         ...o,
         _planoLabel: PLANOS[o.plano?.toUpperCase()]?.label ?? o.plano,
