@@ -3178,7 +3178,7 @@ window.FB = {
       (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
     if (filtros.bairro) oficinas = oficinas.filter(o =>
       (o.bairro||'').toLowerCase().includes(filtros.bairro.toLowerCase()));
-    if (filtros.avaliacaoMin) oficinas = oficinas.filter(o => (o.avaliacao||0) >= filtros.avaliacaoMin);
+    if (filtros.avaliacaoMin > 0) oficinas = oficinas.filter(o => (o.avaliacao||0) >= filtros.avaliacaoMin);
     if (filtros.precoMax) oficinas = oficinas.filter(o =>
       (o.servicos||[]).some(s => s.min <= filtros.precoMax));
     if (filtros.apenasAberta) oficinas = oficinas.filter(o => o.aberto === true);
@@ -3441,7 +3441,7 @@ function demoOficinas(filtros = {}) {
   }
   if (filtros.cidade)  r = r.filter(o => o.cidade.toLowerCase().includes(filtros.cidade.toLowerCase()));
   if (filtros.bairro)  r = r.filter(o => o.bairro.toLowerCase().includes(filtros.bairro.toLowerCase()));
-  if (filtros.avaliacaoMin) r = r.filter(o => o.avaliacao >= filtros.avaliacaoMin);
+  if (filtros.avaliacaoMin > 0) r = r.filter(o => o.avaliacao >= filtros.avaliacaoMin);
   if (filtros.precoMax)     r = r.filter(o => o.servicos.some(s => s.min <= filtros.precoMax));
   if (filtros.apenasAberta) r = r.filter(o => o.aberto);
   if (filtros.atendeHoje)   r = r.filter(o => o.atendeHoje || o.aberto);
@@ -3790,7 +3790,7 @@ const STATE = {
   // Advanced filters
   advFilters: {
     cidade: '', bairro: '', tipoVeiculo: '', urgencia: '',
-    avaliacaoMin: 1, precoMax: 2000, apenasAberta: false
+    avaliacaoMin: 0, precoMax: 2000, apenasAberta: false
   },
   // (no duplicates)
 };
@@ -4897,7 +4897,8 @@ async function buildOficinaSelect() {
     if (window.FB?.ready()) {
       try { oficinas = await window.FB.listarOficinas({}); } catch(_) {}
     }
-    if (!oficinas.length) oficinas = demoOficinas({});
+    // Não usa demoOficinas como fallback — evita mostrar dados fictícios
+    // quando o Firebase ainda está carregando ou retornou lista vazia.
 
     // Deduplica por nome
     const seen = new Set();
@@ -5902,7 +5903,7 @@ async function finalizarCadastro() {
 
     STATE.oficina     = { id, ...STATE.onbData, plano: 'basico' };
     STATE.oficinaAtual = STATE.oficina;
-    window.Services?.Search?.invalidar();
+    window.Services?.Search?.invalidar(); // invalida cache para oficina aparecer imediatamente na busca
     _onbFotos.length = 0;
 
     // nextStep(3) só após sucesso confirmado
@@ -6522,7 +6523,7 @@ function applyAdvFilters() {
     bairro:       document.getElementById('fBairro')?.value || '',
     tipoVeiculo:  document.getElementById('fVeiculo')?.value || '',
     urgencia:     document.getElementById('fUrgencia')?.value || '',
-    avaliacaoMin: parseFloat(document.getElementById('fAvaliacao')?.value || 1),
+    avaliacaoMin: parseFloat(document.getElementById('fAvaliacao')?.value || 0),
     precoMax:     parseInt(document.getElementById('fPrecoMax')?.value || 2000),
     apenasAberta: document.getElementById('fAbertaAgora')?.checked || false,
     atendeHoje:   document.getElementById('fAtendeHoje')?.checked || false,
