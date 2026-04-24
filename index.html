@@ -1994,6 +1994,12 @@ button,a,[role=button]{min-height:44px;}
           <span class="home-note-dot"></span>
           <span style="color:var(--pu);cursor:pointer;font-weight:500;font-size:13px;" onclick="goTo('scFornecedor')">🔩 Vende peças? Cadastre-se</span>
         </div>
+        <!-- FIX UX: link de login para oficinas já cadastradas -->
+        <div id="home-login-row" style="margin-top:4px;">
+          <span style="color:var(--t3);font-size:12px;">Já tem conta? </span>
+          <span style="color:var(--g);cursor:pointer;font-size:12.5px;font-weight:600;text-decoration:underline;text-underline-offset:2px;"
+                onclick="homeLoginOficina()">Entrar no painel →</span>
+        </div>
       </div>
     </div>
   </div>
@@ -2837,16 +2843,10 @@ import {
 // 5. Regras do Firestore — veja bloco completo abaixo (versão segura)
 // ─────────────────────────────────────────────────────────────────
 // ── CONFIG DO FIREBASE ──────────────────────────────────────────
-// ⚠️  NUNCA commite chaves reais aqui.
-// Fix 6: Firebase config real injetada — projeto mecbusca
-window.__FIREBASE_CFG__ = {
-  apiKey: "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
-  authDomain: "mecbusca.firebaseapp.com",
-  projectId: "mecbusca",
-  storageBucket: "mecbusca.firebasestorage.app",
-  messagingSenderId: "273467472832",
-  appId: "1:273467472832:web:fee239b43f50adae04a625"
-};
+// Config já definida e congelada no bloco <script> do <head> (linha ~50).
+// NÃO reatribuir aqui — window.__FIREBASE_CFG__ é non-writable/non-configurable
+// e a atribuição falharia silenciosamente em modo não-strict, gerando confusão.
+// A config real está no primeiro <script> da página (Object.defineProperty).
 // Opção A (produção): Firebase Hosting injeta __firebase_config__
 // Opção B (CI/build): defina window.__FIREBASE_CFG__ antes deste script
 // Sem config → modo DEMO ativo automaticamente
@@ -3211,7 +3211,15 @@ window.FB = {
   },
 
   async listarOficinas(filtros = {}, pagSize = 20, lastDoc = null) {
-    if (!isFirebaseReady) return demoOficinas(filtros);
+    // FIX BUG B: não retornar demo imediatamente — aguardar o módulo
+    // inicializar antes de decidir. Race condition: runSearch() pode ser
+    // chamado antes do <script type="module"> terminar (ex: DOMContentLoaded
+    // dispara antes do módulo ES ser avaliado). Sem este await, todas as
+    // buscas na abertura do app retornam dados demo mesmo em PROD.
+    if (!isFirebaseReady) {
+      if (window.__fbReadyPromise) await window.__fbReadyPromise;
+      if (!isFirebaseReady) return window.demoOficinas ? window.demoOficinas(filtros) : [];
+    }
     let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize));
     if (lastDoc) q = query(q, startAfter(lastDoc));
     const snap = await getDocs(q);
@@ -4211,7 +4219,14 @@ async function abrirPerfil(ofId) {
     try { of = await window.FB.getOficinaById(ofId); if (of) STATE.oficinas.push(of); } catch(_) {}
   }
   if (!of) {
-    if (!STATE.oficinas.length) STATE.oficinas = demoOficinas({});
+    // FIX BUG D: não sobrescrever com demoOficinas — aguardar a busca real.
+  // O problema: loadOficinas() é async mas renderServicosCliente() era sync
+  // e forçava demo quando STATE.oficinas ainda estava vazio (busca em andamento).
+  if (!STATE.oficinas.length && window.FB?.ready()) {
+    // Busca real em andamento ou ainda não iniciada — não sobrescrever com demo
+    return; // renderServicosCliente será chamada novamente por loadOficinas()
+  }
+  if (!STATE.oficinas.length) STATE.oficinas = window.demoOficinas ? window.demoOficinas({}) : [];
     of = getOficina(ofId);
   }
   if (!of) { toast('Perfil não encontrado', 'error'); return; }
@@ -4583,6 +4598,17 @@ function homeSetTab(tab) {
   document.getElementById('hbox-oficinas').style.display = tab === 'oficinas' ? '' : 'none';
   document.getElementById('hbox-pecas').style.display   = tab === 'pecas'    ? '' : 'none';
   if (tab === 'pecas') pecaInitSelects();
+}
+
+function homeLoginOficina() {
+  // Abre o modal de autenticação em modo login
+  // Após login bem-sucedido, o AuthController detecta a oficina e abre o painel
+  openOverlay('scAuth');
+  // Pré-selecionar aba "Entrar"
+  setTimeout(() => {
+    const tabLogin = document.querySelector('#scAuth .auth-tab');
+    if (tabLogin) tabLogin.click();
+  }, 150);
 }
 
 function homeBuscarPeca() {
@@ -5564,9 +5590,18 @@ async function doLogin() {
     if (!window.FB.ready()) { usedDemo = true; await demoLogin(); return; }
     const user = await window.FB.login(email, pass);
     STATE.user = user;
-    const oficina = await window.FB.getMinhaOficina(user.uid);
-    STATE.oficinaAtual = oficina || { id: 'of001', nome: 'Minha Oficina', email };
-    loadPainel();
+    const oficina = await window.FB.getMinhaOficina(user.uid).catch(() => null);
+    if (oficina) {
+      // Usuário tem oficina cadastrada → vai direto para o painel
+      STATE.oficinaAtual = oficina;
+      closeOverlay('scAuth');
+      toast('Bem-vindo de volta, ' + esc(oficina.nome || 'oficina') + '! 👋', 'success');
+      loadPainel();
+    } else {
+      // Usuário autenticado mas sem oficina → pode cadastrar
+      closeOverlay('scAuth');
+      toast('Login realizado! Cadastre sua oficina para aparecer nas buscas.', 'success');
+    }
   } catch(e) {
     const erros = {
       'auth/invalid-credential': 'Email ou senha incorretos.',
@@ -8596,6 +8631,9 @@ function _doFinishInit() {
   if (window.FB?.ready()) {
     window.FB.onAuthChange(user => {
       STATE.user = user;
+      // Ocultar o link "Entrar no painel" quando já logado
+      const loginRow = document.getElementById('home-login-row');
+      if (loginRow) loginRow.style.display = user ? 'none' : '';
       if (user && document.getElementById('scPainel').classList.contains('active')) {
         loadLeadsPainel();
       }
