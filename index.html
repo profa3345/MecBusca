@@ -11774,5 +11774,872 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 </script>
 
+<!--
+  ╔══════════════════════════════════════════════════════════════════════╗
+  ║  MECBUSCA — PATCH DE MELHORIAS v3.0                                  ║
+  ║  Injetar no index.html antes de </body>                              ║
+  ║                                                                      ║
+  ║  Melhorias incluídas:                                                ║
+  ║  1. Geolocalização automática na home + busca por proximidade        ║
+  ║  2. Loading states claros (busca + envio de lead)                    ║
+  ║  3. Chatbot Ana com IA real (Claude API) para diagnóstico de carro   ║
+  ║  4. Instruções do índice Firestore para leads                        ║
+  ╚══════════════════════════════════════════════════════════════════════╝
+-->
+
+<!-- ═══════════════════════════════════════════════════════════
+     PATCH 1: GEOLOCALIZAÇÃO AUTOMÁTICA
+     - Botão "📍 Usar minha localização" na home
+     - Atualiza STATE.userLat/Lng e refaz a busca
+     - Toast de feedback com nome do bairro (Nominatim)
+     ════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Botão de geolocalização na home ── */
+#btn-usar-geo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  background: rgba(0,208,132,0.08);
+  border: 1.5px dashed rgba(0,208,132,0.3);
+  border-radius: 11px;
+  color: var(--g);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  font-family: 'DM Sans', sans-serif;
+}
+#btn-usar-geo:hover { background: rgba(0,208,132,0.14); border-color: var(--g); }
+#btn-usar-geo:disabled { opacity: 0.5; cursor: wait; }
+#geo-status-badge {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--g);
+  background: rgba(0,208,132,0.08);
+  border: 1px solid rgba(0,208,132,0.2);
+  border-radius: 8px;
+  padding: 5px 11px;
+  margin-top: 6px;
+  animation: fadeIn 0.3s ease;
+}
+
+/* ── Loading state global para busca de oficinas ── */
+#search-loading-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--g), #1DE898, var(--g));
+  background-size: 200% 100%;
+  animation: loadingBar 1.2s linear infinite;
+  z-index: 9999;
+  display: none;
+}
+@keyframes loadingBar {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Loading state melhorado para envio de lead ── */
+.lead-sending-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8,12,9,0.6);
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 13.5px;
+  color: var(--g);
+  font-weight: 600;
+  z-index: 10;
+  animation: fadeIn 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+.lead-dots span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--g);
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+.lead-dots span:nth-child(2) { animation-delay: 0.2s; }
+.lead-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotBounce {
+  0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+</style>
+
+<!-- Barra de progresso global -->
+<div id="search-loading-bar"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   PATCH 1 — Geolocalização Automática
+   Injeta botão na home e atualiza STATE.userLat/Lng
+   ════════════════════════════════════════════════════════════ */
+(function patchGeolocalizacao() {
+  // Injeta o botão e badge após o botão de busca da home
+  function injectGeoBtnInHome() {
+    const searchBtn = document.querySelector('.home-search-btn');
+    if (!searchBtn || document.getElementById('btn-usar-geo')) return;
+
+    const wrapper = document.createElement('div');
+    wrapper.id = 'geo-btn-wrapper';
+
+    wrapper.innerHTML = `
+      <button id="btn-usar-geo" onclick="solicitarGeolocalizacao()" type="button" aria-label="Usar minha localização atual">
+        <span id="geo-btn-icon">📍</span>
+        <span id="geo-btn-txt">Usar minha localização</span>
+      </button>
+      <div id="geo-status-badge">
+        <span>📍</span>
+        <span id="geo-status-txt">Localização ativa</span>
+      </div>
+    `;
+
+    searchBtn.parentNode.insertBefore(wrapper, searchBtn.nextSibling);
+  }
+
+  // Função principal — chamada pelo botão
+  window.solicitarGeolocalizacao = function(silencioso = false) {
+    if (!navigator.geolocation) {
+      if (!silencioso) toast('Geolocalização não suportada neste dispositivo.', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('btn-usar-geo');
+    const btnTxt = document.getElementById('geo-btn-txt');
+    const btnIcon = document.getElementById('geo-btn-icon');
+    if (btn) { btn.disabled = true; }
+    if (btnTxt) btnTxt.textContent = 'Buscando sua localização...';
+    if (btnIcon) btnIcon.textContent = '⏳';
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        STATE.userLat = latitude;
+        STATE.userLng = longitude;
+
+        // Tentar reverso geocode para pegar nome do bairro/cidade
+        let localName = 'sua localização';
+        try {
+          const r = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
+            { headers: { 'Accept-Language': 'pt-BR', 'User-Agent': 'MecBusca/1.0' } }
+          );
+          const data = await r.json();
+          const addr = data.address || {};
+          localName = addr.suburb || addr.neighbourhood || addr.quarter
+            || addr.village || addr.town || addr.city || 'sua região';
+        } catch(_) {}
+
+        // Atualiza UI
+        const badge = document.getElementById('geo-status-badge');
+        const statusTxt = document.getElementById('geo-status-txt');
+        if (badge) badge.style.display = 'flex';
+        if (statusTxt) statusTxt.textContent = `📍 ${localName} · ordenando por distância`;
+
+        if (btn) { btn.disabled = false; }
+        if (btnTxt) btnTxt.textContent = `✓ ${localName} detectado`;
+        if (btnIcon) btnIcon.textContent = '✅';
+
+        if (!silencioso) toast(`📍 Localização detectada: ${localName}. Busca por proximidade ativada!`, 'success');
+
+        // Se o usuário já está na tela de resultados, refaz a busca
+        if (typeof runSearch === 'function') {
+          const scCliente = document.getElementById('scCliente');
+          if (scCliente && scCliente.classList.contains('active')) {
+            runSearch();
+          }
+        }
+
+        // Salva no localStorage para próxima visita
+        try {
+          localStorage.setItem('mb_last_lat', latitude);
+          localStorage.setItem('mb_last_lng', longitude);
+          localStorage.setItem('mb_last_geo_ts', Date.now());
+        } catch(_) {}
+      },
+      (err) => {
+        if (btn) { btn.disabled = false; }
+        if (btnTxt) btnTxt.textContent = 'Usar minha localização';
+        if (btnIcon) btnIcon.textContent = '📍';
+
+        if (!silencioso) {
+          const msgs = {
+            1: 'Permissão de localização negada. Ative nas configurações do navegador.',
+            2: 'Localização indisponível. Tente novamente.',
+            3: 'Tempo esgotado ao buscar localização.',
+          };
+          toast(msgs[err.code] || 'Erro ao obter localização.', 'warning');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 120000 }
+    );
+  };
+
+  // Tenta restaurar geo da sessão anterior (cache de 30 min)
+  function tryRestoreGeo() {
+    try {
+      const ts = parseInt(localStorage.getItem('mb_last_geo_ts') || '0');
+      if (Date.now() - ts > 30 * 60 * 1000) return; // 30 min expirado
+      const lat = parseFloat(localStorage.getItem('mb_last_lat'));
+      const lng = parseFloat(localStorage.getItem('mb_last_lng'));
+      if (!isFinite(lat) || !isFinite(lng)) return;
+      STATE.userLat = lat;
+      STATE.userLng = lng;
+      const badge = document.getElementById('geo-status-badge');
+      const statusTxt = document.getElementById('geo-status-txt');
+      if (badge) badge.style.display = 'flex';
+      if (statusTxt) statusTxt.textContent = 'Localização anterior restaurada · ordenando por distância';
+      const btnTxt = document.getElementById('geo-btn-txt');
+      const btnIcon = document.getElementById('geo-btn-icon');
+      if (btnTxt) btnTxt.textContent = '✓ Localização ativa';
+      if (btnIcon) btnIcon.textContent = '✅';
+    } catch(_) {}
+  }
+
+  // Inicializa após DOMContentLoaded
+  function init() {
+    injectGeoBtnInHome();
+    tryRestoreGeo();
+
+    // Tenta auto-detect silencioso se permissão já foi concedida antes
+    if (navigator.permissions) {
+      navigator.permissions.query({ name: 'geolocation' }).then(result => {
+        if (result.state === 'granted' && !STATE.userLat) {
+          solicitarGeolocalizacao(true);
+        }
+      }).catch(() => {});
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 300);
+  }
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PATCH 2: LOADING STATES CLAROS
+     - Barra de progresso no topo durante busca
+     - Dots animados no botão de envio de lead
+     ════════════════════════════════════════════════════════════ -->
+<script>
+(function patchLoadingStates() {
+  // ── 1. Barra de progresso durante loadOficinas ──
+  const origLoadOficinas = window.loadOficinas;
+  if (typeof origLoadOficinas === 'function') {
+    window.loadOficinas = async function(...args) {
+      const bar = document.getElementById('search-loading-bar');
+      if (bar) bar.style.display = 'block';
+      try {
+        return await origLoadOficinas.apply(this, args);
+      } finally {
+        if (bar) bar.style.display = 'none';
+      }
+    };
+  }
+
+  // ── 2. Também patcha runSearch para mostrar bar em outros modos ──
+  const origRunSearch = window.runSearch;
+  if (typeof origRunSearch === 'function') {
+    window.runSearch = async function(...args) {
+      const bar = document.getElementById('search-loading-bar');
+      if (bar) bar.style.display = 'block';
+      try {
+        return await origRunSearch.apply(this, args);
+      } finally {
+        if (bar) bar.style.display = 'none';
+      }
+    };
+  }
+
+  // ── 3. Melhora o botão de envio de lead com dots animados ──
+  const origEnviarLead = window.enviarLead;
+  if (typeof origEnviarLead === 'function') {
+    window.enviarLead = async function(ofId) {
+      const btn = document.getElementById('btnEnviarLead');
+      const txt = document.getElementById('enviarLeadText');
+      const spin = document.getElementById('enviarLeadSpin');
+
+      // Estado de loading melhorado
+      if (btn && txt && spin) {
+        txt.style.display = 'none';
+        spin.style.display = 'none';
+        btn.innerHTML = `
+          <span style="display:flex;align-items:center;gap:10px;">
+            <span class="lead-dots">
+              <span></span><span></span><span></span>
+            </span>
+            <span style="font-size:13px;font-weight:600;">Enviando solicitação...</span>
+          </span>`;
+        btn.disabled = true;
+      }
+
+      try {
+        return await origEnviarLead.apply(this, arguments);
+      } finally {
+        // Restaura botão
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = `
+            <span id="enviarLeadText">✔ Confirmar orçamento</span>
+            <span id="enviarLeadSpin" style="display:none;"><span class="spinner"></span></span>`;
+        }
+      }
+    };
+  }
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PATCH 3: CHATBOT ANA COM IA REAL (Claude API)
+     - Substitui o redirect para WhatsApp por chat inline
+     - Diagnóstico inteligente de problemas do carro
+     - Sugere serviços e oficinas com base nos sintomas
+     ════════════════════════════════════════════════════════════ -->
+<style>
+/* ── Ana AI Chat Widget ── */
+#ana-ai-chat {
+  position: fixed;
+  bottom: 88px;
+  right: 24px;
+  width: 340px;
+  max-width: calc(100vw - 32px);
+  background: rgba(14,22,15,0.97);
+  border: 1.5px solid rgba(0,208,132,0.25);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 40px rgba(0,208,132,0.06);
+  backdrop-filter: blur(20px);
+  z-index: 99998;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 500px;
+  animation: chatSlideIn 0.3s cubic-bezier(.25,.8,.25,1);
+}
+@keyframes chatSlideIn {
+  from { opacity:0; transform:translateY(16px) scale(0.97); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+#ana-ai-chat.open { display: flex; }
+
+#ana-chat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(0,208,132,0.1);
+  background: rgba(0,208,132,0.05);
+}
+.ana-avatar {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--g), #1DE898);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+  box-shadow: 0 0 14px rgba(0,208,132,0.35);
+}
+.ana-name-block .ana-name {
+  font-size: 13.5px; font-weight: 700; color: var(--t);
+}
+.ana-name-block .ana-status {
+  font-size: 11px; color: var(--g);
+  display: flex; align-items: center; gap: 4px;
+}
+.ana-status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%; background: var(--g);
+  box-shadow: 0 0 6px rgba(0,208,132,0.7);
+  animation: liveBlink 1.4s ease-in-out infinite;
+}
+#ana-close-btn {
+  margin-left: auto;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--t3);
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+}
+#ana-close-btn:hover { color: var(--t); background: rgba(255,255,255,0.1); }
+
+#ana-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 14px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  scroll-behavior: smooth;
+}
+.ana-msg {
+  max-width: 85%;
+  padding: 10px 13px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  animation: fadeUp 0.2s ease both;
+}
+.ana-msg.bot {
+  background: rgba(0,208,132,0.09);
+  border: 1px solid rgba(0,208,132,0.15);
+  color: var(--t);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+.ana-msg.user {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--t2);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+.ana-typing {
+  display: flex; align-items: center; gap: 4px;
+  padding: 10px 13px;
+  background: rgba(0,208,132,0.07);
+  border: 1px solid rgba(0,208,132,0.12);
+  border-radius: 14px; border-bottom-left-radius: 4px;
+  align-self: flex-start;
+}
+.ana-typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--g); opacity: 0.6;
+  animation: dotBounce 1.2s ease-in-out infinite;
+}
+.ana-typing span:nth-child(2) { animation-delay: 0.2s; }
+.ana-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+#ana-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(0,208,132,0.1);
+  background: rgba(0,0,0,0.2);
+}
+#ana-input {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,208,132,0.15);
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: var(--t);
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color 0.15s;
+  resize: none;
+}
+#ana-input:focus { border-color: rgba(0,208,132,0.4); }
+#ana-input::placeholder { color: var(--t3); }
+#ana-send-btn {
+  width: 36px; height: 36px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--g), #1DE898);
+  border: none; border-radius: 10px;
+  color: #060A07; font-size: 16px;
+  cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: all 0.15s;
+  margin-top: 1px;
+  align-self: flex-end;
+}
+#ana-send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 14px rgba(0,208,132,0.4); }
+#ana-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* Chips de resposta rápida */
+.ana-quick-replies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.ana-chip {
+  padding: 5px 12px;
+  background: rgba(0,208,132,0.08);
+  border: 1px solid rgba(0,208,132,0.2);
+  border-radius: 20px;
+  font-size: 11.5px;
+  color: var(--g);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'DM Sans', sans-serif;
+}
+.ana-chip:hover { background: rgba(0,208,132,0.16); border-color: var(--g); }
+</style>
+
+<!-- Widget Ana AI Chat -->
+<div id="ana-ai-chat" role="dialog" aria-label="Chat com Ana - Assistente MecBusca">
+  <div id="ana-chat-header">
+    <div class="ana-avatar">🤖</div>
+    <div class="ana-name-block">
+      <div class="ana-name">Ana · IA MecBusca</div>
+      <div class="ana-status">
+        <span class="ana-status-dot"></span>
+        Diagnosticando seu carro com IA
+      </div>
+    </div>
+    <button id="ana-close-btn" onclick="anaAiToggle(false)" aria-label="Fechar chat">×</button>
+  </div>
+  <div id="ana-messages"></div>
+  <div id="ana-input-row">
+    <input id="ana-input" placeholder="Descreva o problema do seu carro..." 
+           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();anaAiSend();}"
+           aria-label="Digite sua mensagem">
+    <button id="ana-send-btn" onclick="anaAiSend()" aria-label="Enviar">➤</button>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   PATCH 3 — Chatbot Ana com IA Real (Claude API)
+   ════════════════════════════════════════════════════════════ */
+(function initAnaAI() {
+  const SYSTEM_PROMPT = `Você é Ana, assistente inteligente do MecBusca — marketplace de oficinas mecânicas do Espírito Santo (Brasil).
+
+Seu trabalho é ajudar motoristas a diagnosticar problemas no carro e encontrar o serviço certo.
+
+REGRAS:
+1. Responda em português brasileiro, de forma amigável e direta
+2. Faça perguntas cirúrgicas para entender o problema (máx 2 perguntas por vez)
+3. Com base nos sintomas, identifique QUAL serviço o cliente precisa
+4. Sempre termine sugerindo clicar em "Buscar oficinas" com o serviço identificado
+5. Respostas curtas: máx 3 parágrafos. Use emojis com moderação
+6. Serviços disponíveis: Troca de óleo, Freios, Alinhamento, Balanceamento, Suspensão, Amortecedor, Revisão completa, Ar-condicionado, Elétrica automotiva, Bateria, Correia dentada, Embreagem, Câmbio, Injeção eletrônica, Funilaria e pintura, Pneus
+7. Não dê preços exatos — diga para consultar as oficinas no app
+8. Se o problema for grave/segurança (sem freios, fumaça, etc.), adverta com urgência
+
+FORMATO DE RESPOSTA quando identificar o serviço:
+Após o diagnóstico, inclua exatamente este bloco no final:
+[SERVIÇO: nome do serviço identificado]
+
+Exemplo de bloco: [SERVIÇO: Freios dianteiros]`;
+
+  let anaHistory = [];
+  let anaIsTyping = false;
+  let anaOpen = false;
+
+  // ── Abre / fecha o chat ──
+  window.anaAiToggle = function(forceState) {
+    anaOpen = forceState !== undefined ? forceState : !anaOpen;
+    const chat = document.getElementById('ana-ai-chat');
+    if (!chat) return;
+
+    if (anaOpen) {
+      chat.classList.add('open');
+      // Mensagem inicial na primeira abertura
+      if (anaHistory.length === 0) {
+        setTimeout(() => {
+          addAnaMessage('bot', 
+            '👋 Olá! Sou a **Ana**, sua assistente de diagnóstico automotivo.\n\nDescreva o que está acontecendo com seu carro — barulhos, falhas, luzes acesas — e eu identifico qual serviço você precisa!',
+            ['🔊 Barulho estranho', '💡 Luz acesa no painel', '🚗 Carro puxando', '🌡️ Esquentando']
+          );
+        }, 200);
+      }
+      setTimeout(() => document.getElementById('ana-input')?.focus(), 300);
+    } else {
+      chat.classList.remove('open');
+    }
+
+    // Esconde o widget original do WhatsApp Ana ao abrir o chat IA
+    const origWidget = document.getElementById('ana-widget');
+    if (origWidget) {
+      origWidget.style.opacity = anaOpen ? '0.3' : '1';
+      origWidget.style.pointerEvents = anaOpen ? 'none' : '';
+    }
+  };
+
+  // Override do anaToggle original para abrir o chat IA
+  const origAnaToggle = window.anaToggle;
+  window.anaToggle = function(force) {
+    // Abre o chat IA ao invés do bubble original
+    anaAiToggle(true);
+  };
+
+  // ── Adiciona mensagem na UI ──
+  function addAnaMessage(role, text, quickReplies) {
+    const msgs = document.getElementById('ana-messages');
+    if (!msgs) return;
+
+    // Remove indicador de typing se existir
+    const typingEl = msgs.querySelector('.ana-typing');
+    if (typingEl) typingEl.remove();
+
+    const div = document.createElement('div');
+    div.className = `ana-msg ${role}`;
+    // Suporte a markdown básico: **bold**, \n → br
+    div.innerHTML = text
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>');
+
+    msgs.appendChild(div);
+
+    // Chips de resposta rápida
+    if (quickReplies && quickReplies.length) {
+      const chipsDiv = document.createElement('div');
+      chipsDiv.className = 'ana-quick-replies';
+      quickReplies.forEach(chip => {
+        const btn = document.createElement('button');
+        btn.className = 'ana-chip';
+        btn.textContent = chip;
+        btn.onclick = () => {
+          document.getElementById('ana-input').value = chip.replace(/^[^a-zA-ZÀ-ÿ]+/, '');
+          chipsDiv.remove();
+          anaAiSend();
+        };
+        chipsDiv.appendChild(btn);
+      });
+      msgs.appendChild(chipsDiv);
+    }
+
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function addTypingIndicator() {
+    const msgs = document.getElementById('ana-messages');
+    if (!msgs) return;
+    const div = document.createElement('div');
+    div.className = 'ana-typing';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  // ── Envia mensagem para Claude API ──
+  window.anaAiSend = async function() {
+    if (anaIsTyping) return;
+    const input = document.getElementById('ana-input');
+    const sendBtn = document.getElementById('ana-send-btn');
+    if (!input) return;
+
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.value = '';
+    addAnaMessage('user', text);
+
+    anaHistory.push({ role: 'user', content: text });
+    anaIsTyping = true;
+    if (sendBtn) sendBtn.disabled = true;
+    addTypingIndicator();
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 400,
+          system: SYSTEM_PROMPT,
+          messages: anaHistory
+        })
+      });
+
+      const data = await response.json();
+      const reply = data.content?.[0]?.text || 'Desculpe, não consegui processar. Tente novamente.';
+
+      anaHistory.push({ role: 'assistant', content: reply });
+
+      // Extrai serviço sugerido se presente
+      const servicoMatch = reply.match(/\[SERVIÇO:\s*([^\]]+)\]/i);
+      const servicoSugerido = servicoMatch ? servicoMatch[1].trim() : null;
+
+      // Remove o bloco [SERVIÇO:...] do texto exibido
+      const replyLimpo = reply.replace(/\[SERVIÇO:[^\]]+\]/gi, '').trim();
+
+      // Monta chips de resposta
+      const chips = [];
+      if (servicoSugerido) {
+        chips.push(`🔍 Buscar oficinas para: ${servicoSugerido}`);
+      }
+
+      addAnaMessage('bot', replyLimpo, chips.length ? chips : undefined);
+
+      // Se chip de busca foi criado, ao clicar nele executa a busca
+      if (servicoSugerido) {
+        const chatEl = document.getElementById('ana-ai-chat');
+        const lastChips = chatEl?.querySelectorAll('.ana-chip');
+        if (lastChips) {
+          lastChips.forEach(chip => {
+            if (chip.textContent.includes('Buscar oficinas')) {
+              chip.onclick = () => {
+                anaAiToggle(false);
+                // Vai para tela de busca com o serviço sugerido
+                document.getElementById('cliSearch').value = servicoSugerido;
+                STATE.filtroChip = servicoSugerido;
+                if (typeof goTo === 'function') goTo('scCliente');
+                if (typeof setMode === 'function') setMode('oficinas');
+                if (typeof runSearch === 'function') runSearch();
+                toast(`🔍 Buscando oficinas para: ${servicoSugerido}`, 'success');
+              };
+            }
+          });
+        }
+      }
+
+    } catch(err) {
+      const msgs = document.getElementById('ana-messages');
+      const typingEl = msgs?.querySelector('.ana-typing');
+      if (typingEl) typingEl.remove();
+      addAnaMessage('bot', 'Ops! Sem conexão com o servidor de IA. Mas posso te ajudar via WhatsApp! 📱', 
+        ['💬 Falar com suporte']);
+    } finally {
+      anaIsTyping = false;
+      if (sendBtn) sendBtn.disabled = false;
+      input.focus();
+    }
+  };
+
+  // Garante que o chat fecha ao navegar para outras telas
+  document.addEventListener('DOMContentLoaded', () => {
+    // Monitora mudanças de tela
+    const origGoTo = window.goTo;
+    if (typeof origGoTo === 'function') {
+      window.goTo = function(screenId, ...rest) {
+        if (screenId !== 'scCliente' && anaOpen) anaAiToggle(false);
+        return origGoTo.apply(this, [screenId, ...rest]);
+      };
+    }
+  });
+
+})();
+</script>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PATCH 4: AVISO DO ÍNDICE FIRESTORE (aparece 1x no painel)
+     Exibe banner com link direto para criar o índice necessário
+     ════════════════════════════════════════════════════════════ -->
+<script>
+(function patchFirestoreIndexBanner() {
+  const INDEX_KEY = 'mb_index_banner_dismissed';
+  const INDEX_URL = 'https://console.firebase.google.com/v1/r/project/mecbusca/firestore/indexes?create_composite=CkZwcm9qZWN0cy9tZWNidXNjYS9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvbGVhZHMvaW5kZXhlcy9fEAEaDQoJb2ZpY2luYUlkEAEaDAoIY3JpYWRvRW0QAhoMCghfX25hbWVfXxAC';
+
+  function showIndexBanner() {
+    if (localStorage.getItem(INDEX_KEY)) return;
+
+    const existingBanner = document.getElementById('firestore-index-banner');
+    if (existingBanner) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'firestore-index-banner';
+    banner.style.cssText = `
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      background: rgba(255,179,71,0.12); border: 1.5px solid rgba(255,179,71,0.4);
+      border-radius: 14px; padding: 14px 18px; z-index: 9997;
+      max-width: 420px; width: calc(100vw - 32px);
+      display: flex; align-items: flex-start; gap: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      backdrop-filter: blur(12px);
+      animation: fadeUp 0.3s ease both;
+      font-family: 'DM Sans', sans-serif;
+    `;
+    banner.innerHTML = `
+      <span style="font-size:22px;flex-shrink:0;">⚠️</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:700;color:#FFB347;margin-bottom:4px;">Índice Firestore necessário</div>
+        <div style="font-size:12px;color:rgba(255,179,71,0.8);line-height:1.5;margin-bottom:10px;">
+          O painel de leads precisa de um índice composto no Firestore para funcionar. 
+          Clique abaixo para criá-lo em 1 clique.
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="${INDEX_URL}" target="_blank" rel="noopener"
+             style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(255,179,71,0.2);border:1px solid rgba(255,179,71,0.4);border-radius:8px;color:#FFB347;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.15s;"
+             onmouseover="this.style.background='rgba(255,179,71,0.3)'"
+             onmouseout="this.style.background='rgba(255,179,71,0.2)'">
+            🔗 Criar índice no Firebase Console
+          </a>
+          <button onclick="document.getElementById('firestore-index-banner').remove();localStorage.setItem('${INDEX_KEY}','1')"
+             style="padding:7px 14px;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:rgba(255,255,255,0.4);font-size:12px;cursor:pointer;font-family:inherit;">
+            Fechar
+          </button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(banner);
+
+    // Auto-remove após 20s
+    setTimeout(() => {
+      if (document.getElementById('firestore-index-banner')) {
+        banner.remove();
+      }
+    }, 20000);
+  }
+
+  // Mostra o banner quando o usuário abre o painel (aguarda loadPainel)
+  const origLoadPainel = window.loadPainel;
+  if (typeof origLoadPainel === 'function') {
+    window.loadPainel = function(...args) {
+      const result = origLoadPainel.apply(this, args);
+      setTimeout(showIndexBanner, 1500);
+      return result;
+    };
+  }
+
+  // Também mostra se onLeadsSnapshot retornar erro de índice
+  window.addEventListener('firestore-index-missing', showIndexBanner);
+})();
+</script>
+
+<!--
+══════════════════════════════════════════════════════════════════
+  📋 GUIA RÁPIDO DE IMPLANTAÇÃO
+══════════════════════════════════════════════════════════════════
+
+  1️⃣  INJETAR O PATCH
+  ─────────────────────
+  Cole todo o conteúdo deste arquivo imediatamente antes de
+  </body> no seu index.html. Todos os patches são não-destrutivos
+  e usam monkey-patching seguro (verificam se a função existe antes
+  de sobrescrever).
+
+  2️⃣  ÍNDICE FIRESTORE (OBRIGATÓRIO para leads funcionar)
+  ─────────────────────────────────────────────────────────
+  Acesse o link abaixo para criar o índice composto em 1 clique:
+
+  https://console.firebase.google.com/v1/r/project/mecbusca/firestore/indexes?create_composite=CkZwcm9qZWN0cy9tZWNidXNjYS9kYXRhYmFzZXMvKGRlZmF1bHQpL2NvbGxlY3Rpb25Hcm91cHMvbGVhZHMvaW5kZXhlcy9fEAEaDQoJb2ZpY2luYUlkEAEaDAoIY3JpYWRvRW0QAhoMCghfX25hbWVfXxAC
+
+  Ou crie manualmente no Firebase Console:
+  - Coleção: leads
+  - Campo 1: oficinaId (Ascending)
+  - Campo 2: criadoEm (Descending)
+  - Modo: Collection
+
+  ⏱  Criação leva 2-5 minutos. Enquanto isso, leads não carregam
+     no painel.
+
+  3️⃣  CHATBOT ANA (API KEY)
+  ─────────────────────────
+  O chatbot usa a Anthropic API. A chave é gerenciada pelo
+  proxy da Claude.ai — em produção própria, adicione ao header:
+  "x-api-key": "sua-chave-aqui"
+
+  Para usar sem custo inicial, configure um rate limit no
+  backend (max 10 req/min por IP).
+
+  4️⃣  SERVICE WORKER — BUILD TIMESTAMP
+  ──────────────────────────────────────
+  No seu CI/CD (ex: GitHub Actions), substitua '__BUILD_TS__'
+  antes do deploy:
+
+  sed -i "s/__BUILD_TS__/$(date +%s)/g" service-worker.js
+
+  Sem isso, o SW usa o placeholder literal e não invalida cache.
+
+══════════════════════════════════════════════════════════════════
+-->
+
 </body>
 </html>
