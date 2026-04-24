@@ -76,9 +76,6 @@
 })();
 </script>
 
-<!-- Manifest PWA — servido pelo Firebase Hosting (public/manifest.json) -->
-<!-- O script abaixo injeta via Blob como fallback se o arquivo não existir -->
-<link rel="manifest" href="/manifest.json">
 <!-- Fix 2: Ícones inline como SVG data URI — zero dependências de arquivos externos -->
 <script>
 (function(){
@@ -97,7 +94,7 @@
     name: "MecBusca",
     short_name: "MecBusca",
     description: "Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto.",
-    start_url: "./",
+    start_url: "/",
     display: "standalone",
     background_color: "#080C09",
     theme_color: "#00D084",
@@ -770,7 +767,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 <!-- ══════════════════════════════════════════════════════════
      styles/onboarding.css
 ════════════════════════════════════════════════════════════ -->
-<style id="css-onboarding" media="not all"><!-- lazy: enabled by JS when onboarding opens -->
+<style id="css-onboarding"><!-- always active: media="not all" ignorado em <style> inline pelos browsers -->
 
 .onb-wrap{max-width:560px;margin:0 auto;padding:40px 24px;}
 .onb-header{display:flex;align-items:center;gap:12px;margin-bottom:40px;}
@@ -779,71 +776,91 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 .onb-logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
 .onb-logo em{color:var(--g);font-style:normal;}
 
-.steps-bar{display:flex;gap:6px;margin-bottom:40px;}
-.step-seg{flex:1;height:3px;border-radius:2px;background:var(--s);transition:background 0.4s;}
+/* ── ONBOARDING REDESIGN v4 ────────────────────────────── */
+/* Progress bar */
+.onb-progress-wrap{padding:14px 20px 0;background:var(--bg2);border-bottom:1px solid var(--b);}
+.steps-bar{display:flex;gap:5px;margin-bottom:6px;}
+.step-seg{flex:1;height:3px;border-radius:2px;background:var(--s2);transition:background 0.4s;}
 .step-seg.done{background:var(--g);}
-.step-seg.active{background:var(--gd);}
+.step-seg.active{background:var(--gd);opacity:0.6;}
+.onb-prog-label{font-size:11px;color:var(--t3);padding-bottom:12px;letter-spacing:0.04em;text-transform:uppercase;font-weight:500;}
 
+/* Step panels */
 .onb-step{display:none;}
-.onb-step.active{display:block;animation:fadeUp 0.35s ease both;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.onb-step.active{display:flex;flex-direction:column;animation:fadeUp 0.28s ease both;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 
-.step-num{font-size:12px;color:var(--g);font-weight:500;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;}
-.step-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--t);margin-bottom:6px;line-height:1.2;}
-.step-sub{font-size:14px;color:var(--t2);margin-bottom:28px;line-height:1.6;}
+/* Step icon + header */
+.onb-step-icon{width:52px;height:52px;border-radius:14px;background:var(--gg);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:16px;flex-shrink:0;}
+.step-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--t);margin-bottom:5px;line-height:1.2;letter-spacing:-0.4px;}
+.step-sub{font-size:13.5px;color:var(--t2);margin-bottom:24px;line-height:1.55;}
+
+/* Sticky footer with nav buttons */
+.onb-footer{background:var(--bg2);border-top:1px solid var(--b);padding:14px 20px;position:sticky;bottom:0;z-index:20;display:flex;gap:10px;flex-shrink:0;}
+.onb-btn-back{flex:0 0 auto;height:48px;padding:0 18px;border-radius:var(--r);border:1px solid var(--b2);background:none;color:var(--t2);font-size:14px;cursor:pointer;transition:all 0.15s;white-space:nowrap;font-family:'DM Sans',sans-serif;}
+.onb-btn-back:hover{background:var(--s);color:var(--t);}
+.onb-btn-next{flex:1;height:48px;border-radius:var(--r);border:none;background:var(--g);color:#0b1a0f;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.15s;letter-spacing:0.01em;font-family:'DM Sans',sans-serif;}
+.onb-btn-next:hover{background:#1DE898;transform:translateY(-1px);}
+.onb-btn-next:active{transform:translateY(0);}
+.onb-btn-next:disabled{opacity:0.5;pointer-events:none;}
 
 /* SERVICE BUILDER */
-.svc-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
-.svc-item{display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--s);border:1px solid var(--b);border-radius:var(--r);}
+.svc-list{display:flex;flex-direction:column;gap:0;margin-bottom:14px;background:var(--s);border:1px solid var(--b);border-radius:var(--rl);overflow:hidden;}
+.svc-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-bottom:1px solid var(--b);}
+.svc-item:last-child{border-bottom:none;}
 .svc-name{flex:1;font-size:13.5px;color:var(--t);}
-.svc-price{font-size:13px;color:var(--g);font-weight:500;min-width:90px;text-align:right;}
-.svc-del{width:28px;height:28px;border-radius:7px;background:rgba(255,107,107,0.1);border:1px solid rgba(255,107,107,0.2);color:var(--re);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all var(--transition);flex-shrink:0;}
-.svc-del:hover{background:rgba(255,107,107,0.2);}
-.add-svc-row{display:grid;grid-template-columns:1fr 80px 80px 36px;gap:8px;align-items:end;}
-.add-btn-sm{width:36px;height:41px;background:var(--g);border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:20px;color:#0A0D0B;font-weight:700;transition:all var(--transition);border:none;}
+.svc-price{font-size:12.5px;color:var(--g);font-weight:500;min-width:70px;text-align:right;}
+.svc-del{width:28px;height:28px;border-radius:7px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.15);color:var(--re);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;transition:all var(--transition);flex-shrink:0;min-height:auto;}
+.svc-del:hover{background:rgba(255,107,107,0.18);}
+.svc-add-panel{background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:14px;margin-bottom:4px;}
+.svc-add-label{font-size:10.5px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
+.svc-price-row{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;margin-top:10px;}
+.add-btn-sm{width:42px;height:42px;background:var(--g);border-radius:var(--r);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#0A0D0B;font-weight:700;transition:all var(--transition);border:none;min-height:auto;flex-shrink:0;}
 .add-btn-sm:hover{background:#1DE898;}
 
-/* PLAN SELECTOR */
-.plan-opts{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
-.plan-opt{background:var(--s);border:2px solid var(--b);border-radius:var(--rxl);padding:20px;cursor:pointer;transition:all 0.2s;text-align:center;position:relative;}
-.plan-opt:hover{border-color:var(--b2);}
-.plan-opt.selected{border-color:var(--g);background:var(--gg2);}
-.popular-tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--g);color:#0A0D0B;font-size:10px;font-weight:700;padding:2px 12px;border-radius:10px;}
-.plan-price-big{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--g);}
-.plan-price-big span{font-size:12px;color:var(--t3);font-family:'DM Sans',sans-serif;font-weight:400;}
-.plan-name{font-size:13px;font-weight:500;color:var(--t);margin-bottom:4px;}
-.plan-feats{font-size:11px;color:var(--t3);margin-top:8px;line-height:1.8;}
+/* HOURS — redesigned */
+.hora-grid-new{display:flex;flex-direction:column;gap:0;background:var(--s);border:1px solid var(--b);border-radius:var(--rl);overflow:hidden;}
+.hora-row{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--b);transition:opacity 0.2s;}
+.hora-row:last-child{border-bottom:none;}
+.hora-row.off{opacity:0.38;}
+.hora-day{font-size:12px;color:var(--t2);font-weight:700;}
+.hora-times{display:flex;align-items:center;gap:5px;}
+.hora-time-input{width:76px;padding:5px 7px;background:var(--bg3);border:1px solid var(--b);border-radius:8px;color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;transition:border var(--transition);text-align:center;}
+.hora-time-input:focus{border-color:var(--g);}
+.hora-time-input:disabled{opacity:0.3;cursor:not-allowed;}
+.hora-sep{font-size:11px;color:var(--t3);}
+.hora-toggle{width:38px;height:22px;background:var(--g);border-radius:11px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;border:none;}
+.hora-toggle::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#0A0D0B;transition:left 0.2s;}
+.hora-toggle.off{background:var(--s2);}
+.hora-toggle.off::after{left:19px;background:var(--t3);}
 
 /* SUCCESS */
-.success-wrap{text-align:center;padding:60px 20px;}
-.success-icon{width:72px;height:72px;border-radius:50%;background:var(--gg);border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:32px;}
-.success-title{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--t);margin-bottom:8px;}
-.success-sub{font-size:14px;color:var(--t2);margin-bottom:32px;line-height:1.6;}
+.success-wrap{text-align:center;padding:32px 0 16px;}
+.success-icon{width:86px;height:86px;border-radius:50%;background:var(--gg);border:2px solid var(--b2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:38px;animation:popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275) both;}
+@keyframes popIn{from{transform:scale(0.5);opacity:0;}to{transform:scale(1);opacity:1;}}
+.success-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--t);margin-bottom:8px;letter-spacing:-0.5px;}
+.success-sub{font-size:14px;color:var(--t2);margin-bottom:24px;line-height:1.6;}
+.success-detail{background:var(--gg);border:1px solid var(--b2);border-radius:var(--rl);padding:14px 16px;margin-bottom:20px;text-align:left;}
+.success-detail-row{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:13px;color:var(--t2);}
+.success-check{color:var(--g);font-size:15px;flex-shrink:0;}
 
-/* HOURS */
-.hora-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b);}
-.hora-row:last-child{border:none;}
-.hora-day{font-size:12px;color:var(--t2);width:36px;font-weight:600;}
-.hora-range{font-size:12.5px;color:var(--t);flex:1;}
-.hora-times{display:flex;align-items:center;gap:6px;flex:1;}
-.hora-time-input{
-  width:72px;padding:5px 7px;background:var(--s);border:1.5px solid var(--b);
-  border-radius:8px;color:var(--t);font-size:12.5px;font-family:'DM Sans',sans-serif;
-  outline:none;transition:border var(--transition);text-align:center;
-}
-.hora-time-input:focus{border-color:var(--g);}
-.hora-time-input:disabled{opacity:0.35;cursor:not-allowed;}
-.hora-sep{font-size:11px;color:var(--t3);}
-.hora-toggle{width:36px;height:20px;background:var(--g);border-radius:10px;position:relative;cursor:pointer;transition:background 0.2s;flex-shrink:0;}
-.hora-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#0A0D0B;transition:left 0.2s;}
-.hora-toggle.off{background:var(--s2);}
-.hora-toggle.off::after{left:18px;background:var(--t3);}
+/* Review card on step 4 */
+.review-card{background:var(--gg);border:1px solid rgba(0,208,132,0.15);border-radius:var(--rl);padding:14px 16px;margin-top:20px;}
+.review-row{display:flex;gap:8px;padding:4px 0;font-size:13px;color:var(--t2);}
+.review-row strong{color:var(--t);}
+
+/* Foto drop zone */
+.foto-drop-zone{border:2px dashed var(--b2);border-radius:var(--rl);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color 0.2s,background 0.2s;margin-bottom:12px;}
+.foto-drop-zone:hover{border-color:var(--g);background:var(--gg);}
+.foto-drop-zone-icon{font-size:30px;margin-bottom:8px;opacity:0.55;}
+.foto-drop-zone-text{font-size:13.5px;color:var(--t2);}
+.foto-drop-zone-hint{font-size:11.5px;color:var(--t3);margin-top:4px;}
 </style>
 
 <!-- ══════════════════════════════════════════════════════════
      styles/cliente.css — Client search app
 ════════════════════════════════════════════════════════════ -->
-<style id="css-cliente" media="not all"><!-- lazy: enabled by JS when cliente screen opens -->
+<style id="css-cliente"><!-- always active: media="not all" ignorado em <style> inline pelos browsers -->
 #scCliente{background:var(--bg);min-height:100vh;}
 .cli-header{
   background:rgba(13,18,16,0.85);
@@ -1070,7 +1087,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 <!-- ══════════════════════════════════════════════════════════
      styles/painel.css — Workshop dashboard
 ════════════════════════════════════════════════════════════ -->
-<style id="css-painel" media="not all"><!-- lazy: enabled by JS when painel loads -->
+<style id="css-painel"><!-- always active: media="not all" ignorado em <style> inline pelos browsers -->
 #scPainel{display:none;min-height:100vh;}
 #scPainel.active{display:flex;}
 
@@ -2224,212 +2241,203 @@ button,a,[role=button]{min-height:44px;}
 ════════════════════════════════════════════════════════════ -->
 <!-- DRAWER: ONBOARDING (cadastro de oficina) -->
 <div class="drawer-overlay" id="scOnboarding" role="dialog" aria-modal="true" aria-label="Cadastro de oficina" onclick="closeOverlay('scOnboarding',event)">
-  <div class="drawer" onclick="event.stopPropagation()">
-    <div class="drawer-header">
+  <div class="drawer" onclick="event.stopPropagation()" style="display:flex;flex-direction:column;height:100%;max-height:100vh;">
+
+    <!-- Header fixo -->
+    <div class="drawer-header" style="flex-shrink:0;">
       <button class="modal-close" style="position:static;" onclick="closeOverlay('scOnboarding')" aria-label="Fechar">×</button>
       <div class="onb-logo" style="margin:0 auto 0 12px;">Mec<em>Busca</em></div>
     </div>
-    <div class="drawer-body"><div class="steps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="1">
-      <div class="step-seg active" id="seg0"></div>
-      <div class="step-seg" id="seg1"></div>
-      <div class="step-seg" id="seg2"></div>
+
+    <!-- Barra de progresso fixa -->
+    <div class="onb-progress-wrap" style="flex-shrink:0;">
+      <div class="steps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1">
+        <div class="step-seg active" id="seg0"></div>
+        <div class="step-seg" id="seg1"></div>
+        <div class="step-seg" id="seg2"></div>
+        <div class="step-seg" id="seg3"></div>
+      </div>
+      <div class="onb-prog-label" id="onbProgLabel">Passo 1 de 4 — Dados da oficina</div>
     </div>
 
-    <!-- STEP 0: Dados básicos -->
-    <div class="onb-step active" id="step0" role="form" aria-label="Passo 1: Dados da oficina">
-      <div class="step-num">Passo 1 de 3</div>
-      <div class="step-title">Dados da oficina</div>
-      <div class="step-sub">Essas informações aparecem para os clientes na busca.</div>
-      <div class="form-group">
-        <label class="form-label" for="onbNome">Nome da oficina *</label>
-        <input class="form-input" id="onbNome" placeholder="Ex: Auto Center Vitória" aria-required="true">
-        <span class="field-error" id="onbNomeErr">Nome é obrigatório</span>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="onbCidade">Cidade *</label>
-          <select class="form-input" id="onbCidade" onchange="onbUpdateBairros()" aria-required="true">
-            <option value="">Selecione a cidade</option>
-            <option value="Vitória">Vitória</option>
-            <option value="Vila Velha">Vila Velha</option>
-            <option value="Cariacica">Cariacica</option>
-            <option value="Serra">Serra</option>
-            <option value="Viana">Viana</option>
-            <option value="Guarapari">Guarapari</option>
-            <option value="Fundão">Fundão</option>
-            <option value="Linhares">Linhares</option>
-            <option value="Cachoeiro de Itapemirim">Cachoeiro de Itapemirim</option>
-            <option value="Colatina">Colatina</option>
-            <option value="São Mateus">São Mateus</option>
-            <option value="Aracruz">Aracruz</option>
-            <option value="Outra">Outra cidade do ES</option>
-          </select>
-          <span class="field-error" id="onbCidadeErr">Cidade obrigatória</span>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="onbBairro">Bairro</label>
-          <select class="form-input" id="onbBairro" aria-label="Selecione o bairro">
-            <option value="">Selecione a cidade primeiro</option>
-          </select>
-          <input class="form-input" id="onbBairroOutro" placeholder="Digite o nome do bairro" style="display:none;margin-top:6px;" aria-label="Nome do bairro">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="onbEndereco">Endereço completo</label>
-        <input class="form-input" id="onbEndereco" placeholder="Rua das Flores, 142">
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="onbWpp">WhatsApp (com DDD) *</label>
-        <div class="phone-mask-wrap">
-          <span class="phone-flag" aria-hidden="true">🇧🇷</span>
-          <input class="form-input" id="onbWpp" placeholder="(27) 9 9999-0000" type="tel" autocomplete="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" aria-required="true">
-        </div>
-        <span class="field-error" id="onbWppErr">WhatsApp inválido (precisa de 11 dígitos)</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label" for="onbEmail">Email <span style="color:var(--re)">*</span></label>
-        <input class="form-input" id="onbEmail" placeholder="contato@suaoficina.com" type="email" autocomplete="email" aria-required="true">
-        <span class="field-error" id="onbEmailErr">Email obrigatório para criar sua conta</span>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Fotos da oficina (opcional)</label>
-        <div id="onbFotosDrop" onclick="document.getElementById('onbFotosInput').click()"
-          style="border:2px dashed var(--b2);border-radius:var(--r);padding:18px;text-align:center;cursor:pointer;transition:border-color 0.2s;background:var(--s);"
-          ondragover="event.preventDefault();this.style.borderColor='var(--g)'"
-          ondragleave="this.style.borderColor=''"
-          ondrop="onbHandleDrop(event)">
-          <div style="font-size:26px;margin-bottom:5px;">📷</div>
-          <div style="font-size:13px;color:var(--t2);">Clique ou arraste fotos aqui</div>
-          <div style="font-size:11px;color:var(--t3);margin-top:3px;">JPG, PNG ou WEBP · Máx. 5MB por foto · até 5 fotos</div>
-        </div>
-        <input type="file" id="onbFotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="onbHandleFiles(this.files)">
-        <div id="onbFotosPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;"></div>
-        <span class="field-error" id="onbFotosErr" style="display:none;">Arquivo inválido ou muito grande (máx. 5MB)</span>
-      </div>
-      <button class="btn btn-primary" onclick="nextStep(1)">Continuar →</button>
-    </div>
+    <!-- Corpo scrollável -->
+    <div class="drawer-body" style="flex:1;overflow-y:auto;">
 
-    <!-- STEP 1: Serviços -->
-    <div class="onb-step" id="step1">
-      <div class="step-num">Passo 2 de 3</div>
-      <div class="step-title">Serviços & preços</div>
-      <div class="step-sub">Adicione os serviços que você oferece. Os preços são exibidos direto para o cliente.</div>
-      <div class="svc-list" id="onbSvcList" aria-live="polite"></div>
+      <!-- ══ STEP 0: Dados básicos ══ -->
+      <div class="onb-step active" id="step0" role="form" aria-label="Passo 1 de 4">
+        <div class="onb-step-icon" aria-hidden="true">🏢</div>
+        <div class="step-title">Dados da oficina</div>
+        <div class="step-sub">Essas informações aparecem para os clientes na busca.</div>
+        <div class="form-group">
+          <label class="form-label" for="onbNome">Nome da oficina <span style="color:var(--g)">*</span></label>
+          <input class="form-input" id="onbNome" placeholder="Ex: Auto Center Vitória" autocomplete="organization" aria-required="true">
+          <span class="field-error" id="onbNomeErr">Nome é obrigatório</span>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="onbCidade">Cidade <span style="color:var(--g)">*</span></label>
+            <select class="form-input" id="onbCidade" onchange="onbUpdateBairros()" aria-required="true">
+              <option value="">Selecione</option>
+              <option>Vitória</option><option>Vila Velha</option><option>Cariacica</option>
+              <option>Serra</option><option>Viana</option><option>Guarapari</option>
+              <option>Fundão</option><option>Linhares</option>
+              <option>Cachoeiro de Itapemirim</option><option>Colatina</option>
+              <option>São Mateus</option><option>Aracruz</option>
+              <option value="Outra">Outra cidade do ES</option>
+            </select>
+            <span class="field-error" id="onbCidadeErr">Cidade obrigatória</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="onbBairro">Bairro <span style="font-size:11px;color:var(--t3);font-weight:400;">(melhora seu ranking)</span></label>
+            <select class="form-input" id="onbBairro" aria-label="Selecione o bairro">
+              <option value="">Selecione a cidade</option>
+            </select>
+            <input class="form-input" id="onbBairroOutro" placeholder="Nome do bairro" style="display:none;margin-top:6px;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="onbEndereco">Endereço completo</label>
+          <input class="form-input" id="onbEndereco" placeholder="Rua das Flores, 142">
+          <div id="geoStatus" style="font-size:11.5px;color:var(--t3);margin-top:5px;display:none;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="onbWpp">WhatsApp (com DDD) <span style="color:var(--g)">*</span></label>
+          <div class="phone-mask-wrap">
+            <span class="phone-flag" aria-hidden="true">🇧🇷</span>
+            <input class="form-input" id="onbWpp" placeholder="(27) 9 9999-0000" type="tel" autocomplete="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" aria-required="true">
+          </div>
+          <span class="field-error" id="onbWppErr">WhatsApp inválido (precisa de 11 dígitos)</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="onbEmail">E-mail da conta <span style="color:var(--g)">*</span></label>
+          <input class="form-input" id="onbEmail" placeholder="contato@suaoficina.com" type="email" autocomplete="email" aria-required="true">
+          <span class="field-error" id="onbEmailErr">E-mail obrigatório para criar sua conta</span>
+        </div>
+      </div>
 
-      <!-- Serviço selecionável + campo "Outro" -->
-      <div style="background:var(--s);border:1px solid var(--b);border-radius:var(--rl);padding:16px;margin-bottom:4px;">
-        <div style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">➕ Adicionar serviço</div>
-        <div style="margin-bottom:10px;">
-          <label class="form-label" for="nsvcSelect">Serviço</label>
-          <select class="form-input" id="nsvcSelect" onchange="onbSvcSelectChange()" aria-label="Selecione o serviço">
+      <!-- ══ STEP 1: Serviços ══ -->
+      <div class="onb-step" id="step1" role="form" aria-label="Passo 2 de 4">
+        <div class="onb-step-icon" aria-hidden="true">🔧</div>
+        <div class="step-title">Serviços & preços</div>
+        <div class="step-sub">Adicione os serviços que você oferece. Os preços são exibidos direto para o cliente.</div>
+
+        <!-- Lista de serviços adicionados -->
+        <div class="svc-list" id="onbSvcList" aria-live="polite" aria-label="Serviços adicionados" style="display:none;"></div>
+
+        <!-- Painel de adição -->
+        <div class="svc-add-panel">
+          <div class="svc-add-label">Adicionar serviço</div>
+          <select class="form-input" id="nsvcSelect" onchange="onbSvcSelectChange()" aria-label="Selecione o serviço" style="margin-bottom:0;">
             <option value="">— Selecione o serviço —</option>
             <optgroup label="Manutenção">
-              <option>Troca de óleo</option>
-              <option>Revisão completa</option>
-              <option>Filtros</option>
-              <option>Velas de ignição</option>
-              <option>Correia dentada</option>
+              <option>Troca de óleo</option><option>Revisão completa</option>
+              <option>Filtros</option><option>Velas de ignição</option><option>Correia dentada</option>
             </optgroup>
             <optgroup label="Freios e Suspensão">
-              <option>Freios dianteiros</option>
-              <option>Freios traseiros</option>
-              <option>Alinhamento</option>
-              <option>Balanceamento</option>
-              <option>Suspensão</option>
-              <option>Amortecedor</option>
+              <option>Freios dianteiros</option><option>Freios traseiros</option>
+              <option>Alinhamento</option><option>Balanceamento</option>
+              <option>Suspensão</option><option>Amortecedor</option>
             </optgroup>
             <optgroup label="Motor e Câmbio">
-              <option>Embreagem</option>
-              <option>Câmbio</option>
-              <option>Injeção eletrônica</option>
+              <option>Embreagem</option><option>Câmbio</option><option>Injeção eletrônica</option>
             </optgroup>
             <optgroup label="Funilaria & Lanternagem">
-              <option>Funilaria e pintura</option>
-              <option>Lanternagem completa</option>
-              <option>Amassado simples</option>
-              <option>Pintura localizada</option>
-              <option>Pintura completa</option>
-              <option>Polimento e cristalização</option>
-              <option>Troca de para-choque</option>
-              <option>Troca de para-lama</option>
-              <option>Troca de capô</option>
-              <option>Troca de porta</option>
-              <option>Reparo de riscos</option>
-              <option>Destombamento</option>
+              <option>Funilaria e pintura</option><option>Lanternagem completa</option>
+              <option>Amassado simples</option><option>Pintura localizada</option>
+              <option>Pintura completa</option><option>Polimento e cristalização</option>
+              <option>Troca de para-choque</option><option>Troca de para-lama</option>
+              <option>Reparo de riscos</option><option>Destombamento</option>
             </optgroup>
             <optgroup label="Elétrica, Faróis & Acessórios">
-              <option>Elétrica automotiva</option>
-              <option>Ar-condicionado</option>
-              <option>Bateria</option>
-              <option>Troca de farol dianteiro</option>
-              <option>Troca de farol traseiro</option>
-              <option>Troca de farol de milha</option>
-              <option>Polimento de farol</option>
-              <option>Instalação de acessórios</option>
-              <option>Som e multimídia</option>
+              <option>Elétrica automotiva</option><option>Ar-condicionado</option>
+              <option>Bateria</option><option>Troca de farol dianteiro</option>
+              <option>Troca de farol traseiro</option><option>Polimento de farol</option>
+              <option>Instalação de acessórios</option><option>Som e multimídia</option>
               <option>Película automotiva</option>
             </optgroup>
             <optgroup label="Outros">
-              <option>Pneus</option>
-              <option>Escapamento</option>
+              <option>Pneus</option><option>Escapamento</option>
               <option value="__outro__">✏️ Outro (escrever manualmente)</option>
             </optgroup>
           </select>
-        </div>
-        <!-- Campo "Outro" — aparece só quando selecionado -->
-        <div id="nsvcOutroWrap" style="display:none;margin-bottom:10px;">
-          <label class="form-label" for="nsvcNome">Nome do serviço</label>
-          <input class="form-input" id="nsvcNome" placeholder="Ex: Higienização de ar-condicionado" aria-label="Nome do serviço personalizado">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:end;">
-          <div>
-            <label class="form-label" for="nsvcMin">Preço mín. (R$) *</label>
-            <input class="form-input" id="nsvcMin" type="number" min="1" max="99999" placeholder="Ex: 80" aria-label="Preço mínimo" aria-required="true">
+          <div id="nsvcOutroWrap" style="display:none;margin-top:10px;">
+            <input class="form-input" id="nsvcNome" placeholder="Ex: Higienização de ar-condicionado" aria-label="Nome do serviço personalizado">
           </div>
-          <div>
-            <label class="form-label" for="nsvcMax">Preço máx. (R$)</label>
-            <input class="form-input" id="nsvcMax" type="number" min="1" max="99999" placeholder="Ex: 150" aria-label="Preço máximo">
+          <div class="svc-price-row" style="margin-top:10px;">
+            <div>
+              <label class="form-label" for="nsvcMin" style="margin-bottom:5px;">Preço mín. (R$) <span style="color:var(--g)">*</span></label>
+              <input class="form-input" id="nsvcMin" type="number" min="1" max="99999" placeholder="80" aria-required="true">
+            </div>
+            <div>
+              <label class="form-label" for="nsvcMax" style="margin-bottom:5px;">Preço máx. (R$)</label>
+              <input class="form-input" id="nsvcMax" type="number" min="1" max="99999" placeholder="150">
+            </div>
+            <button class="add-btn-sm" onclick="addOnbSvc()" aria-label="Adicionar serviço">+</button>
           </div>
-          <button class="add-btn-sm" onclick="addOnbSvc()" aria-label="Adicionar serviço" style="height:41px;">+</button>
         </div>
       </div>
-      <div style="margin-top:20px;display:flex;gap:10px;">
-        <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 20px;" onclick="nextStep(0)">← Voltar</button>
-        <button class="btn btn-primary" onclick="nextStep(2)">Continuar →</button>
+
+      <!-- ══ STEP 2: Horários ══ -->
+      <div class="onb-step" id="step2" role="form" aria-label="Passo 3 de 4">
+        <div class="onb-step-icon" aria-hidden="true">🕐</div>
+        <div class="step-title">Horários de funcionamento</div>
+        <div class="step-sub">Clientes veem se você está aberto agora. Desative os dias que não atende.</div>
+        <div class="hora-grid-new" id="onbHorarios" aria-label="Horários por dia da semana"></div>
       </div>
+
+      <!-- ══ STEP 3: Fotos + Revisão ══ -->
+      <div class="onb-step" id="step3" role="form" aria-label="Passo 4 de 4">
+        <div class="onb-step-icon" aria-hidden="true">📷</div>
+        <div class="step-title">Fotos da oficina</div>
+        <div class="step-sub">Oficinas com fotos recebem até 3× mais contatos. Opcional, mas recomendado.</div>
+        <div class="foto-drop-zone" id="onbFotosDrop"
+          onclick="document.getElementById('onbFotosInput').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--g)'"
+          ondragleave="this.style.borderColor=''"
+          ondrop="onbHandleDrop(event)">
+          <div class="foto-drop-zone-icon" aria-hidden="true">📷</div>
+          <div class="foto-drop-zone-text">Toque ou arraste fotos aqui</div>
+          <div class="foto-drop-zone-hint">JPG, PNG ou WEBP · Máx. 5MB por foto · até 5 fotos</div>
+        </div>
+        <input type="file" id="onbFotosInput" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="onbHandleFiles(this.files)">
+        <div id="onbFotosPreview" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;"></div>
+        <span class="field-error" id="onbFotosErr">Arquivo inválido ou muito grande (máx. 5MB)</span>
+
+        <!-- Card de revisão -->
+        <div class="review-card">
+          <div style="font-size:12px;font-weight:700;color:var(--g);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Resumo do cadastro</div>
+          <div class="review-row">🏢 <strong id="revNome">—</strong></div>
+          <div class="review-row">📍 <strong id="revLoc">—</strong></div>
+          <div class="review-row">📞 <strong id="revWpp">—</strong></div>
+          <div class="review-row">🔧 <strong id="revSvcs">—</strong></div>
+        </div>
+      </div>
+
+      <!-- ══ STEP SUCCESS ══ -->
+      <div class="onb-step" id="stepSuccess">
+        <div class="success-wrap">
+          <div class="success-icon" aria-hidden="true">✅</div>
+          <div class="success-title">Oficina cadastrada!</div>
+          <div class="success-sub">Seu perfil já está visível no MecBusca.<br>Clientes podem te encontrar agora mesmo.</div>
+          <div class="success-detail">
+            <div class="success-detail-row"><span class="success-check">✓</span> Perfil publicado na busca</div>
+            <div class="success-detail-row"><span class="success-check">✓</span> WhatsApp ativo para contato</div>
+            <div class="success-detail-row"><span class="success-check">✓</span> Painel de leads liberado</div>
+            <div class="success-detail-row"><span class="success-check">✓</span> Plano gratuito ativo</div>
+          </div>
+          <button class="btn btn-primary" style="margin-bottom:12px;" onclick="closeOverlay('scOnboarding');loadPainel();">Acessar meu painel →</button>
+          <button class="btn btn-ghost" onclick="goTo('scCliente')">Ver como cliente vê</button>
+        </div>
+      </div>
+
+    </div><!-- /drawer-body -->
+
+    <!-- Rodapé de navegação fixo -->
+    <div class="onb-footer" id="onbFooter">
+      <button class="onb-btn-back" id="onbBtnBack" style="display:none" onclick="nextStep(STATE.step-1)" aria-label="Voltar">← Voltar</button>
+      <button class="onb-btn-next" id="onbBtnNext" onclick="onbNextHandler()"><span id="onbBtnNextText">Continuar →</span><span id="onbBtnNextSpinner" style="display:none;"><span class="spinner"></span></span></button>
     </div>
 
-    <!-- STEP 2: Horários -->
-    <div class="onb-step" id="step2">
-      <div class="step-num">Passo 3 de 3</div>
-      <div class="step-title">Horários de funcionamento</div>
-      <div class="step-sub">Clientes veem se você está aberto agora.</div>
-      <div id="onbHorarios" aria-label="Horários por dia da semana"></div>
-      <div style="margin-top:24px;display:flex;gap:10px;">
-        <button class="btn btn-ghost" style="flex:0 0 auto;width:auto;padding:12px 20px;" onclick="nextStep(1)">← Voltar</button>
-        <button class="btn btn-primary" id="btnFinalizarCad" onclick="finalizarCadastro()">
-          <span id="finalizarText">🚀 Ativar minha conta grátis</span>
-          <span id="finalizarSpinner" style="display:none;"><span class="spinner"></span></span>
-        </button>
-      </div>
-    </div>
-
-    <!-- STEP 3: Ativação (gratuita) + early-bird -->
-    <div class="onb-step" id="step3">
-      <!-- step3 is now the success/finalizar screen — no pricing shown -->
-    </div>
-
-    <!-- SUCCESS -->
-    <div class="onb-step" id="stepSuccess">
-      <div class="success-wrap">
-        <div class="success-icon" aria-hidden="true">✅</div>
-        <div class="success-title">Oficina cadastrada!</div>
-        <div class="success-sub">Seu perfil já está visível no MecBusca.<br>Clientes podem te encontrar agora mesmo.</div>
-        <button class="btn btn-primary" style="margin-bottom:12px;" onclick="closeOverlay('scOnboarding');loadPainel();">Acessar meu painel →</button>
-        <button class="btn btn-ghost" onclick="goTo('scCliente')">Ver como cliente vê</button>
-      </div>
-    
-    </div>
   </div>
 </div>
 
@@ -2746,7 +2754,7 @@ button,a,[role=button]{min-height:44px;}
         ondragover="event.preventDefault();this.style.borderColor='var(--g)'"
         ondragleave="this.style.borderColor=''"
         ondrop="asvHandleDrop(event)">
-        <div id="asvFotoPreviewWrap" style="display:none;position:relative;display:none;">
+        <div id="asvFotoPreviewWrap" style="display:none;position:relative;">
           <img id="asvFotoImg" style="width:100%;max-height:140px;object-fit:cover;border-radius:8px;display:block;">
           <button type="button" onclick="asvRemoveFoto(event)" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);border:none;color:#fff;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:14px;line-height:1;">×</button>
         </div>
@@ -2829,10 +2837,18 @@ import {
 // 5. Regras do Firestore — veja bloco completo abaixo (versão segura)
 // ─────────────────────────────────────────────────────────────────
 // ── CONFIG DO FIREBASE ──────────────────────────────────────────
-// A config já foi definida via Object.defineProperty no <head> (writable:false).
-// NÃO reatribua window.__FIREBASE_CFG__ aqui — causaria TypeError em modo PROD.
+// ⚠️  NUNCA commite chaves reais aqui.
+// Fix 6: Firebase config real injetada — projeto mecbusca
+window.__FIREBASE_CFG__ = {
+  apiKey: "AIzaSyAjON2Rw44KSMv-u8-O0p0f6UpNE0PksXA",
+  authDomain: "mecbusca.firebaseapp.com",
+  projectId: "mecbusca",
+  storageBucket: "mecbusca.firebasestorage.app",
+  messagingSenderId: "273467472832",
+  appId: "1:273467472832:web:fee239b43f50adae04a625"
+};
 // Opção A (produção): Firebase Hosting injeta __firebase_config__
-// Opção B (CI/build): window.__FIREBASE_CFG__ definido no <head> via Object.defineProperty
+// Opção B (CI/build): defina window.__FIREBASE_CFG__ antes deste script
 // Sem config → modo DEMO ativo automaticamente
 //
 // ═══════════════════════════════════════════════════════════════════
@@ -2930,6 +2946,14 @@ const FB_STATUS = { connected: false, error: null, readAt: null };
 window.__fbStatus = () => ({ ...FB_STATUS }); // só leitura de status, sem dados
 
 let app, db, auth, isFirebaseReady = false;
+
+// Promise que resolve quando o módulo Firebase terminar de inicializar.
+// Evita race condition: finalizarCadastro() pode ser chamado antes do
+// <script type="module"> terminar — sem isso, FB.ready() retorna false
+// e o cadastro cai em demoSave mesmo em modo PROD.
+let _fbReadyResolve;
+window.__fbReadyPromise = new Promise(res => { _fbReadyResolve = res; });
+
 try {
   app  = initializeApp(firebaseConfig);
   db   = getFirestore(app);
@@ -2937,27 +2961,40 @@ try {
   isFirebaseReady = true;
   FB_STATUS.connected = true;
   FB_STATUS.readAt = new Date().toISOString();
+  _fbReadyResolve(true);
   log("✅ Firebase conectado");
 } catch(e) {
   FB_STATUS.error = e.message;
+  _fbReadyResolve(false);
   logW("Firebase não inicializado:", e);
 }
 
 // ── Rate Limiter (anti-spam) ──────────────────────────────────────
-const _rateLimits = {};
+// FIX: rate limit com localStorage — persiste entre reloads de página.
+// Sem isso bastava F5 para zerar o contador e tentar de novo.
 function rateLimit(key, maxCalls, windowMs) {
   const now = Date.now();
-  if (!_rateLimits[key]) _rateLimits[key] = [];
-  _rateLimits[key] = _rateLimits[key].filter(t => now - t < windowMs);
-  if (_rateLimits[key].length >= maxCalls) return false;
-  _rateLimits[key].push(now);
+  const lsKey = 'mb_rl_' + key;
+  let hits = [];
+  try { hits = JSON.parse(localStorage.getItem(lsKey) || '[]'); } catch(e) {}
+  hits = hits.filter(t => now - t < windowMs);
+  if (hits.length >= maxCalls) return false;
+  hits.push(now);
+  try { localStorage.setItem(lsKey, JSON.stringify(hits)); } catch(e) {}
   return true;
 }
 
 // ── Input Sanitizer ───────────────────────────────────────────────
 function sanitize(str, maxLen = 200) {
   if (typeof str !== 'string') return '';
-  return str.trim().slice(0, maxLen).replace(/<[^>]*>/g, '');
+  // FIX: além de remover tags, normaliza entities perigosas
+  // para evitar quebra de atributos HTML e injeção residual.
+  return str.trim().slice(0, maxLen)
+    .replace(/<[^>]*>/g, '')      // remove tags
+    .replace(/&/g, '&amp;')       // & → &amp; (deve ser primeiro)
+    .replace(/"/g, '&quot;')      // " → &quot; (atributos)
+    .replace(/'/g, '&#39;')       // ' → &#39; (atributos simples)
+    .replace(/`/g, '&#96;');      // ` → &#96; (template injection)
 }
 function sanitizeData(obj) {
   // Guard against prototype pollution: skip dangerous keys
@@ -3039,29 +3076,11 @@ window.__fbDiag = async function() {
   return result;
 };
 
-// ── calcularAberto — BUG FIX: campo 'aberto' não era salvo no cadastro ──────────
-// Converte o array de horários { dia, range, on } em boolean "está aberto agora?".
-// Chamado ao cadastrar e ao atualizar horários da oficina.
-// Ex: [{ dia:'Seg', range:'07:30 – 18:00', on:true }]
-function calcularAberto(horarios) {
-  if (!Array.isArray(horarios) || !horarios.length) return false;
-  const now  = new Date();
-  const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
-  const diaHoje = dias[now.getDay()];
-  const h = horarios.find(d => d.dia === diaHoje && d.on);
-  if (!h) return false;
-  // Formato esperado: "07:30 – 18:00" ou "07:30 - 18:00" (hífen simples ou travessão)
-  const match = (h.range || '').match(/(\d{1,2}):(\d{2})\s*[–\-]\s*(\d{1,2}):(\d{2})/);
-  if (!match) return false;
-  const abre  = parseInt(match[1]) * 60 + parseInt(match[2]);
-  const fecha = parseInt(match[3]) * 60 + parseInt(match[4]);
-  const agora = now.getHours() * 60 + now.getMinutes();
-  return agora >= abre && agora < fecha;
-}
-
 // ── Firebase Public API ───────────────────────────────────────────
 window.FB = {
   ready: () => isFirebaseReady,
+  // Aguarda o módulo Firebase terminar de inicializar (resolve imediatamente se já pronto)
+  whenReady: () => window.__fbReadyPromise,
 
   // ── AUTH ─────────────────────────────────────────────────────
   async login(email, password) {
@@ -3125,14 +3144,25 @@ window.FB = {
     const existing = await this.getMinhaOficina(user.uid);
     if (existing) return existing.id;
     const clean = sanitizeData(data);
-    // BUG FIX: calcular se está aberto agora com base nos horários cadastrados.
-    // Sem isso, o campo 'aberto' ficava undefined → oficina nunca aparecia como aberta
-    // e o filtro 'apenasAberta' nunca a incluía.
-    const _aberto = calcularAberto(clean.horarios || []);
+
+    // FIX: calcula "aberto agora" com base nos horários cadastrados.
+    // Sem isso o campo fica undefined e a oficina some dos filtros
+    // e perde os +10 pts de ranking por estar aberta.
+    const _calcAberto = (horarios) => {
+      if (!Array.isArray(horarios) || !horarios.length) return false;
+      const now = new Date();
+      const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+      const hoje = horarios.find(h => h.dia && h.dia.startsWith(dias[now.getDay()]));
+      if (!hoje || !hoje.on || !hoje.range || hoje.range === 'Fechado') return false;
+      const m = hoje.range.match(/(\d{2}):(\d{2})\s*[\u2013-]\s*(\d{2}):(\d{2})/);
+      if (!m) return true;
+      const cur = now.getHours() * 60 + now.getMinutes();
+      return cur >= (parseInt(m[1])*60+parseInt(m[2])) && cur < (parseInt(m[3])*60+parseInt(m[4]));
+    };
 
     const ref = await addDoc(collection(db, "oficinas"), {
       ...clean, ativo: true, uid: user.uid,
-      aberto: _aberto,
+      aberto: _calcAberto(clean.horarios),
       plano: 'basico', planoAtualizadoEm: serverTimestamp(),
       avaliacoes: 0, totalAvaliacoes: 0, avaliacao: 0,
       stats: { impressoes: 0, cliques: 0, whatsapp: 0, orcamentos: 0 },
@@ -3172,9 +3202,6 @@ window.FB = {
       if (!snap.exists()) throw new Error("Oficina não encontrada");
       if (snap.data().uid !== user.uid) throw new Error("Sem permissão para editar esta oficina");
       const { plano, uid, criadoEm, avaliacoes, totalAvaliacoes, avaliacao, ...rest } = sanitizeData(data);
-      // BUG FIX: recalcula 'aberto' sempre que horários são atualizados.
-      // Sem isso, o campo 'aberto' nunca era atualizado após o cadastro.
-      if (rest.horarios) rest.aberto = calcularAberto(rest.horarios);
       await updateDoc(doc(db, "oficinas", oficinaId), { ...rest, atualizadoEm: serverTimestamp() });
       return true;
     } catch(e) {
@@ -3185,11 +3212,7 @@ window.FB = {
 
   async listarOficinas(filtros = {}, pagSize = 20, lastDoc = null) {
     if (!isFirebaseReady) return demoOficinas(filtros);
-    // BUG FIX: busca 5x o pagSize antes de filtrar client-side.
-    // Com limit(pagSize=20) direto, filtros client-side podiam retornar 0 resultados
-    // mesmo com oficinas válidas no Firestore (elas simplesmente não chegavam ao client).
-    const fetchLimit = Math.max(pagSize * 5, 100);
-    let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(fetchLimit));
+    let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize));
     if (lastDoc) q = query(q, startAfter(lastDoc));
     const snap = await getDocs(q);
     let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
@@ -3749,6 +3772,30 @@ const AuthController = (() => {
         ? await window.FB.getMinhaOficina(user.uid).catch(()=>null)
         : null;
       _cbs.forEach(fn => fn({ user:_user, oficina:_oficina }));
+
+      // FIX: restaura sessão do painel após reload da página.
+      // Firebase persiste auth localmente — onAuthChange dispara com user
+      // não-nulo na inicialização, mas o app não abria o painel automaticamente.
+      if (user && _oficina && typeof loadPainel === 'function') {
+        // Só restaura se o app já terminou de inicializar (evita conflito com o loader)
+        const tryRestore = () => {
+          const loader = document.getElementById('scLoader');
+          const isLoaderVisible = loader && loader.style.display !== 'none';
+          if (isLoaderVisible) {
+            // Aguarda o loader sumir e tenta novamente
+            setTimeout(tryRestore, 300);
+            return;
+          }
+          STATE.user = user;
+          STATE.oficinaAtual = _oficina;
+          // Só redireciona se nenhuma tela real está ativa ainda
+          const anyActive = document.querySelector('.screen.active, #scPainel.active');
+          if (!anyActive || document.getElementById('scHome')?.classList.contains('active')) {
+            loadPainel();
+          }
+        };
+        setTimeout(tryRestore, 900); // aguarda loader inicial
+      }
     });
   });
 
@@ -3765,6 +3812,15 @@ const AuthController = (() => {
     async logout()           {
       await window.FB.logout();
       _user=null; _oficina=null;
+      // FIX: limpar dados sensíveis do STATE ao deslogar —
+      // evita que próximo usuário no mesmo browser veja leads alheios.
+      if (window.STATE) {
+        window.STATE.leads = [];
+        window.STATE.user = null;
+        window.STATE.oficinaAtual = null;
+        window.STATE.oficina = null;
+      }
+      if (window._leadsUnsub) { window._leadsUnsub(); window._leadsUnsub = null; }
       _cbs.forEach(fn=>fn({user:null,oficina:null}));
     },
   };
@@ -3847,6 +3903,32 @@ function onbHandleDrop(e) {
   onbHandleFiles(e.dataTransfer.files);
 }
 
+
+// ── compressImageFile: reduz foto para max 500px, JPEG 0.60 ─────
+// Mantém documentos Firestore abaixo do limite de 1MB.
+// 5 fotos × ~80KB ≈ 400KB — seguro com margem.
+function compressImageFile(file, callback, loadingElId) {
+  // FIX UX: mostrar estado de loading durante compressão (pode demorar ~1-2s em mobile)
+  const loadEl = loadingElId ? document.getElementById(loadingElId) : null;
+  if (loadEl) loadEl.style.display = 'flex';
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 500;
+      const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      if (loadEl) loadEl.style.display = 'none';
+      callback(canvas.toDataURL('image/jpeg', 0.60));
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
 function onbHandleFiles(files) {
   const errEl = document.getElementById('onbFotosErr');
   errEl.style.display = 'none';
@@ -3854,9 +3936,10 @@ function onbHandleFiles(files) {
   let invalid = false;
   [...files].slice(0, remaining).forEach(file => {
     if (!file.type.startsWith('image/') || file.size > FORN_FOTO_MAX_BYTES) { invalid = true; return; }
-    const reader = new FileReader();
-    reader.onload = ev => { _onbFotos.push({ file, dataUrl: ev.target.result }); onbRenderFotosPreview(); };
-    reader.readAsDataURL(file);
+    compressImageFile(file, dataUrl => {
+      _onbFotos.push({ file, dataUrl });
+      onbRenderFotosPreview();
+    });
   });
   if (invalid) errEl.style.display = 'block';
   document.getElementById('onbFotosInput').value = '';
@@ -3907,12 +3990,10 @@ function fornHandleFiles(files) {
     if (!file.type.startsWith('image/') || file.size > FORN_FOTO_MAX_BYTES) {
       invalid = true; return;
     }
-    const reader = new FileReader();
-    reader.onload = e => {
-      _fornFotos.push({ file, dataUrl: e.target.result });
+    compressImageFile(file, dataUrl => {
+      _fornFotos.push({ file, dataUrl });
       fornRenderFotosPreview();
-    };
-    reader.readAsDataURL(file);
+    });
   });
   if (invalid) errEl.style.display = 'block';
   // Reset input so same file can be re-selected if removed
@@ -4056,11 +4137,25 @@ const OVERLAYS = ['scAuth', 'scOnboarding', 'scFornecedor'];
 function openOverlay(id) {
   const el = document.getElementById(id);
   if (!el) return;
+
+  // NOTA: css-onboarding NÃO usa mais media="not all" para lazy-load.
+  // Browsers ignoram `media` em <style> inline — o fix via cssOnb.media='all'
+  // nunca teve efeito real. A correção é manter o bloco sempre ativo para que
+  // .onb-step{display:none} seja aplicado desde o parse inicial do HTML.
+
   el.style.display = 'flex';
   // force reflow for transition
   el.getBoundingClientRect();
   el.classList.add('open');
   document.body.style.overflow = 'hidden';
+
+  if (id === 'scOnboarding') {
+    // Sincroniza bairros com a cidade já selecionada (ex: drawer fechado e reaberto).
+    // Sem isso o select de bairro fica vazio mesmo com cidade preenchida.
+    const cidadeVal = document.getElementById('onbCidade')?.value || '';
+    if (cidadeVal) onbUpdateBairros();
+  }
+
   // Inicializa o catálogo de peças do fornecedor
   if (id === 'scFornecedor') {
     setTimeout(() => {
@@ -5233,9 +5328,6 @@ function goTo(id) {
     renderFilters(); runSearch(); renderHistorico(); updateFavCount();
     if (history.replaceState) history.replaceState(null, '', '#busca');
     atualizarBadgeOfertas();
-    // Lazy: ativa CSS do cliente
-    const cssCliente = document.getElementById('css-cliente');
-    if (cssCliente && cssCliente.media !== 'all') cssCliente.media = 'all';
   }
   if (id === 'scHome') {
     document.title = 'MecBusca — Encontre oficinas perto de você';
@@ -5487,6 +5579,9 @@ async function doLogin() {
     const msg = erros[e.code] || 'Erro ao entrar. Tente novamente.';
     showFieldError('authPass', 'authPassErr');
     document.getElementById('authPassErr').textContent = msg;
+    // FIX UX: limpar senha ao errar — evita que o usuário edite a senha errada
+    document.getElementById('authPass').value = '';
+    document.getElementById('authPass').focus();
     toast(msg, 'error');
   } finally {
     // demoLogin already reset state — skip to avoid double-reset
@@ -5610,31 +5705,44 @@ async function doPasswordReset() {
 <script>
 STATE.onbData.servicos = [];
 
+// ── onbNextHandler — botão "Continuar" do novo design ───────────
+function onbNextHandler() {
+  const btn = document.getElementById('onbBtnNext');
+  const mode = btn?.getAttribute('data-mode');
+  if (mode === 'finalizar' || STATE.step === 3) {
+    finalizarCadastro();
+  } else {
+    nextStep(STATE.step + 1);
+  }
+}
+
 async function nextStep(to) {
+  if (to < 0) return; // FIX: guard contra step negativo
   // On step 0 → 1: try to geocode address for preview
   if (to === 1 && STATE.step === 0) {
     const end = document.getElementById('onbEndereco').value.trim();
     const cid = document.getElementById('onbCidade').value.trim();
     if (end && cid) {
       const statusEl = document.getElementById('geoStatus');
-      if (statusEl) statusEl.textContent = '📍 Geocodificando endereço...';
+      if (statusEl) { statusEl.textContent = '📍 Geocodificando endereço...'; statusEl.style.display = 'block'; }
       try {
         const geo = await geocodificarEndereco(end, cid);
         if (geo) {
           STATE.onbData.lat = geo.lat;
           STATE.onbData.lng = geo.lng;
-          if (statusEl) statusEl.textContent = '✅ Localização encontrada (' + geo.lat.toFixed(4) + ', ' + geo.lng.toFixed(4) + ')';
+          if (statusEl) statusEl.textContent = '✅ Localização encontrada!';
         } else {
-          if (statusEl) statusEl.textContent = '⚠️ Endereço não encontrado. Você pode continuar mesmo assim.';
+          if (statusEl) statusEl.textContent = '⚠️ Endereço não localizado. Pode continuar mesmo assim.';
         }
       } catch(e) {
         logW('[nextStep] geocode falhou:', e.message);
-        const statusEl2 = document.getElementById('geoStatus');
-        if (statusEl2) statusEl2.textContent = '⚠️ Não foi possível geocodificar. Continue assim mesmo.';
       }
     }
   }
+
   clearAllErrors();
+
+  // Validações por passo
   if (to === 1) {
     const nome   = document.getElementById('onbNome').value.trim();
     const wpp    = document.getElementById('onbWpp').value.trim();
@@ -5644,7 +5752,6 @@ async function nextStep(to) {
     if (!nome)               { showFieldError('onbNome',   'onbNomeErr');   valid = false; }
     if (!validatePhone(wpp)) { showFieldError('onbWpp',    'onbWppErr');    valid = false; }
     if (!cidade)             { showFieldError('onbCidade', 'onbCidadeErr'); valid = false; }
-    // FIX: email obrigatório — sem ele o cadastro não é salvo no Firebase Auth
     if (!email || !validateEmail(email)) {
       showFieldError('onbEmail', 'onbEmailErr');
       document.getElementById('onbEmailErr').textContent = email
@@ -5655,7 +5762,6 @@ async function nextStep(to) {
     if (!valid) return;
     STATE.onbData.nome   = nome;
     STATE.onbData.cidade = cidade;
-    // Bairro: lê do select; se "Outro" foi escolhido, lê do input livre
     const bairroSel = document.getElementById('onbBairro');
     const bairroOutro = document.getElementById('onbBairroOutro');
     const bairroOutroVis = bairroOutro && bairroOutro.style.display !== 'none';
@@ -5672,28 +5778,80 @@ async function nextStep(to) {
       renderOnbSvcList();
     }
   }
-  // step3 = collect horarios (called from step2 button which does nextStep(3))
   if (to === 3) {
+    // Coleta horários do step2
     const saved = STATE.onbData.horarios;
     const base  = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length)
       ? saved : HORARIOS_PADRAO;
     STATE.onbData.horarios = collectHorarios(base, 'onbH');
+    // Preenche card de revisão (step3)
+    const bai = STATE.onbData.bairro;
+    const cid = STATE.onbData.cidade;
+    const loc = [bai, cid].filter(Boolean).join(', ') || '—';
+    const n = STATE.onbData.servicos.length;
+    const svcsLabel = n
+      ? STATE.onbData.servicos.slice(0,3).map(s=>s.nome).join(', ') + (n > 3 ? ` +${n-3} outros` : '')
+      : 'Nenhum cadastrado';
+    const el = id => { const e=document.getElementById(id); if(e) return e; };
+    if(el('revNome')) el('revNome').textContent = STATE.onbData.nome || '—';
+    if(el('revLoc'))  el('revLoc').textContent  = loc;
+    if(el('revWpp'))  el('revWpp').textContent  = STATE.onbData.wpp || '—';
+    if(el('revSvcs')) el('revSvcs').textContent = svcsLabel;
   }
 
-  // Activate the target step FIRST, then render into it
+  // Ativa o passo correto
+  const STEP_IDS = ['step0','step1','step2','step3','stepSuccess'];
   document.querySelectorAll('.onb-step').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.step-seg').forEach((s, i) => {
-    s.classList.remove('active','done');
-    if (i < to) s.classList.add('done');
-    if (i === to && to < 3) s.classList.add('active');
-  });
-  const stepEl = document.getElementById(to >= 3 ? 'stepSuccess' : 'step' + to);
+  const targetId = to >= 4 ? 'stepSuccess' : STEP_IDS[to];
+  const stepEl = document.getElementById(targetId);
   if (stepEl) stepEl.classList.add('active');
   STATE.step = to;
-  document.querySelector('.steps-bar')?.setAttribute('aria-valuenow', to + 1);
 
-  // Render AFTER step is visible
+  // Atualiza barra de progresso (4 segmentos para 4 passos)
+  for (let i = 0; i < 4; i++) {
+    const seg = document.getElementById('seg' + i);
+    if (!seg) continue;
+    seg.classList.remove('active','done');
+    if (i < to) seg.classList.add('done');
+    else if (i === to && to < 4) seg.classList.add('active');
+  }
+
+  // Atualiza label de progresso
+  const labels = [
+    'Passo 1 de 4 — Dados da oficina',
+    'Passo 2 de 4 — Serviços & preços',
+    'Passo 3 de 4 — Horários',
+    'Passo 4 de 4 — Fotos & revisão',
+    'Cadastro concluído!'
+  ];
+  const progLabel = document.getElementById('onbProgLabel');
+  if (progLabel) progLabel.textContent = labels[Math.min(to, 4)];
+
+  // Botão voltar: aparece do passo 1 em diante (exceto sucesso)
+  const btnBack = document.getElementById('onbBtnBack');
+  const btnNext = document.getElementById('onbBtnNext');
+  const footer  = document.getElementById('onbFooter');
+  if (btnBack) btnBack.style.display = (to > 0 && to < 4) ? 'flex' : 'none';
+  if (btnNext) {
+    const isFinal = (to === 3);
+    // FIX: nunca mutar o ID do botão (quebrava ao navegar de volta).
+    // Usar data-mode como sentinela e onbNextHandler decide o que chamar.
+    btnNext.setAttribute('data-mode', isFinal ? 'finalizar' : 'continuar');
+    document.getElementById('onbBtnNextText').textContent = isFinal ? '🚀 Ativar minha conta grátis' : 'Continuar →';
+  }
+  if (footer) footer.style.display = to >= 4 ? 'none' : 'flex';
+
+  // Render dinâmico por passo
+  if (to === 0) {
+    // Restaura bairros ao voltar para o passo 1 (cidade já estava selecionada)
+    const cidadeVal = document.getElementById('onbCidade')?.value || '';
+    if (cidadeVal) onbUpdateBairros();
+  }
   if (to === 2) renderOnbHorarios();
+
+  // Scroll to top
+  const body = document.querySelector('#scOnboarding .drawer-body');
+  if (body) body.scrollTop = 0;
 }
 
 function renderOnbSvcList() {
@@ -5862,6 +6020,13 @@ async function finalizarCadastro() {
   if (STATE._submitting) return;
   STATE._submitting = true;
 
+  // Aguarda o módulo Firebase terminar de inicializar antes de qualquer decisão.
+  // Sem isso, em conexões lentas o <script type="module"> ainda não terminou
+  // e FB.ready() retorna false, caindo em demoSave mesmo em modo PROD.
+  if (window.__fbReadyPromise) {
+    await window.__fbReadyPromise;
+  }
+
   // v1: plano sempre basico (gratuito). Monetização via upgrade posterior.
   STATE.onbData.plano = 'basico';
   STATE.onbData.ativo = true;
@@ -5878,7 +6043,7 @@ async function finalizarCadastro() {
     } catch(e) { /* geocode optional — nao bloqueia */ }
   }
 
-  setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', true);
+  setBtnLoading('onbBtnNext', 'onbBtnNextText', 'onbBtnNextSpinner', true);
 
   try {
     // BUG FIX: cadastrarOficina exige auth.currentUser.
@@ -5910,7 +6075,7 @@ async function finalizarCadastro() {
         } catch(regErr) {
           if (regErr.code === 'auth/email-already-in-use') {
             STATE._submitting = false;
-            setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', false);
+            setBtnLoading('onbBtnNext', 'onbBtnNextText', 'onbBtnNextSpinner', false);
             toast('Este email já tem cadastro. Faça login para continuar.', 'warning');
             const authEmailEl = document.getElementById('authEmail');
             if (authEmailEl) authEmailEl.value = email;
@@ -5927,7 +6092,7 @@ async function finalizarCadastro() {
     const currentUser = _registeredUser || window.FB?.getCurrentUser();
     const id = window.FB?.ready()
       ? await window.FB.cadastrarOficina(STATE.onbData, currentUser)
-      : demoSave('oficina', STATE.onbData);
+      : (window.demoSave || function(c,d){return 'demo_'+Date.now();})("oficina", STATE.onbData);
 
     STATE.oficina     = { id, ...STATE.onbData, plano: 'basico' };
     STATE.oficinaAtual = STATE.oficina;
@@ -5960,9 +6125,12 @@ async function finalizarCadastro() {
     const msg = erroMsgs[e.code] || e.message || 'Erro ao salvar. Tente novamente.';
     toast(msg, 'error');
     logE('[finalizarCadastro]', e.code, e.message);
+    // FIX: apagar senha temporária mesmo em caso de erro — nunca deixar
+    // credencial em STATE (window acessível via DevTools)
+    delete STATE._senhaTemp;
   } finally {
     STATE._submitting = false;
-    setBtnLoading('btnFinalizarCad', 'finalizarText', 'finalizarSpinner', false);
+    setBtnLoading('onbBtnNext', 'onbBtnNextText', 'onbBtnNextSpinner', false);
   }
 }
 
@@ -6848,7 +7016,7 @@ function renderTipos() {
     return;
   }
   const total = 4 + Object.values(DEMO_ESTABELECIMENTOS).reduce((s,a)=>s+a.length, 0);
-  document.getElementById('resultsCount').innerHTML = `<strong>${total}</strong> estabelecimentos em Cariacica`;
+  document.getElementById('resultsCount').innerHTML = `<strong>${Number(total)||0}</strong> estabelecimentos em Cariacica`;
   list.innerHTML = `<div class="cat-grid" role="list">
     ${TIPOS_ESTABELECIMENTO.map(t => `
       <div class="cat-card" onclick="selecionarTipo('${t.id}')" role="listitem button" tabindex="0" onkeypress="if(event.key==='Enter')selecionarTipo('${t.id}')" aria-label="${t.label}">
@@ -7333,10 +7501,13 @@ function loadPainel() {
       }
     }
   }
-  if (!STATE.oficinaAtual) {
-    STATE.oficinaAtual = STATE.onbData.nome
-      ? { ...STATE.onbData, id: 'of001' }
-      : { id:'of001', nome:'Auto Center Vitória', email:'admin@autocenter.com' };
+  // FIX: o fallback anterior usava id:'of001' (oficina demo) mesmo quando
+  // STATE.onbData tinha os dados reais — painel abria com dados errados.
+  // Agora só usa fallback se não há nenhuma informação de oficina disponível.
+  if (!STATE.oficinaAtual || !STATE.oficinaAtual.nome) {
+    STATE.oficinaAtual = (STATE.onbData && STATE.onbData.nome)
+      ? { ...STATE.onbData }
+      : { id: null, nome: 'Minha Oficina', email: STATE.user?.email || '' };
   }
   // Sincroniza serviços reais do Firestore → STATE.painelSvcs
   const _svcsReais = STATE.oficinaAtual?.servicos;
@@ -7345,9 +7516,6 @@ function loadPainel() {
   const p = document.getElementById('scPainel');
   p.style.display = 'flex';
   p.classList.add('active');
-  // Lazy: ativa CSS do painel
-  const cssPainel = document.getElementById('css-painel');
-  if (cssPainel && cssPainel.media !== 'all') cssPainel.media = 'all';
   document.getElementById('painelNome').textContent = STATE.oficinaAtual.nome || 'Minha Oficina';
   document.getElementById('painelEmail').textContent = STATE.user?.email || STATE.oficinaAtual.email || '';
   document.getElementById('painelAvatar').textContent = (STATE.oficinaAtual.nome||'AC').slice(0,2).toUpperCase();
@@ -7946,6 +8114,22 @@ function painelPage(name, navEl) {
 // ── DASHBOARD ────────────────────────────────────────────────────
 
 
+// FIX UX: dica de fotos/ranking no dashboard quando oficina não tem fotos
+function _dashFotoHint() {
+  const of = STATE.oficinaAtual;
+  if (!of) return '';
+  const temFoto = (of.fotos && of.fotos.length > 0) || (of.foto);
+  if (temFoto) return '';
+  return `<div style="background:rgba(0,208,132,0.08);border:1px solid var(--b2);border-radius:var(--r);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:12px;">
+    <span style="font-size:22px;">📷</span>
+    <div style="flex:1;">
+      <div style="font-size:13px;font-weight:600;color:var(--t);margin-bottom:2px;">Adicione fotos e apareça mais vezes</div>
+      <div style="font-size:12px;color:var(--t2);">Oficinas com fotos recebem até 3× mais contatos e ganham +5 pts no ranking.</div>
+    </div>
+    <button class="btn btn-primary btn-sm" style="width:auto;white-space:nowrap;" onclick="painelPage('servicos',null)">Adicionar →</button>
+  </div>`;
+}
+
 function compartilharPerfilOficina() {
   const of = STATE.oficinaAtual;
   if (!of) return;
@@ -8059,14 +8243,46 @@ function renderServicos(c) {
 function renderSvcPainelList() {
   const el = document.getElementById('svcPainelList');
   if (!el) return;
+  if (!STATE.painelSvcs.length) {
+    el.innerHTML = '<p style="color:var(--t3);font-size:13px;text-align:center;padding:32px 0;">Nenhum serviço cadastrado ainda.<br>Clique em <strong style=\'color:var(--g)\'>+ Adicionar</strong> para começar.</p>';
+    return;
+  }
   el.innerHTML = STATE.painelSvcs.map((s, i) => `
-    <div class="svc-panel-row">
-      ${s.foto ? `<img src="${s.foto}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;border:1px solid var(--b);flex-shrink:0;" alt="${esc(s.nome)}">` : '<div style="width:38px;height:38px;border-radius:6px;background:var(--bg3);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🔧</div>'}
-      <div style="flex:1;font-size:13.5px;color:var(--t)">${esc(s.nome)}</div>
-      <div style="font-size:13px;font-weight:600;color:var(--g);min-width:100px;text-align:right">R$ ${s.min}–${s.max}</div>
-      <div class="svc-toggle${s.ativo?'':' off'}" onclick="toggleSvc(${i},this)" role="switch" aria-checked="${s.ativo}" aria-label="${esc(s.nome)} ${s.ativo?'ativo':'inativo'}" tabindex="0"></div>
-      <button class="edit-btn" onclick="editSvc(${i})" aria-label="Editar ${esc(s.nome)}">✏</button>
+    <div class="svc-panel-row" style="align-items:flex-start;gap:12px;padding:14px 16px;">
+      <!-- Thumbnail da foto com overlay de edição -->
+      <div style="position:relative;flex-shrink:0;cursor:pointer;" onclick="editSvc(${i})" title="Clique para editar / trocar foto">
+        ${s.foto
+          ? `<img src="${s.foto}" style="width:52px;height:52px;object-fit:cover;border-radius:8px;border:1px solid var(--b2);display:block;" alt="${esc(s.nome)}">`
+          : `<div style="width:52px;height:52px;border-radius:8px;background:var(--bg3);border:2px dashed var(--b2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;">
+               <span style="font-size:18px;">📷</span>
+               <span style="font-size:8px;color:var(--t3);font-weight:600;letter-spacing:0.02em;">FOTO</span>
+             </div>`}
+        <div style="position:absolute;inset:0;border-radius:8px;background:rgba(0,0,0,0.45);opacity:0;transition:opacity 0.15s;display:flex;align-items:center;justify-content:center;font-size:14px;"
+             onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=0">✏️</div>
+      </div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:600;color:var(--t);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.nome)}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--g);">R$ ${s.min}${s.max && s.max !== s.min ? '–'+s.max : ''}</div>
+        ${s.foto ? '<div style="font-size:10px;color:var(--g);margin-top:3px;opacity:0.7;">📷 com foto</div>' : '<div style="font-size:10px;color:var(--t3);margin-top:3px;">sem foto — clique para adicionar</div>'}
+      </div>
+      <!-- Controles -->
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;padding-top:2px;">
+        <div class="svc-toggle${s.ativo?'':' off'}" onclick="toggleSvc(${i},this)" role="switch" aria-checked="${s.ativo}" aria-label="${esc(s.nome)} ${s.ativo?'ativo':'inativo'}" tabindex="0" title="${s.ativo?'Desativar':'Ativar'}"></div>
+        <button class="edit-btn" onclick="editSvc(${i})" aria-label="Editar ${esc(s.nome)}" title="Editar serviço">✏</button>
+        <button class="svc-del" onclick="confirmarRemoverSvc(${i})" aria-label="Remover ${esc(s.nome)}" title="Remover serviço" style="min-height:auto;">×</button>
+      </div>
     </div>`).join('');
+}
+
+function confirmarRemoverSvc(i) {
+  const nome = STATE.painelSvcs[i]?.nome || 'este serviço';
+  // FIX UX: confirmar antes de remover — fácil clicar por acidente em mobile
+  if (!confirm(\`Remover "\${nome}"? Esta ação não pode ser desfeita.\`)) return;
+  STATE.painelSvcs.splice(i, 1);
+  renderSvcPainelList();
+  _persistirServicos();
+  toast(\`"\${nome}" removido\`, 'warning');
 }
 
 async function _persistirServicos() {
@@ -8095,6 +8311,10 @@ function editSvc(i) {
   document.getElementById('asvMin').value = s.min;
   document.getElementById('asvMax').value = s.max;
   document.getElementById('addSvcTitle').textContent = 'Editar Serviço';
+  // _asvFotoData=undefined é o sentinela de "usuário não tocou na foto".
+  // asvSetFotoUI() mostra a foto existente mas NÃO altera _asvFotoData,
+  // assim salvarNovoSvc() preserva a foto original se o usuário não a trocou.
+  _asvFotoData = undefined;
   asvSetFotoUI(s.foto || null);
   openModal('addSvcModal');
 }
@@ -8110,12 +8330,14 @@ function asvCompressAndSet(file) {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const MAX = 800;
+      // FIX: max 400px e qualidade 0.55 para manter o documento Firestore
+      // abaixo de 1MB (limite hard). 5 fotos × ~60KB ≈ 300KB, seguro.
+      const MAX = 400;
       const ratio = Math.min(MAX / img.width, MAX / img.height, 1);
       canvas.width  = Math.round(img.width  * ratio);
       canvas.height = Math.round(img.height * ratio);
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-      _asvFotoData = canvas.toDataURL('image/jpeg', 0.82);
+      _asvFotoData = canvas.toDataURL('image/jpeg', 0.55); // base64 = usuário fez upload
       const imgEl = document.getElementById('asvFotoImg');
       const wrap  = document.getElementById('asvFotoPreviewWrap');
       const ph    = document.getElementById('asvFotoPlaceholder');
@@ -8137,7 +8359,7 @@ function asvHandleDrop(e) {
 }
 function asvRemoveFoto(e) {
   e.stopPropagation();
-  _asvFotoData = null;
+  _asvFotoData = null; // null = usuário removeu explicitamente
   const imgEl = document.getElementById('asvFotoImg');
   const wrap  = document.getElementById('asvFotoPreviewWrap');
   const ph    = document.getElementById('asvFotoPlaceholder');
@@ -8147,7 +8369,8 @@ function asvRemoveFoto(e) {
   document.getElementById('asvFotoInput').value = '';
 }
 function asvSetFotoUI(dataUrl) {
-  _asvFotoData = dataUrl || null;
+  // NÃO altera _asvFotoData aqui — apenas atualiza a UI.
+  // _asvFotoData só é alterado quando o usuário interage (upload ou remoção).
   const imgEl = document.getElementById('asvFotoImg');
   const wrap  = document.getElementById('asvFotoPreviewWrap');
   const ph    = document.getElementById('asvFotoPlaceholder');
@@ -8164,6 +8387,7 @@ function asvSetFotoUI(dataUrl) {
 
 function openAddSvcModal() {
   _editingSvcIdx = -1;
+  _asvFotoData = null; // novo serviço começa sem foto
   document.getElementById('asvNome').value = '';
   document.getElementById('asvMin').value = '';
   document.getElementById('asvMax').value = '';
@@ -8198,7 +8422,9 @@ function salvarNovoSvc() {
   }
 
   if (_editingSvcIdx >= 0) {
-    STATE.painelSvcs[_editingSvcIdx] = { ...STATE.painelSvcs[_editingSvcIdx], nome: n, min: mi, max: ma || mi, foto: _asvFotoData !== undefined ? _asvFotoData : STATE.painelSvcs[_editingSvcIdx].foto };
+    // undefined=não tocou → preserva foto existente | null=removeu | string=nova foto
+    const fotoFinal = _asvFotoData === undefined ? STATE.painelSvcs[_editingSvcIdx].foto : _asvFotoData;
+    STATE.painelSvcs[_editingSvcIdx] = { ...STATE.painelSvcs[_editingSvcIdx], nome: n, min: mi, max: ma || mi, foto: fotoFinal };
     toast(`"${n}" atualizado!`);
   } else {
     STATE.painelSvcs.push({nome:n, min:mi, max:ma||mi, ativo:true, foto: _asvFotoData || null});
@@ -8973,6 +9199,7 @@ async function renderDashboard(el) {
   const pct = (n,d) => d ? Math.round(n/d*100) : 0;
 
   el.innerHTML = `
+    ${_dashFotoHint()}
     <div class="metrics-grid">
       ${kpi('💰 Receita estimada', formatCurrency(receita), 'Ticket médio '+formatCurrency(ticket))}
       ${kpi('👥 Leads recebidos', leads.length, novos+' novos · '+aguardando+' aguardando')}
@@ -11176,5 +11403,155 @@ document.addEventListener('DOMContentLoaded', () => {
   const origRenderResults = window.renderResults;
 });
 </script>
+
+<!-- ══════════════════════════════════════════════════════
+     WIDGET: Ana — Canal de dúvidas via WhatsApp
+     Número: +55 27 99924-3874
+══════════════════════════════════════════════════════ -->
+<style>
+#ana-widget{
+  position:fixed;bottom:24px;right:24px;z-index:99999;
+  display:flex;flex-direction:column;align-items:flex-end;gap:12px;
+  font-family:'DM Sans',sans-serif;
+}
+
+/* Balão de dúvidas */
+#ana-bubble{
+  background:#fff;border-radius:18px 18px 4px 18px;
+  padding:14px 18px;box-shadow:0 8px 32px rgba(0,0,0,0.18);
+  max-width:220px;opacity:0;transform:translateY(10px) scale(0.95);
+  transition:opacity 0.3s ease,transform 0.3s ease;
+  pointer-events:none;
+  border:1.5px solid rgba(37,211,102,0.25);
+}
+#ana-bubble.show{opacity:1;transform:translateY(0) scale(1);pointer-events:all;}
+#ana-bubble-text{
+  font-size:13.5px;font-weight:500;color:#1a2a1a;line-height:1.45;
+  margin-bottom:10px;
+}
+#ana-bubble-text strong{color:#00a651;font-weight:700;}
+#ana-cta{
+  display:flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,#25D366,#128C7E);
+  color:#fff;font-size:13px;font-weight:700;
+  padding:9px 16px;border-radius:50px;
+  text-decoration:none;
+  box-shadow:0 4px 14px rgba(37,211,102,0.45);
+  transition:transform 0.15s,box-shadow 0.15s;
+  white-space:nowrap;
+}
+#ana-cta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,211,102,0.55);}
+#ana-cta svg{flex-shrink:0;}
+
+/* Botão flutuante da Ana */
+#ana-btn{
+  width:62px;height:62px;border-radius:50%;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#25D366 0%,#128C7E 100%);
+  box-shadow:0 6px 24px rgba(37,211,102,0.5);
+  display:flex;align-items:center;justify-content:center;
+  position:relative;transition:transform 0.2s,box-shadow 0.2s;
+  padding:0;
+}
+#ana-btn:hover{transform:scale(1.08);box-shadow:0 8px 28px rgba(37,211,102,0.6);}
+#ana-btn:active{transform:scale(0.96);}
+#ana-btn svg{width:32px;height:32px;}
+
+/* Pulse ring */
+#ana-btn::before{
+  content:'';position:absolute;inset:-4px;border-radius:50%;
+  border:2px solid rgba(37,211,102,0.5);
+  animation:ana-pulse 2.4s ease-out infinite;
+}
+@keyframes ana-pulse{
+  0%{transform:scale(1);opacity:0.7;}
+  70%{transform:scale(1.25);opacity:0;}
+  100%{transform:scale(1.25);opacity:0;}
+}
+
+/* Badge online */
+#ana-online{
+  position:absolute;top:2px;right:2px;
+  width:14px;height:14px;border-radius:50%;
+  background:#4ade80;border:2.5px solid #fff;
+}
+
+/* Tooltip "Dúvidas?" — aparece antes do hover */
+#ana-tooltip{
+  position:absolute;right:74px;bottom:50%;transform:translateY(50%);
+  background:#1a2a1a;color:#fff;
+  font-size:12px;font-weight:600;
+  padding:5px 12px;border-radius:8px;
+  white-space:nowrap;pointer-events:none;
+  opacity:0;transition:opacity 0.2s;
+}
+#ana-tooltip::after{
+  content:'';position:absolute;right:-6px;top:50%;transform:translateY(-50%);
+  border:6px solid transparent;border-right:none;border-left-color:#1a2a1a;
+}
+#ana-btn:hover #ana-tooltip,
+#ana-widget:not(.open) #ana-btn:hover + * ~ #ana-tooltip{opacity:1;}
+</style>
+
+<div id="ana-widget">
+  <!-- Balão -->
+  <div id="ana-bubble">
+    <div id="ana-bubble-text">
+      Olá! Sou a <strong>Ana</strong> 👋<br>
+      Dúvidas sobre o MecBusca?<br>Fala comigo no WhatsApp!
+    </div>
+    <a id="ana-cta"
+       href="https://wa.me/5527999243874?text=Ol%C3%A1%20Ana%2C%20tenho%20uma%20d%C3%BAvida%20sobre%20o%20MecBusca!"
+       target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+      </svg>
+      Falar com a Ana
+    </a>
+  </div>
+
+  <!-- Botão flutuante -->
+  <button id="ana-btn" aria-label="Dúvidas? Fale com a Ana no WhatsApp" onclick="anaToggle()">
+    <svg viewBox="0 0 24 24" fill="white">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+    <span id="ana-online"></span>
+  </button>
+</div>
+
+<script>
+(function(){
+  // Abre o balão automaticamente após 3s na primeira visita
+  const _anaKey = 'ana_bubble_seen';
+  function anaToggle(force) {
+    const bubble = document.getElementById('ana-bubble');
+    const widget = document.getElementById('ana-widget');
+    const isOpen = bubble.classList.contains('show');
+    if (force === 'open' || !isOpen) {
+      bubble.classList.add('show');
+      widget.classList.add('open');
+      try { sessionStorage.setItem(_anaKey, '1'); } catch(e){}
+    } else {
+      bubble.classList.remove('show');
+      widget.classList.remove('open');
+    }
+  }
+  window.anaToggle = anaToggle;
+
+  // Auto-open na primeira visita
+  if (!sessionStorage.getItem(_anaKey)) {
+    setTimeout(() => anaToggle('open'), 3000);
+  }
+
+  // Fecha ao clicar fora
+  document.addEventListener('click', function(e) {
+    const widget = document.getElementById('ana-widget');
+    if (widget && !widget.contains(e.target)) {
+      document.getElementById('ana-bubble')?.classList.remove('show');
+      widget.classList.remove('open');
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
