@@ -37,7 +37,7 @@ async function checkRateLimit(key, maxCalls, windowMs) {
   const ref  = db.doc(`_ratelimits/${key.replace(/[^a-z0-9_-]/gi, '_')}`);
   const now  = Date.now();
 
-  return db.runTransaction(async tx => {
+  return db.runTransaction(async tx => {  // INFO-F6: maxAttempts padrão=5, aceitável para rate limiting
     const snap = await tx.get(ref);
     const { count = 0, windowStart = 0 } = snap.data() || {};
 
@@ -47,7 +47,9 @@ async function checkRateLimit(key, maxCalls, windowMs) {
       return true;
     }
     if (count >= maxCalls) return false;
-    tx.update(ref, { count: FieldValue.increment(1) });
+    // BUG-F1 FIX: usar set+merge ao invés de update para evitar NOT_FOUND
+    // se o documento existe mas foi criado por tx.set em outra transação concorrente
+    tx.set(ref, { count: FieldValue.increment(1), windowStart }, { merge: true });
     return true;
   });
 }
@@ -79,9 +81,14 @@ exports.buscarOficinas = onCall({ region: 'southamerica-east1' }, async (req) =>
   }
 
   // Limite base: 60 para buscas públicas, 500 para admin
-  const queryLimit = admin ? 500 : 60;
+  // BUG-F3 FIX: quando cidade está definida, usar limite maior pois o Firestore
+  // aplica limit() ANTES dos filtros adicionais — sem isso, limit(60) poderia
+  // retornar 60 docs de outras cidades e 0 da cidade buscada.
+  const queryLimit = admin ? 500 : (cidade ? 300 : 60);
   let q = db.collection('oficinas').where('ativo', '==', true).limit(queryLimit);
 
+  // Com índice composto ativo+cidade no Firestore Console, esta query é eficiente.
+  // Sem o índice, é um full scan filtrado — aceitável para v1.
   if (cidade) q = q.where('cidade', '==', cidade);
 
   const snap = await q.get();
@@ -178,9 +185,11 @@ exports.enviarLead = onCall({ region: 'southamerica-east1' }, async (req) => {
   if (!oficinaId)
     throw new HttpsError('invalid-argument', 'Oficina não informada.');
 
-  // Verifica se a oficina existe
+  // Verifica se a oficina existe E está ativa
   const ofSnap = await db.doc(`oficinas/${oficinaId}`).get();
   if (!ofSnap.exists) throw new HttpsError('not-found', 'Oficina não encontrada.');
+  // INFO-F4 FIX: não aceitar leads para oficinas desativadas
+  if (!ofSnap.data().ativo) throw new HttpsError('not-found', 'Oficina indisponível no momento.');
 
   const ref = await db.collection('leads').add({
     nomeCliente: sanitize(nomeCliente),
@@ -207,8 +216,18 @@ exports.enviarLead = onCall({ region: 'southamerica-east1' }, async (req) => {
  * Exemplo Stripe: stripe listen --forward-to <url>/confirmarPlano
  */
 exports.confirmarPlano = onCall({ region: 'southamerica-east1' }, async (req) => {
-  // Apenas admins (Custom Claims) podem chamar esta função
-  if (!req.auth?.token?.admin) {
+  // INFO-F5 FIX: dupla verificação — Custom Claim OU documento na coleção 'admins'.
+  // Custom Claim: setar via Admin SDK: admin.auth().setCustomUserClaims(uid, {admin:true})
+  // Fallback: documento admins/{uid} com campo active:true (mais fácil de gerenciar)
+  const uid = req.auth?.uid;
+  if (!uid) throw new HttpsError('unauthenticated', 'Autenticação necessária.');
+  const isClaimAdmin = req.auth?.token?.admin === true;
+  let isDocAdmin = false;
+  if (!isClaimAdmin) {
+    const adminSnap = await db.doc(`admins/${uid}`).get();
+    isDocAdmin = adminSnap.exists && adminSnap.data()?.active === true;
+  }
+  if (!isClaimAdmin && !isDocAdmin) {
     throw new HttpsError('permission-denied', 'Apenas administradores.');
   }
 

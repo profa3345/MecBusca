@@ -21,15 +21,13 @@
 // ═══════════════════════════════════════════════════════════════
 
 // ── 1. MODO DE OPERAÇÃO ──────────────────────────────────────────
-const _urlMode  = new URLSearchParams(location.search).get('mode');
-const APP_MODE  = (
-  window.__MECBUSCA_MODE ||
-  _urlMode?.toUpperCase() ||
-  'DEMO'
-);
+// VULN-1 FIX: modo NÃO pode ser alterado via URL (?mode=PROD era bypassável).
+// Lê APENAS de window.__MECBUSCA_MODE (definido com Object.defineProperty
+// non-writable no index.html — não pode ser sobrescrito via DevTools ou URL).
+const APP_MODE = window.__MECBUSCA_MODE || 'DEMO';
 const IS_PROD   = APP_MODE === 'PROD';
 const IS_DEMO   = !IS_PROD;
-console.info(`[MecBusca] Modo: ${APP_MODE}`);
+// VULN-2 FIX: não vazar APP_MODE no console (visível a qualquer usuário via DevTools)
 
 // ── PLANOS ───────────────────────────────────────────────────────
 //
@@ -39,11 +37,14 @@ console.info(`[MecBusca] Modo: ${APP_MODE}`);
 //
 //  NOTA: não exibir preços no fluxo de cadastro (v1 = tudo grátis).
 //
-export const PLANOS = Object.freeze({
+const PLANOS = Object.freeze({
   BASICO:  { id: 'basico',  label: 'Grátis',   prioridade: 0,    preco: 0   },
   PRO:     { id: 'pro',     label: 'Pro',       prioridade: 500,  preco: 49  },
   PREMIUM: { id: 'premium', label: 'Premium',   prioridade: 1000, preco: 97  },
 });
+
+// BUG-9 FIX: expor PLANOS via window (módulo ES tem escopo isolado)
+window.PLANOS = PLANOS;
 
 // Score máximo teórico por plano:
 //   basico:  40+35+15+3+5+5+5 = 108
@@ -131,20 +132,31 @@ if (IS_PROD) {
 //    });
 //  });
 //
-const _rateLimits = {};
+// INFO-8 FIX: rateLimitUX agora usa localStorage para persistir entre reloads.
+// Sem isso, F5 resetava os contadores e o limite era bypassável.
 function rateLimitUX(key, maxCalls, windowMs) {
   const now = Date.now();
-  if (!_rateLimits[key]) _rateLimits[key] = [];
-  _rateLimits[key] = _rateLimits[key].filter(t => now - t < windowMs);
-  if (_rateLimits[key].length >= maxCalls) return false;
-  _rateLimits[key].push(now);
+  const lsKey = 'mb_rl_' + key;
+  let hits = [];
+  try { hits = JSON.parse(localStorage.getItem(lsKey) || '[]'); } catch(e) {}
+  hits = hits.filter(t => now - t < windowMs);
+  if (hits.length >= maxCalls) return false;
+  hits.push(now);
+  try { localStorage.setItem(lsKey, JSON.stringify(hits)); } catch(e) {}
   return true;
 }
 
 // ── 6. SANITIZAÇÃO ───────────────────────────────────────────────
 function sanitize(str, maxLen = 200) {
   if (typeof str !== 'string') return '';
-  return str.trim().slice(0, maxLen).replace(/<[^>]*>/g, '');
+  // VULN-3 FIX: entity encoding além de remoção de tags.
+  // Impede quebra de atributos HTML e template injection.
+  return str.trim().slice(0, maxLen)
+    .replace(/<[^>]*>/g, '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/`/g, '&#96;');
 }
 function sanitizeData(obj) {
   const out = {};
@@ -229,7 +241,7 @@ window.FB = {
     await sendPasswordResetEmail(auth, email);
   },
 
-  onAuthChange(cb) { return auth ? onAuthStateChanged(auth, cb) : () => cb(null); },
+  onAuthChange(cb) { return auth ? onAuthStateChanged(auth, cb) : () => setTimeout(() => cb(null), 0); },
   getCurrentUser() { return auth?.currentUser || null; },
 
   // ── OFICINAS ─────────────────────────────────────────────────
@@ -243,13 +255,26 @@ window.FB = {
     const existing = await this.getMinhaOficina(user.uid);
     if (existing) return existing.id;
     const clean = sanitizeData(data);
+    // BUG-4 FIX: calcular campo 'aberto' com base nos horários cadastrados.
+    // Sem ele, oficina não aparece no filtro "Abertas agora" e perde +5 pts de ranking.
+    const _calcAberto = (horarios) => {
+      if (!Array.isArray(horarios) || !horarios.length) return false;
+      const now  = new Date();
+      const dias = ['Dom','Seg','Ter','Qua','Qui','Sex','Sab'];
+      const hoje = horarios.find(h => h.dia && h.dia.startsWith(dias[now.getDay()]));
+      if (!hoje || !hoje.on || !hoje.range || hoje.range === 'Fechado') return false;
+      const m = hoje.range.match(/(\d{2}):(\d{2})\s*[\u2013-]\s*(\d{2}):(\d{2})/);
+      if (!m) return true;
+      const cur = now.getHours() * 60 + now.getMinutes();
+      return cur >= (parseInt(m[1])*60+parseInt(m[2])) && cur < (parseInt(m[3])*60+parseInt(m[4]));
+    };
+
     const ref = await addDoc(collection(db, 'oficinas'), {
       ...clean,
       ativo:            true,
       uid:              user.uid,
+      aberto:           _calcAberto(clean.horarios),
       // ── Plano inicial: basico (gratuito) ─────────────────────
-      // Nunca mude o plano diretamente do client em produção.
-      // Use a Cloud Function confirmarPlano após pagamento confirmado.
       plano:            'basico',
       planoAtualizadoEm: serverTimestamp(),
       avaliacoes:       0,
@@ -280,8 +305,15 @@ window.FB = {
     if (IS_DEMO) return true;
     const user = auth.currentUser;
     if (!user) throw new Error('Não autorizado');
-    const clean = sanitizeData(data);
-    await updateDoc(doc(db, 'oficinas', oficinaId), { ...clean, atualizadoEm: serverTimestamp() });
+    // VULN-5 FIX: verificar ownership antes de enviar ao Firestore.
+    // Firestore Rules são a barreira real, mas falhar rápido no client
+    // evita round-trips desnecessários e melhora a mensagem de erro.
+    const ofSnap = await getDoc(doc(db, 'oficinas', oficinaId));
+    if (!ofSnap.exists()) throw new Error('Oficina não encontrada');
+    if (ofSnap.data().uid !== user.uid) throw new Error('Sem permissão para editar esta oficina');
+    // Campos protegidos não podem ser alterados pelo client
+    const { uid, plano, rankScore, score, leadCount, ...safe } = sanitizeData(data);
+    await updateDoc(doc(db, 'oficinas', oficinaId), { ...safe, atualizadoEm: serverTimestamp() });
     return true;
   },
 
@@ -395,8 +427,9 @@ window.FB = {
   //  });
   //
   async __devAtualizarPlano(oficinaId, plano) {
-    const isLocal = ['localhost','127.0.0.1','0.0.0.0'].includes(location.hostname);
-    if (!isLocal) throw new Error('__devAtualizarPlano só funciona em localhost.');
+    // VULN-7 FIX: usar IS_PROD (não manipulável via URL) ao invés de hostname
+    // location.hostname poderia ser 'localhost' em build de produção mal configurado.
+    if (IS_PROD) throw new Error('__devAtualizarPlano indisponível em produção. Use Cloud Function confirmarPlano.');
     const validos = Object.values(PLANOS).map(p => p.id);
     if (!validos.includes(plano))
       throw new Error(`Plano inválido. Use: ${validos.join(' | ')}`);
