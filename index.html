@@ -2101,6 +2101,48 @@ button,a,[role=button]{min-height:44px;}
           </div>
         </div>
 
+        <!-- ── BAIXAR O APP ── -->
+        <div id="home-download" style="margin-top:14px;">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.09em;font-weight:600;margin-bottom:8px;">📲 Baixar o app</div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+
+            <!-- Android / APK -->
+            <a id="btn-download-android"
+               href="MecBusca.apk"
+               download="MecBusca.apk"
+               role="button"
+               aria-label="Baixar app para Android"
+               style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg3);border:1px solid rgba(61,214,140,0.25);border-radius:var(--r);cursor:pointer;transition:all 0.15s;text-decoration:none;"
+               onmouseenter="this.style.borderColor='rgba(61,214,140,0.55)';this.style.background='rgba(61,214,140,0.06)'"
+               onmouseleave="this.style.borderColor='rgba(61,214,140,0.25)';this.style.background='var(--bg3)'">
+              <div style="width:40px;height:40px;border-radius:10px;background:rgba(61,214,140,0.1);border:1px solid rgba(61,214,140,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🤖</div>
+              <div style="flex:1;text-align:left;">
+                <div style="font-size:13.5px;font-weight:600;color:var(--t);">Android — Instalar APK</div>
+                <div style="font-size:11.5px;color:var(--t3);margin-top:1px;">Baixe o aplicativo direto no seu celular Android</div>
+              </div>
+              <div style="color:var(--g);font-size:18px;flex-shrink:0;">↓</div>
+            </a>
+
+            <!-- Computador / PWA -->
+            <button id="btn-install-desktop"
+                    type="button"
+                    aria-label="Instalar app no computador"
+                    onclick="triggerPwaInstall()"
+                    style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg3);border:1px solid rgba(96,165,250,0.25);border-radius:var(--r);cursor:pointer;transition:all 0.15s;width:100%;font-family:'DM Sans',sans-serif;"
+                    onmouseenter="this.style.borderColor='rgba(96,165,250,0.55)';this.style.background='rgba(96,165,250,0.06)'"
+                    onmouseleave="this.style.borderColor='rgba(96,165,250,0.25)';this.style.background='var(--bg3)'">
+              <div style="width:40px;height:40px;border-radius:10px;background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">🖥️</div>
+              <div style="flex:1;text-align:left;">
+                <div style="font-size:13.5px;font-weight:600;color:var(--t);">Computador — Instalar app</div>
+                <div id="desktop-install-sub" style="font-size:11.5px;color:var(--t3);margin-top:1px;">Instale como aplicativo no seu PC ou Mac</div>
+              </div>
+              <div style="color:#60a5fa;font-size:18px;flex-shrink:0;">↓</div>
+            </button>
+
+          </div>
+        </div>
+        <!-- ── /BAIXAR O APP ── -->
+
       </div>
     </div>
   </div>
@@ -10389,6 +10431,7 @@ let _deferredInstall = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault();
   _deferredInstall = e;
+  window._pwaPrompt = e; // expose for home "Install on desktop" button
   const banner = document.getElementById('installBanner');
   if (banner) {
     // Não mostrar se já instalado ou descartado recentemente
@@ -10421,8 +10464,33 @@ document.getElementById('btnInstallNo')?.addEventListener('click', () => {
 
 window.addEventListener('appinstalled', () => {
   document.getElementById('installBanner').style.display = 'none';
+  const sub = document.getElementById('desktop-install-sub');
+  if (sub) sub.textContent = '✅ App instalado com sucesso!';
   if (window.log) log('[MecBusca] App instalado com sucesso!');
 });
+
+// ── Botão "Instalar no computador" da home ──────────────────────
+function triggerPwaInstall() {
+  const sub = document.getElementById('desktop-install-sub');
+  // Se o prompt PWA foi capturado, disparar diretamente
+  if (window._pwaPrompt) {
+    window._pwaPrompt.prompt();
+    window._pwaPrompt.userChoice.then(result => {
+      if (result.outcome === 'accepted') {
+        if (sub) sub.textContent = '✅ App instalado com sucesso!';
+        _pwaLS('set', 'mb_installed', '1');
+      }
+      window._pwaPrompt = null;
+    });
+    return;
+  }
+  // Fallback: instrução manual para o usuário
+  if (sub) sub.textContent = 'Abra o menu do navegador e escolha "Instalar app" ou "Adicionar à área de trabalho"';
+  const btn = document.getElementById('btn-install-desktop');
+  if (btn) btn.title = 'Use o menu do navegador → Instalar app';
+}
+
+// Botão de instalação fica habilitado quando beforeinstallprompt é capturado (ver handler acima)
 </script>
 
 <!-- ══════════════════════════════════════════════════════════
