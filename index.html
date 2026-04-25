@@ -177,6 +177,7 @@
   --shadow-glow:0 0 24px rgba(0,208,132,0.15);
 }
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);}
+body{padding-bottom:52px;} /* espaço para barra da Ana no rodapé */
 
 /* ══════════════════════════════════════════════
    🎨 DESIGN SYSTEM v2 — NÍVEL STARTUP GRANDE
@@ -11763,9 +11764,7 @@ document.addEventListener('DOMContentLoaded', () => {
 ══════════════════════════════════════════════════════ -->
 <style>
 #ana-widget{
-  position:fixed;bottom:24px;right:24px;z-index:99999;
-  display:flex;flex-direction:column;align-items:flex-end;gap:12px;
-  font-family:'DM Sans',sans-serif;
+  display:none !important;
 }
 
 /* Balão de dúvidas */
@@ -11884,10 +11883,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   window.anaToggle = anaToggle;
 
-  // Auto-open na primeira visita
-  if (!sessionStorage.getItem(_anaKey)) {
-    setTimeout(() => anaToggle('open'), 3000);
-  }
+  // Auto-open desativado — Ana fica sutil no rodapé
+  // if (!sessionStorage.getItem(_anaKey)) {
+  //   setTimeout(() => anaToggle('open'), 3000);
+  // }
 
   // Fecha ao clicar fora
   document.addEventListener('click', function(e) {
@@ -12237,37 +12236,47 @@ document.addEventListener('DOMContentLoaded', () => {
      ════════════════════════════════════════════════════════════ -->
 <style>
 /* ── Ana AI Chat Widget ── */
+/* ── Ana AI — Barra de rodapé sutil ── */
 #ana-ai-chat {
   position: fixed;
-  bottom: 88px;
-  right: 24px;
-  width: 340px;
-  max-width: calc(100vw - 32px);
-  background: rgba(14,22,15,0.97);
-  border: 1.5px solid rgba(0,208,132,0.25);
-  border-radius: 20px;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 40px rgba(0,208,132,0.06);
-  backdrop-filter: blur(20px);
-  z-index: 99998;
-  display: none;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: 100%;
+  background: rgba(10,16,11,0.96);
+  border-top: 1px solid rgba(0,208,132,0.15);
+  border-radius: 0;
+  box-shadow: 0 -4px 24px rgba(0,0,0,0.45);
+  backdrop-filter: blur(16px);
+  z-index: 9000;
+  display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: 500px;
-  animation: chatSlideIn 0.3s cubic-bezier(.25,.8,.25,1);
+  /* collapsed: só mostra a barra de input */
+  max-height: 52px;
+  transition: max-height 0.35s cubic-bezier(.25,.8,.25,1);
+}
+#ana-ai-chat.open {
+  max-height: 480px;
 }
 @keyframes chatSlideIn {
-  from { opacity:0; transform:translateY(16px) scale(0.97); }
-  to   { opacity:1; transform:translateY(0) scale(1); }
+  from { opacity:0; transform:translateY(8px); }
+  to   { opacity:1; transform:translateY(0); }
 }
-#ana-ai-chat.open { display: flex; }
 
 #ana-chat-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 16px;
+  padding: 8px 14px;
   border-bottom: 1px solid rgba(0,208,132,0.1);
-  background: rgba(0,208,132,0.05);
+  background: rgba(0,208,132,0.04);
+  /* oculto por padrão — só aparece quando .open */
+  display: none;
+}
+#ana-ai-chat.open #ana-chat-header {
+  display: flex;
 }
 .ana-avatar {
   width: 36px; height: 36px;
@@ -12306,11 +12315,14 @@ document.addEventListener('DOMContentLoaded', () => {
 #ana-messages {
   flex: 1;
   overflow-y: auto;
-  padding: 14px 14px 8px;
-  display: flex;
+  padding: 10px 14px 6px;
+  display: none;
   flex-direction: column;
   gap: 10px;
   scroll-behavior: smooth;
+}
+#ana-ai-chat.open #ana-messages {
+  display: flex;
 }
 .ana-msg {
   max-width: 85%;
@@ -12352,38 +12364,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
 #ana-input-row {
   display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 8px 12px 10px;
-  border-top: 1px solid rgba(0,208,132,0.08);
+  padding: 7px 12px 7px;
+  border-top: none;
   background: transparent;
+  order: -1; /* input sempre fica na base da barra */
+}
+/* Ícone e label da Ana antes do input (só no estado fechado) */
+#ana-input-row::before {
+  content: '🔧 Ana';
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--g);
+  opacity: 0.75;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: 'DM Sans', sans-serif;
 }
 #ana-input {
   flex: 1;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 20px;
-  padding: 8px 14px;
-  color: var(--t);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 4px 8px;
+  color: var(--t2);
   font-size: 13px;
   font-family: 'DM Sans', sans-serif;
   outline: none;
-  transition: border-color 0.2s;
+  transition: color 0.2s;
   resize: none;
 }
-#ana-input:focus { border-color: rgba(0,208,132,0.3); background: rgba(255,255,255,0.06); }
-#ana-input::placeholder { color: var(--t3); font-size: 12px; }
+#ana-input:focus { color: var(--t); }
+#ana-input::placeholder { color: var(--t3); font-size: 12.5px; }
 #ana-send-btn {
-  width: 32px; height: 32px; flex-shrink: 0;
-  background: rgba(0,208,132,0.15);
-  border: 1px solid rgba(0,208,132,0.25);
+  width: 30px; height: 30px; flex-shrink: 0;
+  background: rgba(0,208,132,0.12);
+  border: 1px solid rgba(0,208,132,0.22);
   border-radius: 50%;
-  color: var(--g); font-size: 13px;
+  color: var(--g); font-size: 12px;
   cursor: pointer; display: flex;
   align-items: center; justify-content: center;
   transition: all 0.15s;
-  align-self: center;
 }
-#ana-send-btn:hover { background: rgba(0,208,132,0.28); border-color: var(--g); }
+#ana-send-btn:hover { background: rgba(0,208,132,0.24); border-color: var(--g); }
 #ana-send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* Chips de resposta rápida */
@@ -12407,8 +12431,8 @@ document.addEventListener('DOMContentLoaded', () => {
 .ana-chip:hover { background: rgba(0,208,132,0.16); border-color: var(--g); }
 </style>
 
-<!-- Widget Ana AI Chat -->
-<div id="ana-ai-chat" role="dialog" aria-label="Chat com Ana - Assistente MecBusca">
+<!-- Widget Ana AI — Barra de rodapé sutil -->
+<div id="ana-ai-chat" role="region" aria-label="Assistente Ana MecBusca">
   <div id="ana-chat-header">
     <div class="ana-avatar" style="padding:0;overflow:hidden;"><img src="data:image/jpeg;base64,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" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" alt="Ana"></div>
     <div class="ana-name-block">
@@ -12418,13 +12442,14 @@ document.addEventListener('DOMContentLoaded', () => {
         <span id="ana-status-text">Assistente inteligente</span>
       </div>
     </div>
-    <button id="ana-close-btn" onclick="anaAiToggle(false)" aria-label="Fechar chat">×</button>
+    <button id="ana-close-btn" onclick="anaAiToggle(false)" aria-label="Fechar chat" title="Fechar">▾</button>
   </div>
   <div id="ana-messages"></div>
   <div id="ana-input-row">
     <input id="ana-input" placeholder="Descreva o problema do seu carro…" 
            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();anaAiSend();}"
-           aria-label="Digite sua mensagem">
+           onfocus="anaAiToggle(true)"
+           aria-label="Digite sua mensagem para a Ana, assistente MecBusca">
     <button id="ana-send-btn" onclick="anaAiSend()" aria-label="Enviar">➤</button>
   </div>
   <div id="ana-human-row">
@@ -12433,7 +12458,8 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 <style>
-#ana-human-row{padding:0 12px 10px;}
+#ana-human-row{padding:0 12px 10px;display:none;}
+#ana-ai-chat.open #ana-human-row{display:block;}
 #ana-human-btn{
   display:flex;align-items:center;justify-content:center;gap:6px;
   width:100%;background:transparent;
@@ -12668,12 +12694,7 @@ Quando precisar escalar → [ESCALAR]`;
       salvarHistoricoAna('fechou');
     }
 
-    // Esconde o widget original do WhatsApp Ana ao abrir o chat IA
-    const origWidget = document.getElementById('ana-widget');
-    if (origWidget) {
-      origWidget.style.opacity = anaOpen ? '0.3' : '1';
-      origWidget.style.pointerEvents = anaOpen ? 'none' : '';
-    }
+    // #ana-widget está oculto por CSS — sem necessidade de ajustar opacity
   };
 
   // Override do anaToggle original para abrir o chat IA
@@ -12934,14 +12955,26 @@ Quando precisar escalar → [ESCALAR]`;
     }, 20000);
   }
 
-  // Mostra o banner quando o usuário abre o painel (aguarda loadPainel)
-  const origLoadPainel = window.loadPainel;
-  if (typeof origLoadPainel === 'function') {
-    window.loadPainel = function(...args) {
-      const result = origLoadPainel.apply(this, args);
-      setTimeout(showIndexBanner, 1500);
-      return result;
-    };
+  // FIX: o monkey-patch anterior falhava silenciosamente quando este script
+  // executava antes de loadPainel ser definida (scripts inline são síncronos mas
+  // a ordem de execução depende da posição no HTML).
+  // Solução: tenta no momento da execução; se não encontrar, aguarda DOMContentLoaded.
+  function patchLoadPainel() {
+    if (typeof window.loadPainel === 'function') {
+      const orig = window.loadPainel;
+      window.loadPainel = function(...args) {
+        const result = orig.apply(this, args);
+        setTimeout(showIndexBanner, 1500);
+        return result;
+      };
+      return true;
+    }
+    return false;
+  }
+
+  if (!patchLoadPainel()) {
+    // loadPainel ainda não existe — aguarda o DOM terminar e tenta de novo
+    document.addEventListener('DOMContentLoaded', patchLoadPainel);
   }
 
   // Também mostra se onLeadsSnapshot retornar erro de índice
