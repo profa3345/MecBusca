@@ -7630,17 +7630,17 @@ function openBudgetPeca(id) {
     <div class="budget-note">Compatível com: ${p.compat.join(', ')}. Preços podem variar.</div>
     <div style="border-top:1px solid var(--b);padding-top:14px;">
       <div class="form-group">
-        <input class="form-input" id="lnome" placeholder="Seu nome" autocomplete="name" aria-label="Nome">
-        <span class="field-error" id="lnomeErr">Nome é obrigatório</span>
+        <input class="form-input" id="lnome-peca" placeholder="Seu nome" autocomplete="name" aria-label="Nome">
+        <span class="field-error" id="lnomeErr-peca">Nome é obrigatório</span>
       </div>
       <div class="form-group">
         <div class="phone-mask-wrap">
           <span class="phone-flag" aria-hidden="true">🇧🇷</span>
-          <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" autocomplete="tel" aria-label="WhatsApp">
+          <input class="form-input" id="lwpp-peca" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" autocomplete="tel" aria-label="WhatsApp">
         </div>
-        <span class="field-error" id="lwppErr">WhatsApp inválido</span>
+        <span class="field-error" id="lwppErr-peca">WhatsApp inválido</span>
       </div>
-      <div class="form-group"><input class="form-input" id="lcarro" placeholder="Modelo do carro" aria-label="Modelo do carro"></div>
+      <div class="form-group"><input class="form-input" id="lcarro-peca" placeholder="Modelo do carro" aria-label="Modelo do carro"></div>
       <button class="btn btn-primary" id="btnEnviarLeadPeca" onclick="enviarLeadPeca('${id}')">
         <span id="enviarLeadPecaText">✔ Solicitar orçamento</span>
         <span id="enviarLeadPecaSpin" style="display:none;"><span class="spinner"></span></span>
@@ -7653,12 +7653,12 @@ async function enviarLeadPeca(pecaId) {
   if (STATE._submitting) return;
   clearAllErrors();
   const p = DEMO_PECAS.find(x => x.id === pecaId);
-  const nome = document.getElementById('lnome')?.value.trim();
-  const wpp = document.getElementById('lwpp')?.value.trim();
-  const carro = document.getElementById('lcarro')?.value.trim();
+  const nome = document.getElementById('lnome-peca')?.value.trim();
+  const wpp = document.getElementById('lwpp-peca')?.value.trim();
+  const carro = document.getElementById('lcarro-peca')?.value.trim();
   let valid = true;
-  if (!nome) { showFieldError('lnome', 'lnomeErr'); valid = false; }
-  if (!validatePhone(wpp)) { showFieldError('lwpp', 'lwppErr'); valid = false; }
+  if (!nome) { showFieldError('lnome-peca', 'lnomeErr-peca'); valid = false; }
+  if (!validatePhone(wpp)) { showFieldError('lwpp-peca', 'lwppErr-peca'); valid = false; }
   if (!valid) return;
   STATE._submitting = true;
   setBtnLoading('btnEnviarLeadPeca', 'enviarLeadPecaText', 'enviarLeadPecaSpin', true);
@@ -12154,12 +12154,12 @@ document.addEventListener('DOMContentLoaded', () => {
       try {
         return await origEnviarLead.apply(this, arguments);
       } finally {
-        // Restaura botão
+        // Restaura botão (sem recriar IDs — usa o DOM existente)
         if (btn) {
           btn.disabled = false;
+          // Reconstrói com spans sem id (os IDs originais já existem no DOM do modal)
           btn.innerHTML = `
-            <span id="enviarLeadText">✔ Confirmar orçamento</span>
-            <span id="enviarLeadSpin" style="display:none;"><span class="spinner"></span></span>`;
+            <span>✔ Confirmar orçamento</span>`;
         }
       }
     };
@@ -12659,19 +12659,32 @@ Quando precisar escalar → [ESCALAR]`;
     updateStatus('Analisando...');
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 500,
-          system: SYSTEM_PROMPT,
-          messages: anaHistory
-        })
-      });
+      // Chama Cloud Function proxy (nunca expõe API key no client)
+      const anaChatFn = typeof firebase !== 'undefined' && firebase.functions
+        ? firebase.app().functions('southamerica-east1')
+        : null;
 
-      const data = await response.json();
-      const reply = data.content?.[0]?.text || 'Desculpe, não consegui processar. Tente novamente.';
+      let reply;
+      if (anaChatFn) {
+        // Produção: Cloud Function com API key segura no servidor
+        const callable = anaChatFn.httpsCallable('anaChatProxy');
+        const result = await callable({ messages: anaHistory, system: SYSTEM_PROMPT });
+        reply = result.data?.reply || 'Desculpe, não consegui processar. Tente novamente.';
+      } else {
+        // Fallback dev/Claude.ai: chamada direta (funciona apenas via proxy da Claude.ai)
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 500,
+            system: SYSTEM_PROMPT,
+            messages: anaHistory
+          })
+        });
+        const data = await response.json();
+        reply = data.content?.[0]?.text || 'Desculpe, não consegui processar. Tente novamente.';
+      }
 
       anaHistory.push({ role: 'assistant', content: reply });
 

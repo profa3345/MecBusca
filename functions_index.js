@@ -274,3 +274,83 @@ exports.onOficinaUpdated = onDocumentCreated(
     });
   }
 );
+
+
+// ── 5. PROXY SEGURO PARA CHATBOT ANA (Claude API) ───────────────
+/**
+ * anaChatProxy — proxy server-side para a API Anthropic.
+ * A API key NUNCA é exposta no client.
+ *
+ * Configuração:
+ *   firebase functions:config:set anthropic.api_key="sk-ant-..."
+ *   Ou use Secret Manager:
+ *   firebase functions:secrets:set ANTHROPIC_API_KEY
+ *
+ * Rate limit: 10 mensagens por minuto por IP.
+ */
+const { defineSecret } = require('firebase-functions/params');
+const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
+
+exports.anaChatProxy = onCall(
+  { region: 'southamerica-east1', secrets: [ANTHROPIC_API_KEY] },
+  async (req) => {
+    // Rate limit: 10 msgs/min por IP
+    const ip = req.rawRequest?.ip || 'anon';
+    const allowed = await checkRateLimit(`ana_chat_${ip}`, 10, 60_000);
+    if (!allowed) throw new HttpsError('resource-exhausted', 'Muitas mensagens. Aguarde 1 minuto.');
+
+    const { messages, system } = req.data;
+
+    // Validação básica
+    if (!Array.isArray(messages) || messages.length === 0) {
+      throw new HttpsError('invalid-argument', 'Mensagens não fornecidas.');
+    }
+    if (messages.length > 20) {
+      throw new HttpsError('invalid-argument', 'Histórico muito longo. Inicie uma nova conversa.');
+    }
+
+    // Sanitiza mensagens (previne injection no system prompt)
+    const cleanMessages = messages.map(m => ({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: sanitize(String(m.content || ''), 2000),
+    }));
+
+    // Chama API Anthropic
+    const apiKey = ANTHROPIC_API_KEY.value();
+    if (!apiKey) {
+      throw new HttpsError('internal', 'Chave da API não configurada.');
+    }
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 500,
+          system: sanitize(String(system || ''), 5000),
+          messages: cleanMessages,
+        }),
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('[anaChatProxy] Anthropic API error:', response.status, errText);
+        throw new HttpsError('internal', 'Erro ao processar. Tente novamente.');
+      }
+
+      const data = await response.json();
+      const reply = data.content?.[0]?.text || '';
+
+      return { reply };
+    } catch (err) {
+      if (err instanceof HttpsError) throw err;
+      console.error('[anaChatProxy] fetch error:', err);
+      throw new HttpsError('internal', 'Falha na comunicação com IA.');
+    }
+  }
+);
