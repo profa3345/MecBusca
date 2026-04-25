@@ -5279,6 +5279,37 @@ function onOficinaChange(sel) {
   if (typeof runSearch === 'function') runSearch();
 }
 
+// ── SELEÇÃO DE OFICINA VIA CARD (FIX) ────────────────────────────
+// Quando o usuário clica em um card de oficina (fora do select),
+// esta função sincroniza o <select id="hOficina"> com o id clicado,
+// garantindo que homeBuscar() e validações enxerguem a seleção.
+function selecionarOficina(id, nome) {
+  const select = document.getElementById('hOficina');
+  if (!select) return;
+
+  // Se a option com esse id existe no select, seta direto
+  const optExists = [...select.options].some(o => o.value === id);
+  if (optExists) {
+    select.value = id;
+  } else if (id && nome) {
+    // Se não existe (oficina ainda não carregada no select), cria a option
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.dataset.nome = nome;
+    opt.textContent = nome;
+    select.appendChild(opt);
+    select.value = id;
+  }
+
+  // Dispara a lógica de onOficinaChange para sincronizar STATE + UI
+  if (typeof onOficinaChange === 'function') {
+    onOficinaChange(select);
+  }
+
+  // Garante que listeners de change também reajam
+  select.dispatchEvent(new Event('change'));
+}
+
 // ── BAIRROS DO ES POR CIDADE ─────────────────────────────────────
 //  Dados: principais bairros das cidades do Espírito Santo.
 //  Ordem: alfabética. Última opção: "Outro" para bairro não listado.
@@ -7233,7 +7264,7 @@ function renderCardEstabelecimento(of) {
   const ini = esc((of.nome||'ES').slice(0,2).toUpperCase());
   const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
   const statusTxt = of.aberto ? '● Aberto' : '● Fechado';
-  return `<article class="of-card" onclick="openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')" tabindex="0" aria-label="${esc(of.nome)}">
+  return `<article class="of-card" onclick="selecionarOficina('${esc(of.id)}','${esc(of.nome)}');openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')" tabindex="0" aria-label="${esc(of.nome)}">
     <div class="of-top">
       <div class="of-avatar" aria-hidden="true">${ini}</div>
       <div class="of-info">
