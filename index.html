@@ -983,6 +983,17 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
   box-shadow:0 12px 32px rgba(0,0,0,0.35),0 0 0 1px rgba(0,208,132,0.06);
 }
 .of-card:hover::before{opacity:1;}
+.of-card.selected{
+  border-color:rgba(0,208,132,0.5);
+  box-shadow:0 0 0 3px rgba(0,208,132,0.18),0 8px 24px rgba(0,0,0,0.3);
+}
+.of-card.selected::after{
+  content:'✔';position:absolute;top:10px;right:12px;
+  background:var(--g);color:#0a0f0b;font-size:11px;font-weight:700;
+  width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,208,132,0.4);
+}
 
 .of-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;}
 .of-avatar{
@@ -4021,6 +4032,7 @@ const STATE = {
   tipoSelecionado: '',
   filtroOficinaId: '',
   filtroOficinaNome: '',
+  oficinaSelecionada: null,   // {id, nome} — oficina atualmente em interação (modal aberto, lead, etc.)
   pecaFiltro: {},
   // Advanced filters
   advFilters: {
@@ -5259,9 +5271,11 @@ function onOficinaChange(sel) {
       }
     }
 
-    // Pré-seleciona a oficina no STATE para que runSearch filtre
+    // Pré-seleciona a oficina no STATE (sync centralizado)
+    const nome = sel.options[sel.selectedIndex]?.dataset.nome || '';
+    STATE.oficinaSelecionada = { id: ofId, nome };
     STATE.filtroOficinaId   = ofId;
-    STATE.filtroOficinaNome = sel.options[sel.selectedIndex]?.dataset.nome || '';
+    STATE.filtroOficinaNome = nome;
   } else {
     // Limpa restrições de serviço
     if (svcSel) {
@@ -5271,43 +5285,71 @@ function onOficinaChange(sel) {
       });
       svcSel.title = '';
     }
-    STATE.filtroOficinaId   = '';
-    STATE.filtroOficinaNome = '';
+    limparSelecaoOficina();
   }
 
   // Disparo de busca imediato
   if (typeof runSearch === 'function') runSearch();
 }
 
-// ── SELEÇÃO DE OFICINA VIA CARD (FIX) ────────────────────────────
-// Quando o usuário clica em um card de oficina (fora do select),
-// esta função sincroniza o <select id="hOficina"> com o id clicado,
-// garantindo que homeBuscar() e validações enxerguem a seleção.
+// ── SELEÇÃO DE OFICINA — SYNC CENTRAL DE ESTADO ─────────────────
+// Função única que sincroniza UI ↔ STATE quando o usuário interage
+// com uma oficina em qualquer ponto do app (card, select, modal).
+//
+// Fluxos que passam por aqui:
+//   1. Card clicado em renderCardEstabelecimento → selecionarOficina(id, nome)
+//   2. Select da home alterado → onOficinaChange → STATE sync
+//   3. openBudget → selecionarOficina(id, nome) → modal abre com estado correto
+//
+// O que esta função FAZ:
+//   ✅ Seta STATE.oficinaSelecionada = {id, nome}
+//   ✅ Sincroniza o <select id="hOficina"> se existir
+//   ✅ Atualiza STATE.filtroOficinaId/Nome
+//
+// O que esta função NÃO FAZ:
+//   ❌ Não dispara runSearch() (evita re-render desnecessário)
+//   ❌ Não abre modals (o caller decide o que abrir)
 function selecionarOficina(id, nome) {
+  if (!id) return;
+
+  // 1. Atualiza estado central
+  STATE.oficinaSelecionada = { id, nome: nome || '' };
+  STATE.filtroOficinaId = id;
+  STATE.filtroOficinaNome = nome || '';
+
+  // 2. Feedback visual — destaca o card selecionado
+  document.querySelectorAll('.of-card.selected').forEach(el => el.classList.remove('selected'));
+  const card = document.querySelector(`.of-card[data-id="${id}"]`);
+  if (card) card.classList.add('selected');
+
+  // 3. Sincroniza o <select> da home (se existir e estiver visível)
   const select = document.getElementById('hOficina');
-  if (!select) return;
-
-  // Se a option com esse id existe no select, seta direto
-  const optExists = [...select.options].some(o => o.value === id);
-  if (optExists) {
-    select.value = id;
-  } else if (id && nome) {
-    // Se não existe (oficina ainda não carregada no select), cria a option
-    const opt = document.createElement('option');
-    opt.value = id;
-    opt.dataset.nome = nome;
-    opt.textContent = nome;
-    select.appendChild(opt);
-    select.value = id;
+  if (select) {
+    // Se a option com esse id existe no select, seta direto
+    const optExists = [...select.options].some(o => o.value === id);
+    if (optExists) {
+      select.value = id;
+    } else if (nome) {
+      // Cria option temporária para manter sync
+      const opt = document.createElement('option');
+      opt.value = id;
+      opt.dataset.nome = nome;
+      opt.textContent = nome;
+      select.appendChild(opt);
+      select.value = id;
+    }
   }
+}
 
-  // Dispara a lógica de onOficinaChange para sincronizar STATE + UI
-  if (typeof onOficinaChange === 'function') {
-    onOficinaChange(select);
-  }
-
-  // Garante que listeners de change também reajam
-  select.dispatchEvent(new Event('change'));
+// Limpa seleção (usado ao fechar modal ou limpar filtros)
+function limparSelecaoOficina() {
+  STATE.oficinaSelecionada = null;
+  STATE.filtroOficinaId = '';
+  STATE.filtroOficinaNome = '';
+  const select = document.getElementById('hOficina');
+  if (select) select.value = '';
+  // Remove destaque visual
+  document.querySelectorAll('.of-card.selected').forEach(el => el.classList.remove('selected'));
 }
 
 // ── BAIRROS DO ES POR CIDADE ─────────────────────────────────────
@@ -5573,6 +5615,10 @@ function closeModal(id, e) {
     el.classList.remove('open');
     releaseFocus(el);
     if (_lastFocused) { _lastFocused.focus(); _lastFocused = null; }
+    // Limpa oficina selecionada ao fechar modal de orçamento
+    if (id === 'budgetModal' && typeof limparSelecaoOficina === 'function') {
+      limparSelecaoOficina();
+    }
   }
 }
 
@@ -7179,7 +7225,7 @@ function renderOficinas() {
     else if (isBestRated) rankBadge = '<span class="rank-badge rank-best-rated">★ Mais bem avaliado</span>';
     else if (isNearest)   rankBadge = '<span class="rank-badge rank-nearest">📍 Mais próximo</span>';
     else if (isTop)       rankBadge = '<span class="rank-badge rank-top">🏆 Top da busca</span>';
-    return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" style="animation-delay:${_i*40}ms" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
+    return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" data-id="${esc(of.id)}" style="animation-delay:${_i*40}ms" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
       <div class="of-top">
         <div class="of-avatar" aria-hidden="true">${ini}</div>
         <div class="of-info">
@@ -7264,7 +7310,7 @@ function renderCardEstabelecimento(of) {
   const ini = esc((of.nome||'ES').slice(0,2).toUpperCase());
   const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
   const statusTxt = of.aberto ? '● Aberto' : '● Fechado';
-  return `<article class="of-card" onclick="selecionarOficina('${esc(of.id)}','${esc(of.nome)}');openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')" tabindex="0" aria-label="${esc(of.nome)}">
+  return `<article class="of-card" data-id="${esc(of.id)}" onclick="openBudgetEstab('${esc(of.id)}','${esc(of.tipo||'oficina')}')" tabindex="0" aria-label="${esc(of.nome)}">
     <div class="of-top">
       <div class="of-avatar" aria-hidden="true">${ini}</div>
       <div class="of-info">
@@ -7290,6 +7336,10 @@ function openBudgetEstab(id, tipo) {
   const lista = DEMO_ESTABELECIMENTOS[tipo] || [];
   const estab = lista.find(e => e.id === id);
   if (!estab) return;
+
+  // SYNC: registra no estado global
+  selecionarOficina(id, estab.nome);
+
   const ti = TIPO_INFO[tipo] || TIPO_INFO.oficina;
   document.getElementById('bm-nome').textContent = estab.nome;
   document.getElementById('bm-sub').textContent = `${ti.icon} ${ti.label} · 📍 ${estab.bairro||estab.cidade}`;
@@ -7498,6 +7548,10 @@ async function openBudget(id) {
     try { of = await window.FB.getOficinaById(id); if (of) STATE.oficinas.push(of); } catch(_) {}
   }
   if (!of) { toast('Oficina não encontrada', 'error'); return; }
+
+  // ── SYNC: registra no estado global qual oficina está ativa ──
+  selecionarOficina(id, of.nome);
+
   const q = (STATE.filtroChip||'').toLowerCase();
   const svc = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
 
@@ -7566,6 +7620,14 @@ async function openBudget(id) {
 async function enviarLead(ofId) {
   if (STATE._submitting) return;
   clearAllErrors();
+
+  // ── SOURCE OF TRUTH: usa STATE.oficinaSelecionada, fallback pro param inline ──
+  const resolvedOfId = STATE.oficinaSelecionada?.id || ofId;
+  if (!resolvedOfId) {
+    toast('Selecione uma oficina antes de continuar.', 'warning');
+    return;
+  }
+
   const nome = document.getElementById('lnome')?.value.trim();
   const wpp = document.getElementById('lwpp')?.value.trim();
   const carro = document.getElementById('lcarro')?.value.trim();
@@ -7575,21 +7637,21 @@ async function enviarLead(ofId) {
   if (!valid) return;
 
   // Rate limit: máx 3 orçamentos por minuto por oficina
-  if (!checkRateLimit('lead:' + ofId, 3, 60000)) {
+  if (!checkRateLimit('lead:' + resolvedOfId, 3, 60000)) {
     toast('Muitas solicitações. Aguarde um momento e tente novamente.', 'warning');
     return;
   }
 
   STATE._submitting = true;
   setBtnLoading('btnEnviarLead', 'enviarLeadText', 'enviarLeadSpin', true);
-  const of = getOficina(ofId);
+  const of = getOficina(resolvedOfId);
   const q = STATE.filtroChip;
   const svc = q ? (of?.servicos||[]).find(s => s.nome.toLowerCase().includes(q.toLowerCase()) && s.ativo) : null;
   const valor = svc ? Math.round((svc.min+svc.max)/2) : 0;
 
   try {
     await window.FB.enviarLead({
-      oficinaId: ofId, nomeCliente: nome,
+      oficinaId: resolvedOfId, nomeCliente: nome,
       whatsapp: wpp.replace(/\D/g,''), carro,
       servico: svc?.nome || q || 'Consulta', valor
     });
