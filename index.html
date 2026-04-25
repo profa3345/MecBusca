@@ -11849,8 +11849,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <!-- Balão -->
   <div id="ana-bubble">
     <div id="ana-bubble-text">
-      ð Sou a <strong>Ana</strong>, assistente IA do MecBusca.<br>
-      Posso diagnosticar problemas do seu carro!
+      Sou a <strong>Ana</strong>, assistente do MecBusca.<br>
+      Descreva o problema do seu carro.
     </div>
     <button id="ana-cta" onclick="anaToggle(); document.getElementById('ana-bubble').classList.remove('show'); document.getElementById('ana-widget').classList.remove('open');"
        style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
@@ -12353,38 +12353,38 @@ document.addEventListener('DOMContentLoaded', () => {
 #ana-input-row {
   display: flex;
   gap: 8px;
-  padding: 10px 12px;
-  border-top: 1px solid rgba(0,208,132,0.1);
-  background: rgba(0,0,0,0.2);
+  padding: 8px 12px 10px;
+  border-top: 1px solid rgba(0,208,132,0.08);
+  background: transparent;
 }
 #ana-input {
   flex: 1;
-  background: rgba(0,0,0,0.3);
-  border: 1px solid rgba(0,208,132,0.15);
-  border-radius: 10px;
-  padding: 9px 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 8px 14px;
   color: var(--t);
   font-size: 13px;
   font-family: 'DM Sans', sans-serif;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.2s;
   resize: none;
 }
-#ana-input:focus { border-color: rgba(0,208,132,0.4); }
-#ana-input::placeholder { color: var(--t3); }
+#ana-input:focus { border-color: rgba(0,208,132,0.3); background: rgba(255,255,255,0.06); }
+#ana-input::placeholder { color: var(--t3); font-size: 12px; }
 #ana-send-btn {
-  width: 36px; height: 36px; flex-shrink: 0;
-  background: linear-gradient(135deg, var(--g), #1DE898);
-  border: none; border-radius: 10px;
-  color: #060A07; font-size: 16px;
+  width: 32px; height: 32px; flex-shrink: 0;
+  background: rgba(0,208,132,0.15);
+  border: 1px solid rgba(0,208,132,0.25);
+  border-radius: 50%;
+  color: var(--g); font-size: 13px;
   cursor: pointer; display: flex;
   align-items: center; justify-content: center;
   transition: all 0.15s;
-  margin-top: 1px;
-  align-self: flex-end;
+  align-self: center;
 }
-#ana-send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 14px rgba(0,208,132,0.4); }
-#ana-send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+#ana-send-btn:hover { background: rgba(0,208,132,0.28); border-color: var(--g); }
+#ana-send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* Chips de resposta rápida */
 .ana-quick-replies {
@@ -12422,7 +12422,7 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div id="ana-messages"></div>
   <div id="ana-input-row">
-    <input id="ana-input" placeholder="Ex: meu carro está fazendo barulho ao frear..." 
+    <input id="ana-input" placeholder="Descreva o problema do seu carro…" 
            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();anaAiSend();}"
            aria-label="Digite sua mensagem">
     <button id="ana-send-btn" onclick="anaAiSend()" aria-label="Enviar">➤</button>
