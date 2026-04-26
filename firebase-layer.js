@@ -442,10 +442,13 @@ window.FB = {
 
   // ── LEADS ─────────────────────────────────────────────────────
   async enviarLead(data) {
-    if (!rateLimitUX('lead:' + data.whatsapp, 3, 300_000))
+    // Rate limit por oficina+whatsapp (evita spam em oficinas diferentes com mesmo número)
+    const rlKey = 'lead:' + (data.oficinaId || '') + ':' + (data.whatsapp || '');
+    if (!rateLimitUX(rlKey, 3, 300_000))
       throw new Error('Muitas solicitações. Aguarde alguns minutos.');
     if (IS_DEMO) return demoSave('lead', data);
     const clean = sanitizeData(data);
+    if (!clean.oficinaId)                throw new Error('Oficina não identificada. Selecione uma oficina.');
     if (!validarNome(clean.nomeCliente)) throw new Error('Nome do cliente inválido.');
     if (!validarWpp(clean.whatsapp))     throw new Error('WhatsApp inválido.');
     // Usa Cloud Function (rate limit real server-side) quando disponível
@@ -825,5 +828,10 @@ function demoOficinas(filtros) {
   if (typeof window.demoOficinas === 'function') return window.demoOficinas(filtros);
   return [];
 }
+
+// ── window.APP — alias de compatibilidade para window.FB ─────────
+// Código legado no index.html pode referenciar window.APP.
+// Apontamos para o mesmo objeto para evitar duplicação.
+window.APP = window.FB;
 
 window.dispatchEvent(new Event('fbready'));

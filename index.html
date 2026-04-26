@@ -7656,8 +7656,8 @@ async function enviarLead(ofId) {
       whatsapp: wpp.replace(/\D/g,''), carro,
       servico: svc?.nome || q || 'Consulta', valor
     });
-    window.FB?.trackEvent(ofId, 'orcamento');
-    Analytics.leadSent(ofId, svc?.nome || q || 'Consulta');
+    window.FB?.trackEvent(resolvedOfId, 'orcamento');
+    Analytics.leadSent(resolvedOfId, svc?.nome || q || 'Consulta');
     closeModal('budgetModal');
     toast('✅ Solicitação enviada para ' + (of?.nome||'oficina') + '! Aguarde contato.');
   } catch(e) {
