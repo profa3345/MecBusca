@@ -5617,8 +5617,11 @@ function closeModal(id, e) {
     releaseFocus(el);
     if (_lastFocused) { _lastFocused.focus(); _lastFocused = null; }
     // Limpa oficina selecionada ao fechar modal de orçamento
-    if (id === 'budgetModal' && typeof limparSelecaoOficina === 'function') {
-      limparSelecaoOficina();
+    if (id === 'budgetModal') {
+      // FIX: remove data-oficina-id do modal para evitar vazamento entre sessões
+      const bm = document.getElementById('budgetModal');
+      if (bm) delete bm.dataset.oficinaId;
+      if (typeof limparSelecaoOficina === 'function') limparSelecaoOficina();
     }
   }
 }
@@ -7612,6 +7615,10 @@ async function openBudget(id) {
       <button class="btn btn-ghost" style="margin-top:8px;width:100%;" onclick="submitAvaliacao('${id}')">Enviar avaliação</button>
     </div>`;
 
+  // FIX: grava o id da oficina diretamente no modal como fonte de verdade
+  // Garante que enviarLead() sempre sabe qual oficina está ativa,
+  // independente de re-renders, fechamentos parciais ou STATE volátil.
+  document.getElementById('budgetModal').dataset.oficinaId = id;
   document.getElementById('bm-nome').textContent = of.nome;
   document.getElementById('bm-sub').textContent = svc ? ('Orçamento: ' + svc.nome) : 'Solicitar orçamento';
   document.getElementById('bm-body').innerHTML = body;
@@ -7622,8 +7629,12 @@ async function enviarLead(ofId) {
   if (STATE._submitting) return;
   clearAllErrors();
 
-  // ── SOURCE OF TRUTH: usa STATE.oficinaSelecionada, fallback pro param inline ──
-  const resolvedOfId = STATE.oficinaSelecionada?.id || ofId;
+  // FIX: hierarquia de fontes para o oficinaId
+  // 1º data-oficina-id no modal (gravado no momento exato do clique no card)
+  // 2º STATE.oficinaSelecionada (sync de estado global)
+  // 3º ofId passado como parâmetro inline pelo onclick
+  const modalOfId = document.getElementById('budgetModal')?.dataset?.oficinaId;
+  const resolvedOfId = modalOfId || STATE.oficinaSelecionada?.id || ofId;
   if (!resolvedOfId) {
     toast('Selecione uma oficina antes de continuar.', 'warning');
     return;
