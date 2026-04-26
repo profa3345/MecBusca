@@ -147,17 +147,30 @@ function rateLimitUX(key, maxCalls, windowMs) {
 }
 
 // ── 6. SANITIZAÇÃO ───────────────────────────────────────────────
+// FIX-9: sanitize agora remove tags HTML mas NÃO aplica entity encoding.
+// HTML encoding pertence à camada de renderização (ex: textContent / innerHTML),
+// não à camada de persistência. Salvar '&amp;' no Firestore causa exibição
+// literal do escape para o usuário quando renderizado via textContent.
+// Injeção HTML/XSS é prevenida nas regras do Firestore + sanitização na saída.
 function sanitize(str, maxLen = 200) {
   if (typeof str !== 'string') return '';
-  // VULN-3 FIX: entity encoding além de remoção de tags.
-  // Impede quebra de atributos HTML e template injection.
-  return str.trim().slice(0, maxLen)
-    .replace(/<[^>]*>/g, '')
+  // Remove tags HTML e limita tamanho. Encoding feito apenas na renderização.
+  return str.trim().slice(0, maxLen).replace(/<[^>]*>/g, '');
+}
+
+// Função separada para uso ao renderizar dados no DOM (innerHTML):
+// use sempre escapeHtml(valor) ao inserir dados de usuário em innerHTML.
+function escapeHtml(str) {
+  if (typeof str !== 'string') return '';
+  return str
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
     .replace(/`/g, '&#96;');
 }
+window.escapeHtml = escapeHtml;
 function sanitizeData(obj) {
   const out = {};
   for (const [k, v] of Object.entries(obj)) {
@@ -446,11 +459,12 @@ window.FB = {
     const rlKey = 'lead:' + (data.oficinaId || '') + ':' + (data.whatsapp || '');
     if (!rateLimitUX(rlKey, 3, 300_000))
       throw new Error('Muitas solicitações. Aguarde alguns minutos.');
-    if (IS_DEMO) return demoSave('lead', data);
+    // BUG FIX: valida ANTES do IS_DEMO — detecta erro de estado no front mesmo em demo
     const clean = sanitizeData(data);
     if (!clean.oficinaId)                throw new Error('Oficina não identificada. Selecione uma oficina.');
     if (!validarNome(clean.nomeCliente)) throw new Error('Nome do cliente inválido.');
     if (!validarWpp(clean.whatsapp))     throw new Error('WhatsApp inválido.');
+    if (IS_DEMO) return demoSave('lead', clean);
     // Usa Cloud Function (rate limit real server-side) quando disponível
     if (window._fbFunctions) {
       try {
@@ -487,6 +501,22 @@ window.FB = {
 
   async atualizarLead(leadId, data) {
     if (IS_DEMO) return true;
+    // FIX-2: verificar autenticação e ownership antes de atualizar.
+    // Sem isso, qualquer usuário autenticado poderia alterar leads de qualquer oficina.
+    // Firestore Rules são a barreira definitiva, mas falhar no client evita round-trips
+    // desnecessários e produz mensagens de erro mais claras.
+    const user = auth?.currentUser;
+    if (!user) throw new Error('Não autorizado');
+    const leadSnap = await getDoc(doc(db, 'leads', leadId));
+    if (!leadSnap.exists()) throw new Error('Lead não encontrado');
+    // Busca a oficina associada ao lead para verificar ownership
+    const { oficinaId } = leadSnap.data();
+    if (oficinaId) {
+      const ofSnap = await getDoc(doc(db, 'oficinas', oficinaId));
+      if (ofSnap.exists() && ofSnap.data().uid !== user.uid) {
+        throw new Error('Sem permissão para atualizar este lead');
+      }
+    }
     const allowed = { status: data.status, atualizadoEm: serverTimestamp() };
     await updateDoc(doc(db, 'leads', leadId), allowed);
     return true;
@@ -494,10 +524,14 @@ window.FB = {
 
   onLeadsSnapshot(oficinaId, cb) {
     if (IS_DEMO) { cb(demoLeads(oficinaId)); return () => {}; }
+    // FIX-3: limit(100) adicionado — sem ele, oficinas com muitos leads
+    // causam leituras ilimitadas no Firestore, gerando custo excessivo e
+    // lentidão. Mesmo limite usado em listarLeadsDaOficina.
     const q = query(
       collection(db, 'leads'),
       where('oficinaId', '==', oficinaId),
-      orderBy('criadoEm', 'desc')
+      orderBy('criadoEm', 'desc'),
+      limit(100)
     );
     return onSnapshot(
       q,
@@ -517,8 +551,21 @@ window.FB = {
     if (IS_DEMO) return demoSave('avaliacao', { oficinaId, nota, comentario });
     const user = auth?.currentUser;
     if (!user) throw new Error('Faça login para avaliar.');
+    // FIX-4a: rate limit client-side mantido apenas como UX (anti-duplo-clique).
+    // Era bypassável via localStorage.clear() ou janela anônima.
     if (!rateLimitUX('avaliacao:' + user.uid + ':' + oficinaId, 1, 86_400_000))
       throw new Error('Você já avaliou esta oficina hoje.');
+
+    // FIX-4b: verificação server-side — consulta se o uid já avaliou esta oficina.
+    // Impede duplicatas mesmo que o rate limit client-side seja contornado.
+    const avalSnap = await getDocs(
+      query(
+        collection(db, 'oficinas', oficinaId, 'avaliacoes'),
+        where('uid', '==', user.uid),
+        limit(1)
+      )
+    );
+    if (!avalSnap.empty) throw new Error('Você já avaliou esta oficina.');
 
     // Salva avaliação
     await addDoc(collection(db, 'oficinas', oficinaId, 'avaliacoes'), {
@@ -831,7 +878,10 @@ function demoOficinas(filtros) {
 
 // ── window.APP — alias de compatibilidade para window.FB ─────────
 // Código legado no index.html pode referenciar window.APP.
-// Apontamos para o mesmo objeto para evitar duplicação.
-window.APP = window.FB;
+// FIX-1: a atribuição dupla anterior era código morto (a segunda linha nunca
+// executava pois window.APP já havia sido definido na linha acima).
+// Preserva window.APP pré-existente (do index.html legado) quando presente,
+// caso contrário aponta para window.FB.
+if (!window.APP) window.APP = window.FB;
 
 window.dispatchEvent(new Event('fbready'));

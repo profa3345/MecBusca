@@ -67,7 +67,11 @@
      O bloco firebase.js (type="module") sobrescreve com versão condicional ao carregar. -->
 <script>
 (function(){
-  var _DEV = new URLSearchParams(location.search).has('debug');
+  // FIX-7: modo debug via ?debug só ativo em ambiente não-produção.
+  // Em PROD, window.__MECBUSCA_MODE === 'PROD' (definido acima, non-writable).
+  // Isso impede que usuários comuns exponham logs internos adicionando ?debug na URL.
+  var isProd = (window.__MECBUSCA_MODE === 'PROD');
+  var _DEV = !isProd && new URLSearchParams(location.search).has('debug');
   window.log  = _DEV ? console.log.bind(console)   : function(){};
   window.logW = _DEV ? console.warn.bind(console)  : function(){};
   window.logE = _DEV ? console.error.bind(console) : function(){};
@@ -4043,6 +4047,47 @@ const STATE = {
   // (no duplicates)
 };
 
+// ── window.APP — fonte de verdade da oficina selecionada ─────────
+// Única fonte que o clique escreve e o envio lê.
+// Não é apagado por re-renders de lista, scroll ou STATE reset.
+window.APP = {
+  oficinaSelecionada: null,   // { id, nome, wpp, servicos, ... }
+
+  selecionar(oficina) {
+    this.oficinaSelecionada = oficina || null;
+    // persiste id para sobreviver a F5 (UX avançada)
+    try {
+      if (oficina) localStorage.setItem('mb_ofSel', oficina.id);
+      else         localStorage.removeItem('mb_ofSel');
+    } catch(_) {}
+    this._atualizarBotaoEnviar();
+    this._atualizarCardVisual(oficina?.id || null);
+  },
+
+  // Restaura seleção após reload (se oficina ainda estiver na lista)
+  restaurar() {
+    try {
+      const savedId = localStorage.getItem('mb_ofSel');
+      if (!savedId) return;
+      const of = STATE.oficinas.find(o => o.id === savedId);
+      if (of) { this.oficinaSelecionada = of; this._atualizarCardVisual(savedId); }
+    } catch(_) {}
+  },
+
+  _atualizarBotaoEnviar() {
+    const btn = document.getElementById('btnEnviarLead');
+    if (!btn) return;
+    btn.disabled = !this.oficinaSelecionada;
+    btn.style.opacity = this.oficinaSelecionada ? '1' : '0.45';
+  },
+
+  _atualizarCardVisual(id) {
+    document.querySelectorAll('.of-card').forEach(el => {
+      el.classList.toggle('selected', !!id && el.dataset.id === id);
+    });
+  },
+};
+
 const HORARIOS_PADRAO = [
   {dia:'Seg',range:'07:30 – 18:00',on:true},{dia:'Ter',range:'07:30 – 18:00',on:true},
   {dia:'Qua',range:'07:30 – 18:00',on:true},{dia:'Qui',range:'07:30 – 18:00',on:true},
@@ -5605,22 +5650,15 @@ function openModal(id) {
 function closeModal(id, e) {
   if (!e || e.target === document.getElementById(id)) {
     // Se é o modal de orçamento e tem dados preenchidos, pedir confirmação
-    if (id === 'budgetModal' && e) {
-      const nome = document.getElementById('lnome')?.value.trim();
-      const wpp = document.getElementById('lwpp')?.value.trim();
-      if (nome || wpp) {
-        if (!window.confirm('Fechar o orçamento? Os dados preenchidos serão perdidos.')) return;
-      }
-    }
+    // UX FIX: confirm() removido — bloqueante em mobile/PWA
+    // Modal fecha direto ao clicar fora; dados do form são limpos normalmente
     const el = document.getElementById(id);
     el.classList.remove('open');
     releaseFocus(el);
     if (_lastFocused) { _lastFocused.focus(); _lastFocused = null; }
     // Limpa oficina selecionada ao fechar modal de orçamento
     if (id === 'budgetModal') {
-      // FIX: remove data-oficina-id do modal para evitar vazamento entre sessões
-      const bm = document.getElementById('budgetModal');
-      if (bm) delete bm.dataset.oficinaId;
+      if (window.APP) window.APP.selecionar(null); // limpa fonte de verdade
       if (typeof limparSelecaoOficina === 'function') limparSelecaoOficina();
     }
   }
@@ -7542,6 +7580,35 @@ function fpOpenFoto(src) {
 }
 
 // ── BUDGET / LEAD MODAL ──────────────────────────────────────────
+// ── DELEGAÇÃO DE CLIQUE — .of-card ──────────────────────────────
+// Um único listener no document captura todos os cliques em cards,
+// incluindo cards renderizados dinamicamente depois do load.
+// Escreve em window.APP (não em STATE) — imune a re-renders.
+document.addEventListener('click', (e) => {
+  const card = e.target.closest('.of-card');
+  if (!card || !card.dataset.id) return;
+  const id = card.dataset.id;
+  const oficina = STATE.oficinas.find(o => o.id === id)
+               || (window.demoOficinas ? window.demoOficinas({}) : []).find(o => o.id === id);
+  if (!oficina) return;
+  window.APP.selecionar(oficina);
+});
+
+// ── DELEGAÇÃO DE CLIQUE — .of-card ──────────────────────────────
+// Captura cliques em qualquer card, inclusive renderizados depois.
+// Grava em window.APP — não em STATE (que é volátil).
+document.addEventListener('click', function(e) {
+  const card = e.target.closest('.of-card');
+  if (!card || !card.dataset.id) return;
+  const id = card.dataset.id;
+  // PERF FIX: busca em STATE primeiro; demoOficinas só se STATE vazio
+  const oficina = STATE.oficinas.find(o => o.id === id)
+    || (STATE.oficinas.length === 0 && window.demoOficinas
+        ? window.demoOficinas({}).find(o => o.id === id)
+        : null);
+  if (oficina) window.APP.selecionar(oficina);
+});
+
 function getOficina(id) { return STATE.oficinas.find(o => o.id === id); }
 
 async function openBudget(id) {
@@ -7553,8 +7620,9 @@ async function openBudget(id) {
   }
   if (!of) { toast('Oficina não encontrada', 'error'); return; }
 
-  // ── SYNC: registra no estado global qual oficina está ativa ──
-  selecionarOficina(id, of.nome);
+  // ── SYNC: registra em window.APP (fonte de verdade) E em STATE ──
+  window.APP.selecionar(of);
+  selecionarOficina(id, of.nome); // mantém STATE e visual legado em sync
 
   const q = (STATE.filtroChip||'').toLowerCase();
   const svc = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
@@ -7615,10 +7683,6 @@ async function openBudget(id) {
       <button class="btn btn-ghost" style="margin-top:8px;width:100%;" onclick="submitAvaliacao('${id}')">Enviar avaliação</button>
     </div>`;
 
-  // FIX: grava o id da oficina diretamente no modal como fonte de verdade
-  // Garante que enviarLead() sempre sabe qual oficina está ativa,
-  // independente de re-renders, fechamentos parciais ou STATE volátil.
-  document.getElementById('budgetModal').dataset.oficinaId = id;
   document.getElementById('bm-nome').textContent = of.nome;
   document.getElementById('bm-sub').textContent = svc ? ('Orçamento: ' + svc.nome) : 'Solicitar orçamento';
   document.getElementById('bm-body').innerHTML = body;
@@ -7629,12 +7693,11 @@ async function enviarLead(ofId) {
   if (STATE._submitting) return;
   clearAllErrors();
 
-  // FIX: hierarquia de fontes para o oficinaId
-  // 1º data-oficina-id no modal (gravado no momento exato do clique no card)
-  // 2º STATE.oficinaSelecionada (sync de estado global)
-  // 3º ofId passado como parâmetro inline pelo onclick
-  const modalOfId = document.getElementById('budgetModal')?.dataset?.oficinaId;
-  const resolvedOfId = modalOfId || STATE.oficinaSelecionada?.id || ofId;
+  // ── SOURCE OF TRUTH: window.APP → STATE → param inline ────────
+  // window.APP.oficinaSelecionada é escrito pelo clique no card e pelo
+  // openBudget — nunca apagado por re-render ou STATE reset.
+  const resolvedOf   = window.APP?.oficinaSelecionada || null;
+  const resolvedOfId = resolvedOf?.id || STATE.oficinaSelecionada?.id || ofId;
   if (!resolvedOfId) {
     toast('Selecione uma oficina antes de continuar.', 'warning');
     return;
@@ -7737,8 +7800,9 @@ async function enviarLeadPeca(pecaId) {
   STATE._submitting = true;
   setBtnLoading('btnEnviarLeadPeca', 'enviarLeadPecaText', 'enviarLeadPecaSpin', true);
   try {
+    const _pecaOfId = window.APP?.oficinaSelecionada?.id || 'of001';
     await window.FB.enviarLead({
-      oficinaId: 'of001', nomeCliente: nome,
+      oficinaId: _pecaOfId, nomeCliente: nome,
       whatsapp: wpp.replace(/\D/g,''), carro,
       servico: 'Peça: ' + (p?.nome||pecaId), valor: p?.preco || 0
     });
@@ -13037,9 +13101,39 @@ Quando precisar escalar → [ESCALAR]`;
   sed -i "s/__BUILD_TS__/$(date +%s)/g" service-worker.js
 
   Sem isso, o SW usa o placeholder literal e não invalida cache.
+  Um aviso é exibido no console de produção se o placeholder não
+  for substituído (ver script FIX-5 no final do <body>).
 
 ══════════════════════════════════════════════════════════════════
 -->
+
+<!-- FIX-5: Detecta __BUILD_TS__ não substituído no deploy e avisa no console.
+     Sem o sed no CI/CD, o Service Worker nunca invalida cache entre deploys. -->
+<script>
+(function(){
+  // Verifica se há um SW registrado com CACHE_NAME contendo o placeholder literal
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(regs) {
+      regs.forEach(function(reg) {
+        // Tenta detectar SW ativo com placeholder não substituído
+        if (reg.active && reg.active.scriptURL) {
+          fetch(reg.active.scriptURL)
+            .then(function(r){ return r.text(); })
+            .then(function(src){
+              if (src.includes('__BUILD_TS__')) {
+                console.warn(
+                  '[MecBusca] ⚠️ Service Worker com __BUILD_TS__ não substituído!\n' +
+                  'Execute no CI/CD: sed -i "s/__BUILD_TS__/$(date +%s)/g" service-worker.js\n' +
+                  'Sem isso, o cache nunca é invalidado entre deploys.'
+                );
+              }
+            }).catch(function(){});
+        }
+      });
+    });
+  }
+})();
+</script>
 
 </body>
 </html>
