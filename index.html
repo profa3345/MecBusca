@@ -2669,6 +2669,7 @@ button,a,[role=button]{min-height:44px;}
           <option value="carro">🚗 Carro</option>
           <option value="moto">🏍️ Moto</option>
           <option value="caminhao">🚛 Caminhão</option>
+          <option value="bicicleta">🚲 Bicicleta</option>
         </select>
       </div>
       <div class="filter-group">
@@ -6943,6 +6944,16 @@ const DEMO_SERVICOS_AGRUPADOS = [
   {id:'sv005',nome:'Ar-condicionado (recarga)',cat:'Ar-condicionado',icon:'❄️',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:120,max:200,avaliacao:4.9},{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:130,max:190,avaliacao:4.8}]},
   {id:'sv006',nome:'Suspensão (amortecedores)',cat:'Suspensão',icon:'🔩',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:280,max:450,avaliacao:4.8},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:300,max:500,avaliacao:4.9}]},
   {id:'sv007',nome:'Elétrica automotiva',cat:'Elétrica',icon:'⚡',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:80,max:200,avaliacao:4.3}]},
+  // ── Motos
+  {id:'sv008',nome:'Revisão de moto',cat:'Moto',icon:'🏍️',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:120,max:250,avaliacao:4.8},{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:100,max:200,avaliacao:4.3}]},
+  {id:'sv009',nome:'Troca de óleo (moto)',cat:'Moto',icon:'🛢️',cor:'var(--gg)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:50,max:90,avaliacao:4.8},{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:45,max:80,avaliacao:4.3}]},
+  {id:'sv010',nome:'Freios de moto',cat:'Moto',icon:'🔴',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:80,max:180,avaliacao:4.9}]},
+  {id:'sv011',nome:'Pneu de moto',cat:'Moto',icon:'⭕',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:60,max:140,avaliacao:4.8}]},
+  // ── Bicicletas
+  {id:'sv012',nome:'Revisão de bicicleta',cat:'Bicicleta',icon:'🚲',cor:'rgba(0,208,132,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:40,max:120,avaliacao:4.3}]},
+  {id:'sv013',nome:'Troca de câmbio (bike)',cat:'Bicicleta',icon:'⚙️',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:30,max:80,avaliacao:4.3}]},
+  {id:'sv014',nome:'Freios de bicicleta',cat:'Bicicleta',icon:'🛑',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:25,max:60,avaliacao:4.3}]},
+  {id:'sv015',nome:'Troca de pneu (bike)',cat:'Bicicleta',icon:'🔵',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:20,max:50,avaliacao:4.3}]},
 ];
 
 const TIPOS_ESTABELECIMENTO = [
@@ -6954,12 +6965,15 @@ const TIPOS_ESTABELECIMENTO = [
   {id:'gas',icon:'🔥',label:'Gás veicular',count:1},
   {id:'vidros',icon:'🪟',label:'Vidros',count:2},
   {id:'pecas',icon:'🔩',label:'Peças',count:4},
+  {id:'moto',icon:'🏍️',label:'Motos',count:3},
+  {id:'bicicleta',icon:'🚲',label:'Bicicletas',count:2},
 ];
 const TIPO_INFO = {
   oficina:{icon:'🔧',label:'Oficina'},pneu:{icon:'🔵',label:'Pneus'},
   eletrica:{icon:'⚡',label:'Elétrica'},funilaria:{icon:'🎨',label:'Funilaria'},
   som:{icon:'🔊',label:'Som'},gas:{icon:'🔥',label:'GNV'},
   vidros:{icon:'🪟',label:'Vidros'},pecas:{icon:'🔩',label:'Autopeças'},
+  moto:{icon:'🏍️',label:'Moto'},bicicleta:{icon:'🚲',label:'Bicicleta'},
 };
 const DEMO_ESTABELECIMENTOS = {
   pneu:[{id:'pn001',nome:'Pneus Vitória Centro',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999991001',avaliacao:4.6,avaliacoes:34,distancia:'1,1 km',aberto:true,horario:'até 18h',tipo:'pneu',servicos:[{nome:'Troca de pneu',min:35,max:60,ativo:true},{nome:'Balanceamento',min:20,max:30,ativo:true}]}],
@@ -6972,6 +6986,7 @@ const FILTERS = {
     {label:'Todos',val:''},{label:'Troca de óleo',val:'óleo'},{label:'Freios',val:'freios'},
     {label:'Suspensão',val:'suspensão'},{label:'Alinhamento',val:'alinhamento'},
     {label:'Ar-condicionado',val:'ar-condicionado'},{label:'Revisão',val:'revisão'},{label:'Elétrica',val:'elétrica'},
+    {label:'🏍️ Moto',val:'moto'},{label:'🚲 Bicicleta',val:'bicicleta'},
   ],
   tipos:[],
   servicos:[
@@ -11924,7 +11939,7 @@ document.addEventListener('DOMContentLoaded', () => {
   <div id="ana-bubble">
     <div id="ana-bubble-text">
       Sou a <strong>Ana</strong>, assistente do MecBusca.<br>
-      Descreva o problema do seu carro.
+      Descreva o problema do seu carro, moto ou bicicleta.
     </div>
     <button id="ana-cta" onclick="anaToggle(); document.getElementById('ana-bubble').classList.remove('show'); document.getElementById('ana-widget').classList.remove('open');"
        style="display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#25D366,#128C7E);color:#fff;border:none;padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
@@ -12448,7 +12463,7 @@ document.addEventListener('DOMContentLoaded', () => {
 }
 /* Ícone e label da Ana antes do input (só no estado fechado) */
 #ana-input-row::before {
-  content: '🔧 Ana';
+  content: 'Fale com a Ana';
   font-size: 12px;
   font-weight: 600;
   color: var(--g);
@@ -12521,14 +12536,14 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div id="ana-messages"></div>
   <div id="ana-input-row">
-    <input id="ana-input" placeholder="Descreva o problema do seu carro…" 
+    <input id="ana-input" placeholder="Descreva o problema do seu carro, moto ou bicicleta…" 
            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();anaAiSend();}"
            onfocus="anaAiToggle(true)"
            aria-label="Digite sua mensagem para a Ana, assistente MecBusca">
     <button id="ana-send-btn" onclick="anaAiSend()" aria-label="Enviar">➤</button>
   </div>
   <div id="ana-human-row">
-    <button id="ana-human-btn" onclick="anaEscalarHumano()">💬 Falar com atendente</button>
+    <button id="ana-human-btn" onclick="anaEscalarHumano()">💬 Dúvidas sobre o MecBusca? Fale com um humano.</button>
   </div>
 </div>
 
@@ -12560,14 +12575,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const SYSTEM_PROMPT = `Você é Ana, assistente inteligente do MecBusca — marketplace de oficinas mecânicas do Espírito Santo (Brasil).
 
-MISSÃO: Ajudar motoristas a diagnosticar problemas no carro, tirar dúvidas mecânicas e indicar o serviço correto para buscar oficinas próximas.
+MISSÃO: Ajudar motoristas, motociclistas e ciclistas a diagnosticar problemas no carro, moto ou bicicleta, tirar dúvidas mecânicas e indicar o serviço correto para buscar oficinas e especialistas próximos.
 
 CAPACIDADES:
 - Diagnosticar problemas com base em sintomas (barulhos, cheiros, vibrações, luzes, falhas)
-- Explicar de forma simples o que pode estar acontecendo no carro
-- Sugerir qual serviço procurar (ex: "Freios", "Suspensão", "Elétrica automotiva")
-- Dar dicas de manutenção preventiva
-- Responder dúvidas sobre carros em geral (consumo, troca de óleo, pneus, etc.)
+- Explicar de forma simples o que pode estar acontecendo no carro, moto ou bicicleta
+- Sugerir qual serviço procurar (ex: "Freios", "Suspensão", "Revisão de moto", "Revisão de bicicleta")
+- Dar dicas de manutenção preventiva para carros, motos e bikes
+- Responder dúvidas sobre veículos em geral (consumo, troca de óleo, pneus, câmbio de bike, etc.)
 
 REGRAS IMPORTANTES:
 1. Responda em português brasileiro, amigável e direto
@@ -12579,7 +12594,9 @@ REGRAS IMPORTANTES:
 7. Se o problema for complexo demais ou envolver orçamento/agendamento, sugira falar com suporte humano incluindo: [ESCALAR]
 
 SERVIÇOS DISPONÍVEIS NO MECBUSCA:
-Troca de óleo, Filtros, Freios, Alinhamento, Balanceamento, Suspensão, Amortecedor, Revisão completa, Ar-condicionado automotivo, Elétrica automotiva, Bateria, Correia dentada, Embreagem, Câmbio, Injeção eletrônica, Funilaria e pintura, Pneus, Escapamento, Radiador, Direção hidráulica, Vidros e para-brisa, Diagnóstico computadorizado, Retífica de motor, GNV
+🚗 CARROS: Troca de óleo, Filtros, Freios, Alinhamento, Balanceamento, Suspensão, Amortecedor, Revisão completa, Ar-condicionado automotivo, Elétrica automotiva, Bateria, Correia dentada, Embreagem, Câmbio, Injeção eletrônica, Funilaria e pintura, Pneus, Escapamento, Radiador, Direção hidráulica, Vidros e para-brisa, Diagnóstico computadorizado, Retífica de motor, GNV
+🏍️ MOTOS: Revisão de moto, Troca de óleo (moto), Freios de moto, Pneu de moto, Corrente e relação, Carburador, Injeção eletrônica (moto), Elétrica de moto
+🚲 BICICLETAS: Revisão de bicicleta, Troca de câmbio (bike), Freios de bicicleta, Troca de pneu (bike), Regulagem de marcha, Lubrificação de corrente, Troca de corrente
 
 QUANDO ESCALAR PARA HUMANO:
 - Usuário pede orçamento específico
