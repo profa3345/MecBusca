@@ -1,0 +1,29 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "leads",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "oficinaId", "order": "ASCENDING" },
+        { "fieldPath": "criadoEm",  "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "oficinas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ativo",   "order": "ASCENDING" },
+        { "fieldPath": "cidade",  "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "avaliacoes",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "uid",      "order": "ASCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
