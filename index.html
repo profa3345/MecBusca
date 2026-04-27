@@ -59,6 +59,19 @@
     writable: false,
     configurable: false
   });
+
+  // ── Variáveis de ambiente (substituir antes do deploy) ─────────
+  // 1. App Check (reCAPTCHA v3) — obter em console.cloud.google.com/recaptcha
+  window.__RECAPTCHA_KEY__  = window.__RECAPTCHA_KEY__  || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // ← trocar pela chave real
+
+  // 2. Google Analytics 4 — obter em analytics.google.com
+  window.__GA4_ID__         = window.__GA4_ID__         || '';  // ← ex: 'G-XXXXXXXXXX'
+
+  // 3. Sentry DSN — obter em sentry.io após criar o projeto
+  window.__SENTRY_DSN__     = window.__SENTRY_DSN__     || '';  // ← ex: 'https://abc@o123.ingest.sentry.io/456'
+
+  // 4. Versão do app — atualizar a cada deploy para rastrear regressões
+  window.__APP_VERSION__    = '1.2.0'; // ← incrementar a cada release
 })();
 </script>
 
@@ -181,7 +194,7 @@
   --shadow-glow:0 0 24px rgba(0,208,132,0.15);
 }
 html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);}
-body{padding-bottom:52px;} /* espaço para barra da Ana no rodapé */
+body{padding-bottom:0;} /* Ana é FAB flutuante, não barra no rodapé */
 
 /* ══════════════════════════════════════════════
    🎨 DESIGN SYSTEM v2 — NÍVEL STARTUP GRANDE
@@ -575,6 +588,22 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 }
 
 /* Tabs redesenhadas — pill style */
+.home-subtabs{
+  display:flex;gap:6px;margin:0 0 14px;padding:3px;
+  background:var(--bg3);border-radius:20px;
+  border:1px solid var(--b);overflow-x:auto;
+}
+.home-subtab{
+  flex:1;padding:7px 10px;border-radius:16px;border:none;
+  background:transparent;color:var(--t3);font-size:12px;
+  font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:all 0.18s;font-family:'DM Sans',sans-serif;
+}
+.home-subtab.active{
+  background:var(--bg2);color:var(--t);
+  box-shadow:0 1px 4px rgba(0,0,0,0.18);
+}
+.home-subtab:hover:not(.active){color:var(--t2);}
 .home-tabs{
   display:flex;gap:4px;
   background:rgba(255,255,255,0.03);
@@ -1866,67 +1895,148 @@ button,a,[role=button]{min-height:44px;}
 
       <div class="home-tagline">Encontre agora a <strong style="color:var(--t);font-weight:700;">melhor oficina perto de você</strong>.<br><span style="font-size:13px;color:var(--t3);">Receba orçamento em segundos via WhatsApp.</span></div>
 
-      <!-- ABAS DE BUSCA -->
-      <div class="home-tabs" role="tablist">
-        <button class="home-tab active" id="htab-oficinas" onclick="homeSetTab('oficinas')" role="tab" aria-selected="true">🔧 Oficinas</button>
-        <button class="home-tab" id="htab-pecas" onclick="homeSetTab('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
-        <button class="home-tab" id="htab-motos" onclick="homeSetTab('motos')" role="tab" aria-selected="false">🏍️ Motos</button>
-        <button class="home-tab" id="htab-bikes" onclick="homeSetTab('bikes')" role="tab" aria-selected="false">🚲 Bikes</button>
+      <!-- ABAS PRINCIPAIS: Carros / Motos / Bikes -->
+      <div class="home-tabs" role="tablist" aria-label="Categoria de veículo">
+        <button class="home-tab active" id="htab-carros" onclick="homeSetCategoria('carros')" role="tab" aria-selected="true">🚗 Carros</button>
+        <button class="home-tab" id="htab-motos"  onclick="homeSetCategoria('motos')"  role="tab" aria-selected="false">🏍️ Motos</button>
+        <button class="home-tab" id="htab-bikes"  onclick="homeSetCategoria('bikes')"  role="tab" aria-selected="false">🚲 Bikes</button>
       </div>
 
-      <!-- BUSCA OFICINAS -->
-      <div class="home-search-box" id="hbox-oficinas">
-        <div class="home-search-title">🔧 Encontre a oficina ideal</div>
+      <!-- SUB-ABAS: Oficinas | Peças | Lava-Jato (visíveis dentro de cada categoria) -->
+      <div class="home-subtabs" id="homeSubtabs" role="tablist" aria-label="Tipo de serviço">
+        <button class="home-subtab active" id="hstab-oficinas"  onclick="homeSetSubtab('oficinas')"  role="tab" aria-selected="true">🔧 Oficinas</button>
+        <button class="home-subtab"        id="hstab-pecas"     onclick="homeSetSubtab('pecas')"     role="tab" aria-selected="false">🔩 Peças</button>
+        <button class="home-subtab"        id="hstab-lavajato"  onclick="homeSetSubtab('lavajato')"  role="tab" aria-selected="false">🚿 Lava-Jato</button>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           BUSCA: CARROS — OFICINAS
+      ══════════════════════════════════════════════════════════ -->
+      <div class="home-search-box" id="hbox-carros-oficinas">
+        <div class="home-search-title">🔧 Oficinas para carros</div>
         <div class="home-fields">
           <div class="home-field home-field-full">
             <label for="hServico">Serviço</label>
-            <select id="hServico" aria-label="Selecione o serviço">
-              <!-- preenchido dinamicamente por buildServicoSelect() -->
-            </select>
+            <select id="hServico" aria-label="Selecione o serviço"><!-- preenchido por buildServicoSelect() --></select>
           </div>
           <div class="home-field home-field-full">
-            <label for="hOficina" style="display:flex;align-items:center;gap:6px;">
-              Oficina
-              <span style="font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span>
-            </label>
-            <select id="hOficina" aria-label="Selecione a oficina (opcional)" onchange="onOficinaChange(this)" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border var(--transition);cursor:pointer;">
+            <label for="hOficina" style="display:flex;align-items:center;gap:6px;">Oficina <span style="font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+            <select id="hOficina" onchange="onOficinaChange(this)" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
               <option value="">— Todas as oficinas —</option>
-              <!-- preenchido dinamicamente por buildOficinaSelect() -->
             </select>
           </div>
           <div class="home-field">
             <label for="hCidade">Cidade</label>
             <select id="hCidade" onchange="homeUpdateBairros()">
               <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option>
-              <option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option>
-              <option value="Serra">Serra</option>
-              <option value="Viana">Viana</option>
-              <option value="Guarapari">Guarapari</option>
-              <option value="Linhares">Linhares</option>
-              <option value="Cachoeiro de Itapemirim">Cachoeiro</option>
-              <option value="Colatina">Colatina</option>
-              <option value="São Mateus">São Mateus</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
+              <option value="Linhares">Linhares</option><option value="Cachoeiro de Itapemirim">Cachoeiro</option>
+              <option value="Colatina">Colatina</option><option value="São Mateus">São Mateus</option>
             </select>
           </div>
           <div class="home-field">
             <label for="hBairro">Bairro</label>
-            <select id="hBairro">
-              <option value="">Todos os bairros</option>
-            </select>
+            <select id="hBairro"><option value="">Todos os bairros</option></select>
           </div>
         </div>
-        <button class="home-search-btn" onclick="homeBuscar()">
-          🔍 Encontrar oficina agora
-        </button>
+        <button class="home-search-btn" onclick="homeBuscar()">🔍 Encontrar oficina agora</button>
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">⚡ Resultado em segundos · gratuito para o motorista</div>
       </div>
 
+      <!-- BUSCA: CARROS — PEÇAS -->
+      <div class="home-search-box" id="hbox-carros-pecas" style="display:none;">
+        <div class="home-search-title">🔩 Peças para carros</div>
+        <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
+          <label for="hPeca">Peça ou componente</label>
+          <div style="position:relative;">
+            <input id="hPeca" type="text" placeholder="Ex: Filtro de óleo, pastilha, amortecedor..." autocomplete="off" oninput="pecaAutocomplete(this.value)" onkeydown="pecaInputKey(event)" onfocus="pecaAutocomplete(this.value)" style="padding-right:36px;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
+          </div>
+          <div id="pecaSuggestions" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:200;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);box-shadow:var(--shadow-md);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca</label>
+            <select id="hMarca" onchange="pecaUpdateModelos()" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Selecione a marca</option>
+              <option value="Chevrolet">Chevrolet</option><option value="Fiat">Fiat</option>
+              <option value="Ford">Ford</option><option value="Honda">Honda</option>
+              <option value="Hyundai">Hyundai</option><option value="Jeep">Jeep</option>
+              <option value="Kia">Kia</option><option value="Renault">Renault</option>
+              <option value="Toyota">Toyota</option><option value="Volkswagen">Volkswagen</option>
+              <option value="Audi">Audi</option><option value="BMW">BMW</option>
+              <option value="Mercedes-Benz">Mercedes-Benz</option><option value="Nissan">Nissan</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Modelo</label>
+            <select id="hModelo" onchange="pecaUpdateAnos()" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Selecione o modelo</option>
+            </select>
+          </div>
+        </div>
+        <div class="home-field" style="margin-bottom:12px;">
+          <label for="hCidadePeca">Cidade</label>
+          <select id="hCidadePeca" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+            <option value="">Todas as cidades</option>
+            <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+            <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+            <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
+          </select>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarPeca()">🔍 Encontrar peça agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Fornecedores e lojas de autopeças · ES</div>
+      </div>
 
-      <!-- BUSCA MOTOS -->
-      <div class="home-search-box" id="hbox-motos" style="display:none;">
-        <div class="home-search-title">🏍️ Encontre a melhor moto-oficina</div>
+      <!-- BUSCA: CARROS — LAVA-JATO -->
+      <div class="home-search-box" id="hbox-carros-lavajato" style="display:none;">
+        <div class="home-search-title">🚿 Lava-Jatos para carros</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServicoLavaJatoCarro">Serviço</label>
+            <select id="hServicoLavaJatoCarro">
+              <option value="">— Todos os serviços —</option>
+              <option value="lavagem simples carro">🚿 Lavagem simples</option>
+              <option value="lavagem completa carro">✨ Lavagem completa</option>
+              <option value="higienização interna carro">🧹 Higienização interna</option>
+              <option value="polimento carro">💎 Polimento</option>
+              <option value="cristalização pintura carro">🔮 Cristalização</option>
+              <option value="vitrificação carro">🛡️ Vitrificação (coating)</option>
+              <option value="lavagem motor carro">⚙️ Lavagem de motor</option>
+              <option value="cera hidrofugante carro">💧 Cera hidrofugante</option>
+              <option value="limpeza couro carro">🪑 Limpeza de couro</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidadeLavaJatoCarro">Cidade</label>
+            <select id="hCidadeLavaJatoCarro">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hPrecoMaxLavaJatoCarro">Preço máximo</label>
+            <select id="hPrecoMaxLavaJatoCarro">
+              <option value="">Qualquer preço</option>
+              <option value="30">Até R$ 30</option><option value="50">Até R$ 50</option>
+              <option value="80">Até R$ 80</option><option value="120">Até R$ 120</option>
+              <option value="200">Até R$ 200</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarLavaJato('carro')">🔍 Encontrar lava-jato agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚿 Compare preços · agende pelo WhatsApp</div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           BUSCA: MOTOS — OFICINAS
+      ══════════════════════════════════════════════════════════ -->
+      <div class="home-search-box" id="hbox-motos-oficinas" style="display:none;">
+        <div class="home-search-title">🔧 Oficinas para motos</div>
         <div class="home-fields">
           <div class="home-field home-field-full">
             <label for="hServicoMoto">Serviço para moto</label>
@@ -1937,7 +2047,7 @@ button,a,[role=button]{min-height:44px;}
               <option value="freios moto">🔴 Freios</option>
               <option value="pneu moto">⭕ Pneu de moto</option>
               <option value="corrente relação">⛓️ Corrente e relação</option>
-              <option value="elétrica moto">⚡ Elétrica de moto</option>
+              <option value="elétrica moto">⚡ Elétrica</option>
               <option value="carburador injeção moto">⛽ Carburador / Injeção</option>
               <option value="suspensão moto">🔩 Suspensão</option>
               <option value="embreagem moto">⚙️ Embreagem</option>
@@ -1948,28 +2058,20 @@ button,a,[role=button]{min-height:44px;}
             <label for="hCidadeMoto">Cidade</label>
             <select id="hCidadeMoto">
               <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option>
-              <option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option>
-              <option value="Serra">Serra</option>
-              <option value="Viana">Viana</option>
-              <option value="Guarapari">Guarapari</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
             </select>
           </div>
           <div class="home-field">
             <label for="hMarcaMoto">Marca da moto</label>
             <select id="hMarcaMoto">
               <option value="">Todas as marcas</option>
-              <option value="Honda">Honda</option>
-              <option value="Yamaha">Yamaha</option>
-              <option value="Suzuki">Suzuki</option>
-              <option value="Kawasaki">Kawasaki</option>
-              <option value="BMW Motorrad">BMW Motorrad</option>
-              <option value="Ducati">Ducati</option>
-              <option value="Harley-Davidson">Harley-Davidson</option>
-              <option value="Royal Enfield">Royal Enfield</option>
-              <option value="Dafra">Dafra</option>
-              <option value="Shineray">Shineray</option>
+              <option value="Honda">Honda</option><option value="Yamaha">Yamaha</option>
+              <option value="Suzuki">Suzuki</option><option value="Kawasaki">Kawasaki</option>
+              <option value="BMW Motorrad">BMW Motorrad</option><option value="Ducati">Ducati</option>
+              <option value="Harley-Davidson">Harley-Davidson</option><option value="Dafra">Dafra</option>
+              <option value="Shineray">Shineray</option><option value="Royal Enfield">Royal Enfield</option>
             </select>
           </div>
         </div>
@@ -1977,9 +2079,82 @@ button,a,[role=button]{min-height:44px;}
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🏍️ Especialistas em motos · orçamento no WhatsApp</div>
       </div>
 
-      <!-- BUSCA BIKES -->
-      <div class="home-search-box" id="hbox-bikes" style="display:none;">
-        <div class="home-search-title">🚲 Encontre o melhor bike-shop</div>
+      <!-- BUSCA: MOTOS — PEÇAS -->
+      <div class="home-search-box" id="hbox-motos-pecas" style="display:none;">
+        <div class="home-search-title">🔩 Peças para motos</div>
+        <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
+          <label for="hPecaMoto">Peça para moto</label>
+          <div style="position:relative;">
+            <input id="hPecaMoto" type="text" placeholder="Ex: corrente, pneu traseiro, pastilha de freio..." autocomplete="off" style="padding-right:36px;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca da moto</label>
+            <select id="hMarcaPecaMoto" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todas as marcas</option>
+              <option value="Honda">Honda</option><option value="Yamaha">Yamaha</option>
+              <option value="Suzuki">Suzuki</option><option value="Kawasaki">Kawasaki</option>
+              <option value="Dafra">Dafra</option><option value="Shineray">Shineray</option>
+              <option value="BMW Motorrad">BMW Motorrad</option><option value="Ducati">Ducati</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
+            <select id="hCidadePecaMoto" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarPecaMoto()">🔍 Encontrar peça para moto</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Peças originais e paralelas · melhores preços · ES</div>
+      </div>
+
+      <!-- BUSCA: MOTOS — LAVA-JATO -->
+      <div class="home-search-box" id="hbox-motos-lavajato" style="display:none;">
+        <div class="home-search-title">🚿 Lava-Jatos para motos</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServicoLavaJatoMoto">Serviço</label>
+            <select id="hServicoLavaJatoMoto">
+              <option value="">— Todos os serviços —</option>
+              <option value="lavagem simples moto">🚿 Lavagem simples</option>
+              <option value="lavagem completa moto">✨ Lavagem completa</option>
+              <option value="polimento moto">💎 Polimento de pintura</option>
+              <option value="limpeza motor moto">⚙️ Limpeza de motor</option>
+              <option value="vitrificação moto">🛡️ Vitrificação</option>
+              <option value="higienização moto">🧹 Higienização</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidadeLavaJatoMoto">Cidade</label>
+            <select id="hCidadeLavaJatoMoto">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hPrecoMaxLavaJatoMoto">Preço máximo</label>
+            <select id="hPrecoMaxLavaJatoMoto">
+              <option value="">Qualquer preço</option>
+              <option value="20">Até R$ 20</option><option value="35">Até R$ 35</option>
+              <option value="60">Até R$ 60</option><option value="100">Até R$ 100</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarLavaJato('moto')">🔍 Encontrar lava-jato agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🏍️ Lavagem especializada em motos · ES</div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           BUSCA: BIKES — OFICINAS
+      ══════════════════════════════════════════════════════════ -->
+      <div class="home-search-box" id="hbox-bikes-oficinas" style="display:none;">
+        <div class="home-search-title">🔧 Bike-shops e oficinas</div>
         <div class="home-fields">
           <div class="home-field home-field-full">
             <label for="hServicoBike">Serviço para bicicleta</label>
@@ -1987,25 +2162,21 @@ button,a,[role=button]{min-height:44px;}
               <option value="">— Todos os serviços —</option>
               <option value="revisão de bicicleta">🔧 Revisão completa</option>
               <option value="troca de câmbio bike">⚙️ Câmbio / marcha</option>
-              <option value="freios bike">🛑 Freios (mecânico / hidráulico)</option>
-              <option value="pneu bike">🔵 Troca de pneu / câmara</option>
+              <option value="freios bike">🛑 Freios</option>
+              <option value="pneu bike">🔵 Pneu / câmara</option>
               <option value="corrente bike">⛓️ Corrente e transmissão</option>
-              <option value="suspensão bike">🛞 Suspensão (garfo / amortecedor)</option>
+              <option value="suspensão bike">🛞 Suspensão</option>
               <option value="rodas bike">🔵 Rodas e aros</option>
               <option value="limpeza lubrificação bike">🧴 Limpeza e lubrificação</option>
-              <option value="freio hidráulico bike">💧 Freio hidráulico (sangria)</option>
             </select>
           </div>
           <div class="home-field">
             <label for="hCidadeBike">Cidade</label>
             <select id="hCidadeBike">
               <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option>
-              <option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option>
-              <option value="Serra">Serra</option>
-              <option value="Viana">Viana</option>
-              <option value="Guarapari">Guarapari</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
             </select>
           </div>
           <div class="home-field">
@@ -2017,15 +2188,82 @@ button,a,[role=button]{min-height:44px;}
               <option value="urbana">🏙️ Urbana / City</option>
               <option value="gravel">🛤️ Gravel</option>
               <option value="infantil">👶 Infantil</option>
-              <option value="elétrica">⚡ Elétrica (e-bike)</option>
+              <option value="elétrica">⚡ E-bike</option>
             </select>
           </div>
         </div>
         <button class="home-search-btn" onclick="homeBuscarBike()">🔍 Encontrar bike-shop agora</button>
-        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚲 Bike-shops e oficinas especializadas · ES</div>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚲 Bike-shops especializados · ES</div>
       </div>
 
-      <!-- BUSCA PEÇAS -->
+      <!-- BUSCA: BIKES — PEÇAS -->
+      <div class="home-search-box" id="hbox-bikes-pecas" style="display:none;">
+        <div class="home-search-title">🔩 Peças para bicicletas</div>
+        <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
+          <label for="hPecaBike">Peça ou componente</label>
+          <div style="position:relative;">
+            <input id="hPecaBike" type="text" placeholder="Ex: câmbio Shimano, freio hidráulico, pneu 29..." autocomplete="off" style="padding-right:36px;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo de bike</label>
+            <select id="hTipoPecaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todos os tipos</option>
+              <option value="speed">Speed / Road</option><option value="mountain">Mountain (MTB)</option>
+              <option value="urbana">Urbana</option><option value="elétrica">E-bike</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
+            <select id="hCidadePecaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarPecaBike()">🔍 Encontrar peça para bike</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Componentes e acessórios para bicicletas · ES</div>
+      </div>
+
+      <!-- BUSCA: BIKES — LAVA-JATO -->
+      <div class="home-search-box" id="hbox-bikes-lavajato" style="display:none;">
+        <div class="home-search-title">🚿 Limpeza de bicicletas</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServicoLavaJatoBike">Serviço</label>
+            <select id="hServicoLavaJatoBike">
+              <option value="">— Todos os serviços —</option>
+              <option value="lavagem bicicleta">🚿 Lavagem completa</option>
+              <option value="limpeza lubrificação bike">🧴 Limpeza + lubrificação</option>
+              <option value="polimento quadro bike">💎 Polimento de quadro</option>
+              <option value="higienização bicicleta">🧹 Higienização</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidadeLavaJatoBike">Cidade</label>
+            <select id="hCidadeLavaJatoBike">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hPrecoMaxLavaJatoBike">Preço máximo</label>
+            <select id="hPrecoMaxLavaJatoBike">
+              <option value="">Qualquer preço</option>
+              <option value="20">Até R$ 20</option><option value="40">Até R$ 40</option>
+              <option value="70">Até R$ 70</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarLavaJato('bike')">🔍 Encontrar lavagem agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚲 Limpeza especializada em bikes · ES</div>
+      </div>
+
+      <!-- BUSCA PEÇAS (legado — mantido para compatibilidade com homeSetTab('pecas')) -->
       <div class="home-search-box" id="hbox-pecas" style="display:none;">
         <div class="home-search-title">🔩 Encontre a peça que você precisa</div>
 
@@ -2733,12 +2971,12 @@ button,a,[role=button]{min-height:44px;}
     </div>
     <div class="search-modes" role="tablist" aria-label="Tipo de busca">
       <button class="mode-btn active" id="mode-oficinas" onclick="setMode('oficinas')" role="tab" aria-selected="true">🔧 Oficinas</button>
-      <button class="mode-btn" id="mode-ofertas" onclick="setMode('ofertas')" role="tab" aria-selected="false">🔥 Ofertas <span id="ofertasBadge" style="display:none;background:var(--re);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 5px;margin-left:2px;animation:pulse 1.5s infinite;">●</span></button>
-      <button class="mode-btn" id="mode-tipos" onclick="setMode('tipos')" role="tab" aria-selected="false">🏪 Tipos</button>
-      <button class="mode-btn" id="mode-servicos" onclick="setMode('servicos')" role="tab" aria-selected="false">⚙️ Serviços</button>
+      <button class="mode-btn" id="mode-lavajato" onclick="setMode('lavajato')" role="tab" aria-selected="false">🚿 Lava-Jato</button>
       <button class="mode-btn" id="mode-pecas" onclick="setMode('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
       <button class="mode-btn" id="mode-motos" onclick="setMode('motos')" role="tab" aria-selected="false">🏍️ Motos</button>
       <button class="mode-btn" id="mode-bikes" onclick="setMode('bikes')" role="tab" aria-selected="false">🚲 Bikes</button>
+      <button class="mode-btn" id="mode-ofertas" onclick="setMode('ofertas')" role="tab" aria-selected="false">🔥 Ofertas <span id="ofertasBadge" style="display:none;background:var(--re);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 5px;margin-left:2px;animation:pulse 1.5s infinite;">●</span></button>
+      <button class="mode-btn" id="mode-servicos" onclick="setMode('servicos')" role="tab" aria-selected="false">⚙️ Serviços</button>
       <button class="mode-btn" id="mode-mapa" onclick="setMode('mapa')" role="tab" aria-selected="false">🗺️ Mapa</button>
     </div>
   </header>
@@ -4935,16 +5173,91 @@ function initTema() {
 }
 
 // ── HOME TABS ─────────────────────────────────────────────────────
+// ── Navegação categoria + sub-abas (home) ───────────────────────
+let _homeCategoria = 'carros';
+let _homeSubtab    = 'oficinas';
+
+function homeSetCategoria(cat) {
+  _homeCategoria = cat;
+  _homeSubtab    = 'oficinas';
+  ['carros','motos','bikes'].forEach(c => {
+    const btn = document.getElementById('htab-' + c);
+    if (btn) { btn.classList.toggle('active', c === cat); btn.setAttribute('aria-selected', c === cat); }
+  });
+  _applyHomeBoxes();
+  // Resetar sub-tab UI
+  ['oficinas','pecas','lavajato'].forEach(s => {
+    const b = document.getElementById('hstab-' + s);
+    if (b) { b.classList.toggle('active', s === 'oficinas'); b.setAttribute('aria-selected', s === 'oficinas'); }
+  });
+}
+
+function homeSetSubtab(sub) {
+  _homeSubtab = sub;
+  ['oficinas','pecas','lavajato'].forEach(s => {
+    const btn = document.getElementById('hstab-' + s);
+    if (btn) { btn.classList.toggle('active', s === sub); btn.setAttribute('aria-selected', s === sub); }
+  });
+  _applyHomeBoxes();
+  if (sub === 'pecas') pecaInitSelects?.();
+}
+
+function _applyHomeBoxes() {
+  document.querySelectorAll('.home-search-box').forEach(b => b.style.display = 'none');
+  const boxId = 'hbox-' + _homeCategoria + '-' + _homeSubtab;
+  const box   = document.getElementById(boxId);
+  if (box) box.style.display = '';
+}
+
+// Compatibilidade legada
 function homeSetTab(tab) {
-  document.querySelectorAll('.home-tab').forEach(t => {
-    t.classList.toggle('active', t.id === 'htab-' + tab);
-    t.setAttribute('aria-selected', t.id === 'htab-' + tab);
-  });
-  ['oficinas','pecas','motos','bikes'].forEach(id => {
-    const el = document.getElementById('hbox-' + id);
-    if (el) el.style.display = (id === tab) ? '' : 'none';
-  });
-  if (tab === 'pecas') pecaInitSelects();
+  if (tab === 'oficinas' || tab === 'carros') homeSetCategoria('carros');
+  else if (tab === 'motos')  homeSetCategoria('motos');
+  else if (tab === 'bikes')  homeSetCategoria('bikes');
+  else if (tab === 'pecas')  { homeSetCategoria('carros'); homeSetSubtab('pecas'); }
+}
+
+// ── Lava-Jato search handler ─────────────────────────────────────
+function homeBuscarLavaJato(tipo) {
+  const servicoEl  = document.getElementById({ carro:'hServicoLavaJatoCarro', moto:'hServicoLavaJatoMoto', bike:'hServicoLavaJatoBike' }[tipo]);
+  const cidadeEl   = document.getElementById({ carro:'hCidadeLavaJatoCarro',  moto:'hCidadeLavaJatoMoto',  bike:'hCidadeLavaJatoBike'  }[tipo]);
+  const precoEl    = document.getElementById({ carro:'hPrecoMaxLavaJatoCarro',moto:'hPrecoMaxLavaJatoMoto',bike:'hPrecoMaxLavaJatoBike' }[tipo]);
+  const servico    = servicoEl?.value || 'lava-jato';
+  const cidade     = cidadeEl?.value  || '';
+  const precoMax   = precoEl?.value   || '';
+
+  if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = servico;
+  if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
+  STATE._buscarLavaJato        = true;
+  STATE._buscarLavaJatoPrecoMax = precoMax ? Number(precoMax) : null;
+  STATE._buscarVeiculo          = tipo;
+
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'lavajato', veiculo:tipo, servico, cidade });
+  goTo('scCliente');
+  pedirGeolocalizacao(() => { runSearch(); applyAdvFilters(); });
+}
+
+// ── Peças moto / bike handlers ───────────────────────────────────
+function homeBuscarPecaMoto() {
+  const peca  = document.getElementById('hPecaMoto')?.value  || '';
+  const marca = document.getElementById('hMarcaPecaMoto')?.value || '';
+  const cidade= document.getElementById('hCidadePecaMoto')?.value|| '';
+  if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = [peca, marca].filter(Boolean).join(' ') || 'peças moto';
+  if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'pecas', veiculo:'moto', peca, marca });
+  goTo('scCliente'); setMode('pecas');
+  pedirGeolocalizacao(() => runSearch());
+}
+
+function homeBuscarPecaBike() {
+  const peca  = document.getElementById('hPecaBike')?.value  || '';
+  const tipo  = document.getElementById('hTipoPecaBike')?.value || '';
+  const cidade= document.getElementById('hCidadePecaBike')?.value|| '';
+  if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = [peca, tipo].filter(Boolean).join(' ') || 'peças bicicleta';
+  if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'pecas', veiculo:'bike', peca });
+  goTo('scCliente'); setMode('pecas');
+  pedirGeolocalizacao(() => runSearch());
 }
 
 function homeBuscarMoto() {
@@ -5705,6 +6018,9 @@ function homeBuscar() {
     document.getElementById('filterToggleBtn').setAttribute('aria-expanded','true');
   }
 
+  // Analytics: rastreia intenção de busca
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { servico, cidade, bairro });
+
   goTo('scCliente');
   pedirGeolocalizacao(() => { runSearch(); applyAdvFilters(); });
 }
@@ -5793,8 +6109,17 @@ function goTo(id) {
     buildServicoSelect();
     buildOficinaSelect();
     initTema();
+    if (typeof _applyHomeBoxes === 'function') _applyHomeBoxes();
   }
   document.getElementById('painelSidebar')?.classList.remove('open');
+
+  // Analytics: rastreia navegação entre telas
+  const screenNames = {
+    scHome:    'Home',
+    scCliente: 'Busca',
+    scPainel:  'Painel da Oficina',
+  };
+  if (window.MbAnalytics) window.MbAnalytics.pageView(screenNames[id] || id);
 }
 
 // ── TOAST ────────────────────────────────────────────────────────
@@ -6063,6 +6388,9 @@ async function doLogin() {
       'auth/user-disabled': 'Esta conta foi desativada.',
     };
     const msg = erros[e.code] || 'Erro ao entrar. Tente novamente.';
+    // Analytics: login falhou
+    if (window.MbAnalytics) window.MbAnalytics.track('login_erro', { erro_code: e.code || 'unknown' });
+    if (window._captureError && !erros[e.code]) window._captureError(e, { acao: 'doLogin' });
     showFieldError('authPass', 'authPassErr');
     document.getElementById('authPassErr').textContent = msg;
     // FIX UX: limpar senha ao errar — evita que o usuário edite a senha errada
@@ -7245,6 +7573,11 @@ const FILTERS = {
     {label:'Todas',val:''},{label:'Filtros',val:'filtro'},{label:'Freios',val:'freio'},
     {label:'Motor',val:'motor'},{label:'Suspensão',val:'amortecedor'},{label:'Elétrica',val:'bateria'},{label:'Óleo',val:'óleo'},
   ],
+  lavajato:[
+    {label:'🚿 Todos',val:''},{label:'Lavagem Simples',val:'lavagem simples'},{label:'Lavagem Completa',val:'lavagem completa'},
+    {label:'Polimento',val:'polimento'},{label:'Higienização',val:'higienização'},{label:'Vitrificação',val:'vitrificação'},
+    {label:'Motor',val:'lavagem motor'},{label:'Couro',val:'couro'},
+  ],
 };
 
 // ── ADVANCED FILTERS ────────────────────────────────────────────
@@ -7383,6 +7716,15 @@ function setMode(modo) {
     if (mapaCont) mapaCont.style.display = 'none';
     if (cliBody)  cliBody.style.display  = '';
     renderBikeShops();
+  } else if (modo === 'lavajato') {
+    const mapaCont = document.getElementById('mapaContainer');
+    const cliBody  = document.querySelector('.cli-body');
+    if (mapaCont) mapaCont.style.display = 'none';
+    if (cliBody)  cliBody.style.display  = '';
+    // Filtra por lava-jato: busca usando tipoEstabelecimento ou keyword
+    STATE.filtroChip = 'lava-jato';
+    document.getElementById('cliSearch').value = 'lava-jato';
+    renderLavaJatos();
   } else {
     const mapaCont = document.getElementById('mapaContainer');
     const cliBody  = document.querySelector('.cli-body');
@@ -7390,6 +7732,70 @@ function setMode(modo) {
     if (cliBody)  cliBody.style.display  = '';
     runSearch();
   }
+}
+
+// ── renderLavaJatos ──────────────────────────────────────────────
+function renderLavaJatos() {
+  const list = document.getElementById('resultsList');
+  if (!list) return;
+
+  // Filtros da home
+  const cidade   = document.getElementById('fCidade')?.value   || '';
+  const precoMax = STATE._buscarLavaJatoPrecoMax                || null;
+  const veiculo  = STATE._buscarVeiculo                         || '';
+
+  list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--t3);"><div style="font-size:32px;margin-bottom:10px;">🚿</div>Buscando lava-jatos...</div>';
+
+  window.FB?.listarOficinas({ cidade }).then(ofs => {
+    // Filtra por tipo lava-jato (tipoEstabelecimento ou servico com keyword)
+    let ljs = ofs.filter(o =>
+      o.tipoEstabelecimento === 'lavajato' ||
+      (o.servicos||[]).some(s => s.nome.toLowerCase().includes('lava') || s.nome.toLowerCase().includes('lavagem') || s.nome.toLowerCase().includes('polimento') || s.nome.toLowerCase().includes('higieniza'))
+    );
+    if (veiculo && veiculo !== 'carro') {
+      ljs = ljs.filter(o => (o.tipoVeiculo||[]).includes(veiculo) || (o.servicos||[]).some(s => s.nome.toLowerCase().includes(veiculo)));
+    }
+    if (precoMax) {
+      ljs = ljs.filter(o => (o.servicos||[]).some(s => (s.min||999) <= precoMax));
+    }
+
+    if (!ljs.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🚿</div><div class="empty-title">Nenhum lava-jato encontrado</div><div class="empty-sub">Tente outra cidade ou remova o filtro de preço.</div><div style="margin-top:14px;"><button class="chip active" onclick="setMode(&apos;oficinas&apos;)">Ver todas as oficinas</button></div></div>';
+      return;
+    }
+
+    document.getElementById('resultsCount').innerHTML = '<strong>' + ljs.length + '</strong> lava-jato' + (ljs.length !== 1 ? 's' : '') + ' encontrado' + (ljs.length !== 1 ? 's' : '');
+
+    list.innerHTML = ljs.map((lj, i) => {
+      const ini = esc((lj.nome||'LJ').slice(0,2).toUpperCase());
+      const svcs = (lj.servicos||[]).filter(s => s.ativo).slice(0, 4);
+      const precos = svcs.map(s => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--b);font-size:12px;"><span style="color:var(--t2);">${esc(s.nome)}</span><span style="color:var(--g);font-weight:700;">R$ ${s.min}${s.max && s.max !== s.min ? '–'+s.max : ''}</span></div>`).join('');
+      return `<article class="of-card" data-id="${esc(lj.id)}" style="animation-delay:${i*40}ms" onclick="openBudget('${esc(lj.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(lj.id)}')" aria-label="${esc(lj.nome)}">
+        <div class="of-top">
+          <div class="of-avatar" aria-hidden="true">${ini}</div>
+          <div class="of-info">
+            <div class="of-name">🚿 ${esc(lj.nome)}</div>
+            <div class="of-loc">📍 ${esc(lj.bairro||'')}${lj.bairro&&lj.cidade?', ':''}${esc(lj.cidade||'')}</div>
+            <div style="font-size:11px;color:${lj.aberto?'var(--g)':'var(--t3)'};">${lj.aberto?'● Aberto':'● Fechado'}${lj.horario?' · '+esc(lj.horario):''}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
+            ${lj.avaliacao ? `<div style="font-size:13px;font-weight:700;color:var(--t);">★ ${lj.avaliacao.toFixed(1)}</div>` : ''}
+          </div>
+        </div>
+        ${svcs.length ? `<div style="margin:10px 0 4px;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--b);"><div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">💰 Tabela de preços</div>${precos}</div>` : ''}
+        <div style="margin-top:10px;display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" style="flex:1;" onclick="event.stopPropagation();openBudget('${esc(lj.id)}')">📋 Pedir orçamento</button>
+          ${lj.wpp ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();window.open('https://wa.me/55${String(lj.wpp).replace(/\D/g,'')}','_blank','noopener,noreferrer')" style="padding:0 14px;">💬 WhatsApp</button>` : ''}
+        </div>
+      </article>`;
+    }).join('');
+
+    // Reset flags
+    STATE._buscarLavaJato         = false;
+    STATE._buscarLavaJatoPrecoMax = null;
+  }).catch(() => {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro ao buscar lava-jatos</div><div class="empty-sub">Verifique sua conexão e tente novamente.</div></div>';
+  });
 }
 
 function renderFilters() {
@@ -7520,8 +7926,11 @@ function renderOficinas() {
     +'</div></div>';
     return;
   }
-  // Analytics: track impressions
-  ofs.forEach(of => window.FB?.trackEvent(of.id, 'impressao'));
+  // Analytics: rastreia impressões + busca_realizada com MbAnalytics
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_realizada', { servico: q, resultados: ofs.length });
+  if (window.ConversionTracker) {
+    ofs.slice(0, 5).forEach((of, i) => window.ConversionTracker.impression(of.id, i + 1, { servico: q }));
+  }
   // Dev: log ranking table (ativo com ?debug=1)
   if (_DEV && ofs.length) {
     log('[Ranking]', ofs.map(o => ({ nome:o.nome, score:o._score, dist:(o._dist?.toFixed?.(1)||'?')+'km' })));
@@ -8009,8 +8418,13 @@ document.addEventListener('click', function(e) {
 function getOficina(id) { return STATE.oficinas.find(o => o.id === id); }
 
 async function openBudget(id) {
+  // Analytics: clique em oficina — sinal forte de intenção
   window.FB?.trackEvent(id, 'clique');
-  Analytics.budgetOpen(id);
+  if (window.ConversionTracker) {
+    const rank = STATE.oficinas ? STATE.oficinas.findIndex(o => o.id === id) + 1 : 0;
+    window.ConversionTracker.click(id, rank);
+  }
+  if (window.MbAnalytics) window.MbAnalytics.track('perfil_aberto', { oficina_id: id });
   let of = getOficina(id);
   if (!of && window.FB?.ready()) {
     try { of = await window.FB.getOficinaById(id); if (of) STATE.oficinas.push(of); } catch(_) {}
@@ -8950,6 +9364,10 @@ async function _renderRankingReal(oficina) {
 
 // FIX B3: showUpgradeCTA — redireciona para WhatsApp com contexto real
 function showUpgradeCTA() {
+  if (window.MbAnalytics) window.MbAnalytics.track('upgrade_cta_clicado', {
+    plano_atual: STATE.oficinaAtual?.plano || 'basico',
+    plano_destino: 'pro',
+  });
   const of = STATE.oficinaAtual;
   const nome = of ? of.nome : 'minha oficina';
   const id   = of ? of.id   : '';
@@ -12356,8 +12774,17 @@ document.addEventListener('DOMContentLoaded', () => {
 ══════════════════════════════════════════════════════ -->
 <style>
 #ana-widget{
-  display:none !important;
+  position:fixed;
+  right:18px;
+  bottom:82px; /* acima do rodapé da home / acima da barra de navegação */
+  z-index:9000;
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:10px;
+  pointer-events:none;
 }
+#ana-widget > * { pointer-events:all; }
 
 /* Balão de dúvidas */
 #ana-bubble{

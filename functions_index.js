@@ -21,6 +21,28 @@ initializeApp();
 const db = getFirestore();
 
 // ── Helpers ──────────────────────────────────────────────────────
+
+// ── App Check enforcement ─────────────────────────────────────────
+// Rejeita chamadas sem token válido do App Check.
+// Para ativar:
+//   1. Firebase Console → App Check → Apps → Registrar app web
+//   2. Ativar enforcement: Functions → Enforce
+//   3. firebase.json: adicionar "appCheck": { "isTokenAutoRefreshEnabled": true }
+//
+// Em dev/emulador, App Check é bypass automático (FIREBASE_EMULATOR_HUB setado).
+//
+function requireAppCheck(req, functionName) {
+  // Em emulador, sempre permitir
+  if (process.env.FUNCTIONS_EMULATOR === 'true') return;
+
+  // App Check token ausente = chamada não-autorizada (não veio do app)
+  if (!req.app) {
+    console.warn(`[${functionName}] App Check ausente — rejeitado. IP: ${req.rawRequest?.ip}`);
+    throw new HttpsError('unauthenticated', 'Chamada não autorizada. Use o app oficial.');
+  }
+  // App Check token presente e verificado pelo SDK automaticamente
+}
+
 function sanitize(str, max = 200) {
   if (typeof str !== 'string') return '';
   return str.trim().slice(0, max).replace(/<[^>]*>/g, '');
@@ -67,7 +89,8 @@ async function checkRateLimit(key, maxCalls, windowMs) {
  *   const { data } = await fn({ admin: true });
  *   // Requer usuário autenticado — verificado via req.auth.
  */
-exports.buscarOficinas = onCall({ region: 'southamerica-east1' }, async (req) => {
+exports.buscarOficinas = onCall({ region: 'southamerica-east1', enforceAppCheck: true }, async (req) => {
+  requireAppCheck(req, 'buscarOficinas');
   const { servico = '', lat, lng, cidade, bairro, avaliacaoMin, apenasAberta, tipoVeiculo, admin = false } = req.data;
 
   // Rate limit: 60 buscas por minuto por usuário/IP
@@ -171,7 +194,8 @@ exports.buscarOficinas = onCall({ region: 'southamerica-east1' }, async (req) =>
  * enviarLead — substitui window.FB.enviarLead() no client.
  * Rate limit real por IP: 3 leads por 5 minutos.
  */
-exports.enviarLead = onCall({ region: 'southamerica-east1' }, async (req) => {
+exports.enviarLead = onCall({ region: 'southamerica-east1', enforceAppCheck: true }, async (req) => {
+  requireAppCheck(req, 'enviarLead');
   const ip = req.rawRequest?.ip || 'anon';
   const allowed = await checkRateLimit(`lead_${ip}`, 3, 300_000);
   if (!allowed) throw new HttpsError('resource-exhausted', 'Muitas solicitações. Aguarde alguns minutos.');
@@ -239,7 +263,8 @@ Responda rápido — leads respondidos em menos de 5 min convertem 3x mais!`;
  * Em produção: configure o webhook do gateway para chamar esta função.
  * Exemplo Stripe: stripe listen --forward-to <url>/confirmarPlano
  */
-exports.confirmarPlano = onCall({ region: 'southamerica-east1' }, async (req) => {
+exports.confirmarPlano = onCall({ region: 'southamerica-east1', enforceAppCheck: true }, async (req) => {
+  requireAppCheck(req, 'confirmarPlano');
   // INFO-F5 FIX: dupla verificação — Custom Claim OU documento na coleção 'admins'.
   // Custom Claim: setar via Admin SDK: admin.auth().setCustomUserClaims(uid, {admin:true})
   // Fallback: documento admins/{uid} com campo active:true (mais fácil de gerenciar)
@@ -324,7 +349,7 @@ const { defineSecret } = require('firebase-functions/params');
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
 exports.anaChatProxy = onCall(
-  { region: 'southamerica-east1', secrets: [ANTHROPIC_API_KEY] },
+  { region: 'southamerica-east1', secrets: [ANTHROPIC_API_KEY], enforceAppCheck: true },
   async (req) => {
     // Rate limit: 10 msgs/min por IP
     const ip = req.rawRequest?.ip || 'anon';

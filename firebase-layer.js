@@ -84,6 +84,9 @@ import {
 import {
   getFunctions, httpsCallable
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js';
+import {
+  initializeAppCheck, ReCaptchaV3Provider
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-check.js';
 
 // ── 4. INICIALIZAÇÃO ─────────────────────────────────────────────
 const FB_STATUS = { connected: false, mode: APP_MODE, error: null };
@@ -100,10 +103,34 @@ if (IS_PROD) {
     isFirebaseReady = true;
     FB_STATUS.connected = true;
     console.info('✅ Firebase (PROD) conectado');
-    // Cloud Functions — região southamerica-east1
+
+    // ── App Check (reCAPTCHA v3) ───────────────────────────────────
+    // Bloqueia chamadas não-autorizadas às Cloud Functions e ao Firestore.
+    // Chave pública do reCAPTCHA v3 — safe para expor no client.
+    // Configure no Firebase Console → App Check → reCAPTCHA v3 → seu site key.
+    try {
+      const RECAPTCHA_KEY = window.__RECAPTCHA_KEY__ || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI'; // substituir pela chave real
+      initializeAppCheck(app, {
+        provider: new ReCaptchaV3Provider(RECAPTCHA_KEY),
+        isTokenAutoRefreshEnabled: true,
+      });
+      window._appCheckReady = true;
+      console.info('🛡️ App Check ativado');
+    } catch(e) {
+      console.warn('[AppCheck] Falha ao inicializar (ok em localhost):', e.message);
+      window._appCheckReady = false;
+    }
+
+    // ── Cloud Functions — região southamerica-east1 ───────────────
     try {
       window._fbFunctions = getFunctions(app, 'southamerica-east1');
     } catch(e) { console.warn('Functions não disponível:', e.message); }
+
+    // ── Sentry (monitoramento de erros em produção) ───────────────
+    // DSN configurado via window.__SENTRY_DSN__ (definido no index.html).
+    // Em dev/localhost, Sentry é silenciado automaticamente.
+    _initSentry();
+
   } catch (e) {
     FB_STATUS.error = e.message;
     console.warn('Firebase não inicializado — operando em modo DEMO', e);
@@ -216,7 +243,215 @@ function validarNome(nome) {
 //    engajamento→ 0-5  pts  (cliques/impressoes * 50, se imp>10)
 //
 
-// ── 9. API PÚBLICA (window.FB) ───────────────────────────────────
+// ── SENTRY — monitoramento de erros em produção ─────────────────
+// Sentry captura: JS exceptions, promise rejections, fetch errors,
+// e eventos customizados (lead enviado, erro de login, etc.)
+//
+// Setup:
+//   1. Criar conta em sentry.io (free até 5k erros/mês)
+//   2. window.__SENTRY_DSN__ = "https://...@...sentry.io/..." no index.html
+//   3. window.__APP_VERSION__ = "1.0.0" para rastrear versão nos eventos
+//
+function _initSentry() {
+  const dsn = window.__SENTRY_DSN__;
+  if (!dsn) return; // sem DSN = silêncio total (dev/localhost)
+  if (window.__sentryReady) return;
+
+  const script = document.createElement('script');
+  script.src = 'https://browser.sentry-cdn.com/7.114.0/bundle.tracing.min.js';
+  script.crossOrigin = 'anonymous';
+  script.onload = () => {
+    if (!window.Sentry) return;
+    window.Sentry.init({
+      dsn,
+      release:     window.__APP_VERSION__ || '0.0.1',
+      environment: IS_PROD ? 'production' : 'development',
+      tracesSampleRate: 0.1,            // 10% das transações para performance
+      ignoreErrors: [
+        'ResizeObserver loop',          // noise de terceiros
+        'Non-Error exception captured', // noise de extensões
+        'Loading chunk',                // falha de rede momentânea
+      ],
+      beforeSend(event) {
+        // Não enviar PII — remover dados sensíveis
+        if (event.request?.headers) delete event.request.headers['Cookie'];
+        return event;
+      },
+    });
+    window.__sentryReady = true;
+    // Captura erros de Promise não tratados
+    window.addEventListener('unhandledrejection', e => {
+      window.Sentry?.captureException(e.reason, { tags: { type: 'unhandledRejection' } });
+    });
+    console.info('🐛 Sentry ativo (env:', IS_PROD ? 'production' : 'development', ')');
+  };
+  script.onerror = () => console.warn('[Sentry] Falha ao carregar script');
+  document.head.appendChild(script);
+}
+
+// Captura evento de erro amigável (chame em catch blocks críticos)
+function _captureError(err, context = {}) {
+  if (window.__sentryReady && window.Sentry) {
+    window.Sentry.withScope(scope => {
+      Object.entries(context).forEach(([k, v]) => scope.setTag(k, String(v)));
+      window.Sentry.captureException(err);
+    });
+  }
+}
+window._captureError = _captureError;
+
+// ── ANALYTICS UNIFICADO ──────────────────────────────────────────
+// Camada única que envia para GA4 + Firebase Analytics + Sentry.
+// Evita eventos duplicados e centraliza toda a telemetria do app.
+//
+// Eventos-chave:
+//   busca_realizada       → { servico, cidade, resultados }
+//   lead_enviado          → { oficinaId, servico, valor }
+//   perfil_aberto         → { oficinaId, plano }
+//   upgrade_cta_clicado   → { plano_atual, plano_destino }
+//   cadastro_concluido    → { etapa }
+//   chatbot_mensagem      → { tipo: 'user'|'bot' }
+//   erro_usuario          → { acao, erro_code }
+//
+const MbAnalytics = {
+  // GA4 Measurement ID — configure em window.__GA4_ID__ no index.html
+  // Exemplo: window.__GA4_ID__ = "G-XXXXXXXXXX"
+  _ga4Id: null,
+  _loaded: false,
+
+  _loadGA4() {
+    if (this._loaded || !window.__GA4_ID__) return;
+    this._ga4Id = window.__GA4_ID__;
+    this._loaded = true;
+    const s = document.createElement('script');
+    s.async = true;
+    s.src = 'https://www.googletagmanager.com/gtag/js?id=' + this._ga4Id;
+    document.head.appendChild(s);
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function(){ window.dataLayer.push(arguments); };
+    window.gtag('js', new Date());
+    window.gtag('config', this._ga4Id, {
+      send_page_view: false,        // controlamos manualmente
+      anonymize_ip: true,           // LGPD compliance
+      cookie_flags: 'SameSite=None;Secure',
+    });
+    console.info('📊 GA4 ativo:', this._ga4Id);
+  },
+
+  // Rastreia evento em todas as plataformas configuradas
+  track(eventName, params = {}) {
+    // ── GA4 ──────────────────────────────────────────────────────
+    if (window.gtag && this._ga4Id) {
+      window.gtag('event', eventName, {
+        ...params,
+        app_version: window.__APP_VERSION__ || '0.0.1',
+        app_mode:    IS_PROD ? 'prod' : 'demo',
+      });
+    }
+
+    // ── Sentry breadcrumb (trilha de ações antes de um erro) ─────
+    if (window.__sentryReady && window.Sentry) {
+      window.Sentry.addBreadcrumb({
+        category: 'ui',
+        message:  eventName,
+        data:     params,
+        level:    'info',
+      });
+    }
+
+    // ── Firebase Firestore analytics (eventos críticos de negócio) ─
+    // Somente em PROD e para eventos de alto valor
+    const highValue = ['lead_enviado','cadastro_concluido','upgrade_cta_clicado','pagamento_confirmado'];
+    if (IS_PROD && highValue.includes(eventName) && db) {
+      try {
+        addDoc(collection(db, 'analytics'), {
+          evento:    eventName,
+          params,
+          criadoEm:  serverTimestamp(),
+          url:       location.pathname + location.hash,
+          ua:        navigator.userAgent.slice(0, 200),
+        }).catch(() => {}); // fire-and-forget
+      } catch(e) {}
+    }
+  },
+
+  // Rastreia page view (chame ao mudar de tela)
+  pageView(screenName) {
+    if (window.gtag && this._ga4Id) {
+      window.gtag('event', 'page_view', {
+        page_title:    screenName,
+        page_location: location.href,
+      });
+    }
+    if (window.__sentryReady && window.Sentry) {
+      window.Sentry.addBreadcrumb({ category: 'navigation', message: screenName });
+    }
+  },
+
+  // Init: carrega GA4 e retorna a instância
+  init() {
+    this._loadGA4();
+    return this;
+  }
+};
+window.MbAnalytics = MbAnalytics.init();
+
+// ── RANKING POR CONVERSÃO (busca inteligente) ─────────────────────
+// Rastreia:
+//   1. Quais oficinas geraram leads após serem vistas
+//   2. Quais serviços têm maior intenção de compra por região
+//   3. Personalização por histórico do usuário (sessionStorage)
+//
+// Isso alimenta a Cloud Function buscarOficinas com sinais
+// de conversão reais, não só avaliações e distância.
+//
+const ConversionTracker = {
+  // Registra que o usuário viu uma oficina
+  impression(oficinaId, rank, params = {}) {
+    const key = 'mb_impressions';
+    try {
+      const data = JSON.parse(sessionStorage.getItem(key) || '[]');
+      data.push({ id: oficinaId, rank, t: Date.now(), ...params });
+      sessionStorage.setItem(key, JSON.stringify(data.slice(-50)));
+    } catch(e) {}
+    MbAnalytics.track('oficina_impressao', { oficina_id: oficinaId, posicao: rank, ...params });
+  },
+
+  // Registra clique em oficina (intenção forte)
+  click(oficinaId, rank, params = {}) {
+    MbAnalytics.track('oficina_clique', { oficina_id: oficinaId, posicao: rank, ...params });
+    if (IS_PROD && db && oficinaId) {
+      updateDoc(doc(db, 'oficinas', oficinaId), {
+        'stats.cliques': increment(1),
+        'stats.ultimoEvento': serverTimestamp(),
+      }).catch(() => {});
+    }
+  },
+
+  // Registra conversão (lead enviado) — evento de maior peso no ranking
+  convert(oficinaId, servico, valor = 0) {
+    MbAnalytics.track('lead_enviado', { oficina_id: oficinaId, servico, valor });
+    // Persiste no histórico pessoal para personalização futura
+    try {
+      const hist = JSON.parse(localStorage.getItem('mb_hist_conv') || '[]');
+      hist.unshift({ id: oficinaId, servico, t: Date.now() });
+      localStorage.setItem('mb_hist_conv', JSON.stringify(hist.slice(0, 20)));
+    } catch(e) {}
+  },
+
+  // Retorna serviços que o usuário buscou/converteu no passado (para pré-preencher)
+  getHistoricoServicos() {
+    try {
+      const hist = JSON.parse(localStorage.getItem('mb_hist_conv') || '[]');
+      const count = {};
+      hist.forEach(h => { if (h.servico) count[h.servico] = (count[h.servico] || 0) + 1; });
+      return Object.entries(count).sort((a,b) => b[1]-a[1]).map(([s]) => s);
+    } catch(e) { return []; }
+  },
+};
+window.ConversionTracker = ConversionTracker;
+
+// ── 9. API PÚBLICA (window.FB) ───────────────────────────────────────
 window.FB = {
   ready:   () => isFirebaseReady || IS_DEMO,
   isProd:  () => IS_PROD,
@@ -224,6 +459,7 @@ window.FB = {
 
   async login(email, password) {
     if (IS_DEMO) throw new Error('Login indisponível em modo DEMO.');
+    MbAnalytics.track('login_tentativa');
     if (!rateLimitUX('login:' + email, 5, 60_000))
       throw new Error('Muitas tentativas. Aguarde 1 minuto.');
     const cred = await signInWithEmailAndPassword(auth, email, password);
@@ -337,7 +573,10 @@ window.FB = {
       try {
         const fn = httpsCallable(window._fbFunctions, 'buscarOficinas');
         const res = await fn(filtros);
-        return res.data.oficinas || [];
+        const ofs = res.data.oficinas || [];
+        // Analytics: registra impressões para ranking por conversão
+        ofs.slice(0, 5).forEach((o, i) => ConversionTracker.impression(o.id, i + 1, { servico: filtros.servico || '', cidade: filtros.cidade || '' }));
+        return ofs;
       } catch(e) {
         console.warn('[listarOficinas] Cloud Function falhou, usando fallback local:', e.code);
         // Fallback para query direta se a CF não estiver deployada ainda
@@ -470,6 +709,7 @@ window.FB = {
       try {
         const fn = httpsCallable(window._fbFunctions, 'enviarLead');
         const res = await fn(clean);
+        ConversionTracker.convert(clean.oficinaId, clean.servico || '', clean.valor || 0);
         return res.data.id;
       } catch(e) {
         if (e.code === 'resource-exhausted') throw new Error('Muitas solicitações. Aguarde alguns minutos.');
@@ -479,6 +719,8 @@ window.FB = {
     const ref = await addDoc(collection(db, 'leads'), {
       ...clean, status: 'novo', criadoEm: serverTimestamp()
     });
+    // Analytics: conversão — sinal de maior peso para ranking inteligente
+    ConversionTracker.convert(clean.oficinaId, clean.servico || '', clean.valor || 0);
     return ref.id;
   },
 
