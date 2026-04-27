@@ -13,7 +13,7 @@
  */
 
 const { onCall, HttpsError }    = require('firebase-functions/v2/https');
-const { onDocumentCreated }     = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentWritten } = require('firebase-functions/v2/firestore');
 const { initializeApp }         = require('firebase-admin/app');
 const { getFirestore, FieldValue } = require('firebase-admin/firestore');
 
@@ -203,6 +203,30 @@ exports.enviarLead = onCall({ region: 'southamerica-east1' }, async (req) => {
     criadoEm:    FieldValue.serverTimestamp(),
   });
 
+  // FIX ESTRATÉGIA: notificar a oficina via WhatsApp quando novo lead chega
+  // Usa fetch para Evolution API (auto-hospedada) ou qualquer gateway HTTP
+  // Configure a URL via Secret: firebase functions:secrets:set WPP_API_URL
+  const wppUrl = process.env.WPP_API_URL;
+  if (wppUrl) {
+    const ofData = ofSnap.data();
+    const wppOficina = ofData.wpp || ofData.whatsapp;
+    if (wppOficina) {
+      const msg = `🔔 *Novo lead no MecBusca!*
+
+👤 Cliente: ${sanitize(nomeCliente)}
+🔧 Serviço: ${sanitize(servico||'não informado')}
+🚗 Carro: ${sanitize(carro||'não informado')}
+📱 WhatsApp: ${String(whatsapp).replace(/\D/g,'')}
+
+Responda rápido — leads respondidos em menos de 5 min convertem 3x mais!`;
+      fetch(wppUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ number: '55' + String(wppOficina).replace(/\D/g,''), text: msg }),
+      }).catch(e => console.warn('[enviarLead] WPP notify failed:', e.message));
+    }
+  }
+
   return { id: ref.id };
 });
 
@@ -250,20 +274,28 @@ exports.confirmarPlano = onCall({ region: 'southamerica-east1' }, async (req) =>
  * avaliação, totalAvaliacoes ou plano mudam.
  * Evita recalcular em toda busca.
  */
-exports.onOficinaUpdated = onDocumentCreated(
+// FIX B4: usar onDocumentWritten para cobrir edições de avaliação, não só criação
+exports.onOficinaUpdated = onDocumentWritten(
   'oficinas/{id}/avaliacoes/{avalId}',
   async (event) => {
     const { id } = event.params;
+
+    // FIX B4: onDocumentWritten — verificar se doc foi deletado
+    const afterSnap = event.data?.after;
+    if (!afterSnap?.exists) return; // deleção — não recalcular
+
     const ofRef  = db.doc(`oficinas/${id}`);
     const ofSnap = await ofRef.get();
     if (!ofSnap.exists) return;
 
-    const o = ofSnap.data();
     const avaliacoes = await ofRef.collection('avaliacoes').get();
-
     if (avaliacoes.empty) return;
 
-    const notas = avaliacoes.docs.map(d => d.data().nota);
+    const notas = avaliacoes.docs
+      .map(d => d.data().nota)
+      .filter(n => typeof n === 'number' && n >= 1 && n <= 5);
+    if (!notas.length) return;
+
     const total = notas.length;
     const media = Math.round((notas.reduce((a, b) => a + b, 0) / total) * 10) / 10;
 

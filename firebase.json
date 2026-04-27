@@ -1,44 +1,18 @@
 {
   "hosting": {
-    "public": "public",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
+    "public": ".",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "functions/**"],
+    "rewrites": [
+      { "source": "/sitemap.xml", "function": "sitemapXml" },
+      { "source": "**", "destination": "/index.html" }
     ],
     "headers": [
-      {
-        "source": "/service-worker.js",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "no-cache, no-store, must-revalidate"
-          },
-          {
-            "key": "Pragma",
-            "value": "no-cache"
-          },
-          {
-            "key": "Expires",
-            "value": "0"
-          }
-        ]
-      },
-      {
-        "source": "/manifest.json",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=3600"
-          }
-        ]
-      },
       {
         "source": "**",
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' https://www.gstatic.com https://unpkg.com 'sha256-Bl0sJ36kh2UN4Q8KVmBQRRaWbAYIvlOIhlRLzmmef7o=' 'sha256-odGrcB3ZzVQtfw9qiUkNQR12llQGOX0Rhz3CehnqLgs=' 'sha256-ByjqB59mXKcDX5Gtmqga8BJ8kyE2nb7Bzxhnw4hZ6pg=' 'sha256-QUWjRTBFecRN6tPIexVrQ59j34LMIP8XUyPduixRuT4=' 'sha256-RmH25Inc5y3Y/4+fJMFtqS2RMr5CMF0jVBIVyURC49I=' 'sha256-Ur8IJtlSBWe2UNVsXYeO9EB+aU2cK/I1VJOp8KJOp7E=' 'sha256-0HQhNm8OQOm9yOLaa78Apt+wayyYLb2TUYMSQQds4HA=' 'sha256-3f3PP9uwN7r8ZCkSzW/pxkfZi2pcYV6yOP2kFt4GIJ8='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.tile.openstreetmap.org https://*.openstreetmap.org; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://firestore.googleapis.com wss://*.firebaseio.com https://nominatim.openstreetmap.org https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src 'none'; object-src 'none'; worker-src 'self'"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.anthropic.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none'; base-uri 'self';"
           },
           {
             "key": "X-Frame-Options",
@@ -54,7 +28,7 @@
           },
           {
             "key": "Permissions-Policy",
-            "value": "camera=(), microphone=(), geolocation=(self), payment=()"
+            "value": "geolocation=(self), microphone=(), camera=()"
           },
           {
             "key": "Strict-Transport-Security",
@@ -63,29 +37,42 @@
         ]
       },
       {
-        "source": "/static/**",
+        "source": "**/*.@(js|css)",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000, immutable"
-          }
+          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
         ]
       },
       {
-        "source": "**/*.@(js|css)",
+        "source": "index.html",
         "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=86400, stale-while-revalidate=604800"
-          }
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+        ]
+      },
+      {
+        "source": "service-worker.js",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Service-Worker-Allowed", "value": "/" }
         ]
       }
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log"]
+    }
+  ],
+  "emulators": {
+    "auth": { "port": 9099 },
+    "functions": { "port": 5001 },
+    "firestore": { "port": 8080 },
+    "hosting": { "port": 5000 },
+    "ui": { "enabled": true }
   }
 }

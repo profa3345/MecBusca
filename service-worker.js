@@ -6,7 +6,15 @@
 
 // FIX: incluir timestamp no nome do cache garante que novo deploy
 // invalida o cache antigo automaticamente — sem precisar mudar manualmente.
-const BUILD_TS   = '__BUILD_TS__'; // substituído no deploy (ex: via sed/CI)
+// FIX: BUILD_TS substituído pelo CI/CD: sed -i "s/__BUILD_TS__/$(date +%s)/g" service-worker.js
+// Fallback: invalida por dia se o placeholder não foi substituído
+const _RAW_TS = '__BUILD_TS__';
+const BUILD_TS = _RAW_TS.startsWith('__')
+  ? 'daily-' + Math.floor(Date.now() / 86400000)
+  : _RAW_TS;
+if (_RAW_TS.startsWith('__')) {
+  console.warn('[SW] BUILD_TS não substituído no deploy. Cache invalida por dia como fallback.');
+}
 const CACHE_NAME = 'mecbusca-v2-' + BUILD_TS;
 
 const CACHE_ASSETS = [

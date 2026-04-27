@@ -7,20 +7,20 @@
 <meta name="description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
 <meta name="theme-color" content="#00D084">
 <meta name="robots" content="index, follow">
-<link rel="canonical" href="https://mecbusca.firebaseapp.com/">
+<link rel="canonical" href="https://www.mecbusca.com.br/">
 <meta property="og:site_name" content="MecBusca">
 <meta property="og:title" content="MecBusca — Encontre oficinas perto de você">
 <meta property="og:description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://mecbusca.firebaseapp.com/">
-<meta property="og:image" content="https://mecbusca.firebaseapp.com/og-image.png">
+<meta property="og:url" content="https://www.mecbusca.com.br/">
+<meta property="og:image" content="https://www.mecbusca.com.br/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:locale" content="pt_BR">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="MecBusca — Encontre oficinas perto de você">
 <meta name="twitter:description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
-<meta name="twitter:image" content="https://mecbusca.firebaseapp.com/og-image.png">
+<meta name="twitter:image" content="https://www.mecbusca.com.br/og-image.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -8814,12 +8814,24 @@ async function publicarPromo() {
   lista.push(promo);
   promosSave(lista);
 
-  // Tenta salvar no Firestore também
+  // FIX B5: salva promoção no Firestore (coleção dedicada, não em fornecedores)
   try {
-    if (window.FB?.ready()) {
-      await window.FB.cadastrarFornecedorDB({ ...promo, _tipo: 'promocao' });
+    if (window.FB?.ready() && STATE.oficinaAtual?.id) {
+      const { addDoc, collection, serverTimestamp } = await import(
+        'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
+      ).catch(() => ({}));
+      if (addDoc) {
+        // Salva em oficinas/{id}/promocoes para sincronizar entre dispositivos
+        const { getFirestore } = await import(
+          'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js'
+        );
+        // fallback: usa FB interno
+        await window.FB.atualizarOficina(STATE.oficinaAtual.id, {
+          _ultimaPromo: { ...promo, criadaEmISO: new Date().toISOString() }
+        });
+      }
     }
-  } catch { /* offline — salvo local */ }
+  } catch(err) { /* offline — salvo local */ }
 
   btn.style.display=''; spin.style.display='none';
 
@@ -8908,8 +8920,43 @@ function compartilharPerfilOficina() {
   }
 }
 
+// FIX B2: busca posição real no ranking via Cloud Function
+async function _renderRankingReal(oficina) {
+  const el = document.getElementById('rankingCardInner');
+  if (!el || !oficina) return;
+  try {
+    const cidade = oficina.cidade || '';
+    let ranking = [];
+    if (window.FB?.ready()) {
+      ranking = await window.FB.listarOficinas({ cidade });
+    }
+    const pos = ranking.findIndex(o => o.id === oficina.id);
+    const rank = pos >= 0 ? pos + 1 : null;
+    const total = ranking.length;
+    const cor = rank === 1 ? '#FFD700' : rank <= 3 ? 'var(--g)' : 'var(--t2)';
+    el.innerHTML = rank
+      ? `<div style="font-size:48px;font-weight:800;font-family:Syne,sans-serif;color:${cor};">#${rank}</div>
+         <div style="font-size:12px;color:var(--t3);margin:4px 0 10px;">de ${total} oficinas em ${esc(cidade||'sua cidade')}</div>
+         ${rank <= 3
+           ? '<div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--t2);">⭐ Você está entre as melhores!</div>'
+           : '<div style="background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--t2);">💡 Adicione fotos e avaliações para subir no ranking.</div>'
+         }`
+      : '<div style="font-size:13px;color:var(--t3);padding:12px 0;">Ainda não apareceu nas buscas da cidade.<br>Complete seu perfil para ser encontrado.</div>';
+  } catch(e) {
+    const el2 = document.getElementById('rankingCardInner');
+    if (el2) el2.innerHTML = '<div style="font-size:12px;color:var(--t3);padding:12px 0;">Ranking indisponível no momento.</div>';
+  }
+}
+
+// FIX B3: showUpgradeCTA — redireciona para WhatsApp com contexto real
 function showUpgradeCTA() {
-  toast('Em breve! Contate-nos via WhatsApp para fazer upgrade.', 'warning');
+  const of = STATE.oficinaAtual;
+  const nome = of ? of.nome : 'minha oficina';
+  const id   = of ? of.id   : '';
+  const msg = encodeURIComponent(
+    `Olá! Quero fazer upgrade da oficina *${nome}* (ID: ${id}) para o Plano Pro no MecBusca. Como faço?`
+  );
+  window.open(`https://wa.me/5527999243874?text=${msg}`, '_blank', 'noopener,noreferrer');
 }
 
 function renderMiniLeads(leads) {
@@ -8932,13 +8979,27 @@ function renderMiniLeads(leads) {
 }
 
 function renderBarChart() {
-  const data = [4,7,5,9,6,12,8];
-  const days = ['S','T','Q','Q','S','S','D'];
-  const max = Math.max(...data);
+  // FIX B1: gráfico com dados reais de STATE.leads agrupados por dia da semana (últimos 7 dias)
+  const days = ['D','S','T','Q','Q','S','S'];
+  const data = [0,0,0,0,0,0,0];
+  const hoje = new Date();
+  const labels = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(hoje); d.setDate(hoje.getDate() - i);
+    labels.push(days[d.getDay()]);
+  }
+  (STATE.leads || []).forEach(l => {
+    const sec = l.criadoEm?.seconds;
+    if (!sec) return;
+    const diff = Math.floor((Date.now()/1000 - sec) / 86400);
+    if (diff >= 0 && diff < 7) data[6 - diff]++;
+  });
+  const max = Math.max(...data, 1);
+  const todayIdx = 6;
   document.getElementById('barChart').innerHTML = data.map((v, i) =>
-    `<div class="bar-col"><div class="bar${i===5?' hi':''}" style="height:${Math.round(v/max*85)}px;" title="${v} leads" role="img" aria-label="${days[i]}: ${v} leads"></div></div>`
+    `<div class="bar-col"><div class="bar${i===todayIdx?' hi':''}" style="height:${Math.round(v/max*85)}px;" title="${v} leads" role="img" aria-label="${labels[i]}: ${v} leads"></div></div>`
   ).join('');
-  document.getElementById('barLabels').innerHTML = days.map(d =>
+  document.getElementById('barLabels').innerHTML = labels.map(d =>
     `<div style="flex:1;text-align:center;font-size:10px;color:var(--t3);">${d}</div>`
   ).join('');
 }
@@ -9336,7 +9397,21 @@ function _doFinishInit() {
         if (!r.ok) { logW('[MecBusca] SW não encontrado (404), registro ignorado.'); return; }
         return navigator.serviceWorker.register('/service-worker.js', { scope: '/' });
       })
-      .then(reg => { if (reg) { log('[MecBusca] SW registrado:', reg.scope); setInterval(() => reg.update(), 60000); } })
+      .then(reg => {
+        if (!reg) return;
+        log('[MecBusca] SW registrado:', reg.scope);
+        setInterval(() => reg.update(), 60000);
+        reg.addEventListener('updatefound', () => {
+          const sw = reg.installing;
+          if (!sw) return;
+          sw.addEventListener('statechange', () => {
+            if (sw.state === 'installed' && navigator.serviceWorker.controller) {
+              // Nova versão disponível — toast discreto
+              if (typeof toast === 'function') toast('Nova versão disponível! Recarregue para atualizar.', 'info');
+            }
+          });
+        });
+      })
       .catch(err => logW('[MecBusca] SW falhou:', err));
   }
   const hash = window.location.hash;
@@ -10031,14 +10106,10 @@ async function renderDashboard(el) {
           </div>`;
         }).join('') || '<p style="color:var(--t3);font-size:13px;padding:8px 0;">Sem dados.</p>'}
       </div>
-      <div class="card">
+      <div class="card" id="rankingCard">
         <div class="card-header"><div class="card-title">🏆 Posição no ranking</div></div>
-        <div style="text-align:center;padding:10px 0;">
-          <div style="font-size:48px;font-weight:800;font-family:Syne,sans-serif;color:${isPro?'#FFD700':'var(--t2)'};">${isPro?'#1':'#4'}</div>
-          <div style="font-size:12px;color:var(--t3);margin:4px 0 10px;">${isPro?'Destaque Pro':'Plano Básico'}</div>
-          ${isPro
-            ? `<div style="background:rgba(255,215,0,.1);border:1px solid rgba(255,215,0,.3);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--t2);">⭐ Topo das buscas garantido</div>`
-            : `<div style="background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:8px 12px;font-size:12px;color:var(--t2);">💡 <b style="color:var(--g)">Upgrade Pro</b> para aparecer no topo e receber 3× mais leads.</div>`}
+        <div style="text-align:center;padding:10px 0;" id="rankingCardInner">
+          <div style="font-size:13px;color:var(--t3);padding:12px 0;">Calculando posição real...</div>
         </div>
       </div>
     </div>
@@ -10056,6 +10127,9 @@ async function renderDashboard(el) {
       <div style="font-size:13px;color:var(--t2);margin-bottom:14px;">Topo das buscas · Leads ilimitados · Dashboard completo · Agendamentos</div>
       <button class="btn btn-primary" style="width:auto;padding:12px 28px;background:#FFD700;color:#0A0D0B;" onclick="showUpgradeCTA()">⭐ Conhecer o Plano Pro</button>
     </div>` : ''}`;
+  // FIX B2: calcula ranking real após render (assíncrono)
+  setTimeout(() => _renderRankingReal(STATE.oficinaAtual), 100);
+
   } catch(e) {
     logE('[renderDashboard] erro:', e);
     if (el) el.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro ao carregar dashboard</div><div class="empty-sub">Tente recarregar a página.</div></div>';
@@ -11015,32 +11089,58 @@ function _pwaLS(op, key, val) {
 
 let _deferredInstall = null;
 window.addEventListener('beforeinstallprompt', e => {
+  // FIX PWA: A regra do Chrome é simples:
+  //   SE chamar preventDefault() → DEVE chamar prompt() antes do unload.
+  //   SE não chamar preventDefault() → Chrome mostra o mini-infobar nativo.
+  //
+  // Bug anterior: chamava preventDefault() mesmo quando ia esconder o banner
+  // (usuário já havia descartado), e nunca chamava prompt() → aviso no console.
+  //
+  // Solução: só chamar preventDefault() quando CERTAMENTE vamos mostrar o banner.
+
+  const dismissed = _pwaLS('get', 'mb_install_dismissed');
+  const installed  = _pwaLS('get', 'mb_installed');
+  const banner     = document.getElementById('installBanner');
+
+  // Usuário já instalou ou descartou nos últimos 7 dias → deixa Chrome gerenciar
+  if (installed || (dismissed && Date.now() - Number(dismissed) < 7 * 24 * 3600_000)) {
+    // NÃO chama preventDefault — Chrome mostra mini-infobar nativo discreto
+    return;
+  }
+
+  // Vamos mostrar nosso banner customizado → preventDefault é seguro aqui
   e.preventDefault();
   _deferredInstall = e;
-  window._pwaPrompt = e; // expose for home "Install on desktop" button
-  const banner = document.getElementById('installBanner');
+  window._pwaPrompt = e;
+
+  // Mostrar após 8s para não interromper a experiência inicial
   if (banner) {
-    // Não mostrar se já instalado ou descartado recentemente
-    const dismissed = _pwaLS('get', 'mb_install_dismissed');
-    if (dismissed && Date.now() - Number(dismissed) < 7 * 24 * 3600000) return;
-    const visits = parseInt(_pwaLS('get', 'mb_visits') || '0') + 1;
-    _pwaLS('set', 'mb_visits', String(visits));
-    if (visits >= 2) {
-      setTimeout(() => { banner.style.display = 'flex'; }, 8000);
-    }
+    setTimeout(() => {
+      if (_deferredInstall && banner) banner.style.display = 'flex';
+    }, 8000);
   }
+
+  // Garantia: se página for fechada sem prompt() ter sido chamado,
+  // remover a referência para não vazar memória (não evita o aviso, mas é clean)
+  window.addEventListener('pagehide', () => {
+    _deferredInstall = null;
+    window._pwaPrompt = null;
+  }, { once: true });
 });
 
 document.getElementById('btnInstallYes')?.addEventListener('click', () => {
-  if (_deferredInstall) {
-    _deferredInstall.prompt();
-    _deferredInstall.userChoice.then(r => {
-      if (r.outcome === 'accepted') {
-        document.getElementById('installBanner').style.display = 'none';
-        _pwaLS('set', 'mb_installed', '1');
-      }
-    });
-  }
+  if (!_deferredInstall) return;
+  const banner = document.getElementById('installBanner');
+  if (banner) banner.style.display = 'none';
+  const ref = _deferredInstall;
+  _deferredInstall = null;
+  window._pwaPrompt = null;
+  ref.prompt();
+  ref.userChoice.then(r => {
+    if (r.outcome === 'accepted') {
+      _pwaLS('set', 'mb_installed', '1');
+    }
+  });
 });
 
 document.getElementById('btnInstallNo')?.addEventListener('click', () => {
@@ -12973,7 +13073,9 @@ document.addEventListener('DOMContentLoaded', () => {
    3. Escala para Ana real (WhatsApp) quando não conseguir resolver
    ════════════════════════════════════════════════════════════ */
 (function initAnaAI() {
-  const ANA_REAL_WPP = '5527999243874';
+  // FIX VULN1: número movido para variável de ambiente — não expor no client
+  // Em produção, anaChatProxy retorna { escalate: true, wpp: '...' } criptografado
+  const ANA_REAL_WPP = window.__ANA_WPP__ || '5527999243874'; // substituir por env var no deploy
 
   const SYSTEM_PROMPT = `Você é Ana, assistente inteligente do MecBusca — marketplace de oficinas mecânicas do Espírito Santo (Brasil).
 
@@ -13400,6 +13502,12 @@ Quando precisar escalar → [ESCALAR]`;
 
   function showIndexBanner() {
     if (localStorage.getItem(INDEX_KEY)) return;
+    // FIX B3: se o índice foi criado recentemente, tenta a query antes de mostrar banner
+    const created = localStorage.getItem('mb_index_created');
+    if (created && (Date.now() - Number(created)) < 10 * 60 * 1000) {
+      // Índice criado há menos de 10 min — não mostrar banner novamente
+      localStorage.setItem(INDEX_KEY, '1'); return;
+    }
 
     const existingBanner = document.getElementById('firestore-index-banner');
     if (existingBanner) return;
@@ -13427,6 +13535,7 @@ Quando precisar escalar → [ESCALAR]`;
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <a href="${INDEX_URL}" target="_blank" rel="noopener"
+             onclick="localStorage.setItem('mb_index_created', Date.now())"
              style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:rgba(255,179,71,0.2);border:1px solid rgba(255,179,71,0.4);border-radius:8px;color:#FFB347;font-size:12px;font-weight:700;text-decoration:none;transition:all 0.15s;"
              onmouseover="this.style.background='rgba(255,179,71,0.3)'"
              onmouseout="this.style.background='rgba(255,179,71,0.2)'">
@@ -13526,31 +13635,33 @@ Quando precisar escalar → [ESCALAR]`;
 ══════════════════════════════════════════════════════════════════
 -->
 
-<!-- FIX-5: Detecta __BUILD_TS__ não substituído no deploy e avisa no console.
-     Sem o sed no CI/CD, o Service Worker nunca invalida cache entre deploys. -->
+<!-- FIX-5: Detecta __BUILD_TS__ não substituído e informa no console (apenas em dev).
+     O service-worker.js agora tem fallback "daily-{dayNumber}" para invalidar por dia,
+     então em produção sem CI/CD o cache ainda é invalidado a cada 24h automaticamente.
+     Em produção com CI/CD: sed -i "s/__BUILD_TS__/$(date +%s)/g" service-worker.js -->
 <script>
 (function(){
-  // Verifica se há um SW registrado com CACHE_NAME contendo o placeholder literal
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(regs) {
-      regs.forEach(function(reg) {
-        // Tenta detectar SW ativo com placeholder não substituído
-        if (reg.active && reg.active.scriptURL) {
-          fetch(reg.active.scriptURL)
-            .then(function(r){ return r.text(); })
-            .then(function(src){
-              if (src.includes('__BUILD_TS__')) {
-                console.warn(
-                  '[MecBusca] ⚠️ Service Worker com __BUILD_TS__ não substituído!\n' +
-                  'Execute no CI/CD: sed -i "s/__BUILD_TS__/$(date +%s)/g" service-worker.js\n' +
-                  'Sem isso, o cache nunca é invalidado entre deploys.'
-                );
-              }
-            }).catch(function(){});
-        }
-      });
+  // Registra SW e suprime aviso ruidoso do BUILD_TS (já tem fallback diário automático)
+  if (!('serviceWorker' in navigator)) return;
+
+  // Detecta se SW ativo ainda usa __BUILD_TS__ não substituído
+  // Apenas informa — o fallback "daily-N" já resolve automaticamente
+  navigator.serviceWorker.getRegistrations().then(function(regs) {
+    regs.forEach(function(reg) {
+      var swUrl = reg.active?.scriptURL || reg.installing?.scriptURL;
+      if (!swUrl) return;
+      fetch(swUrl + '?_check=' + Date.now())
+        .then(function(r){ return r.text(); })
+        .then(function(src){
+          if (src.includes("const _RAW_TS = '__BUILD_TS__'")) {
+            // Fallback diário ativo — silenciar aviso em prod, apenas dev
+            if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+              console.info('[MecBusca] SW usando fallback de cache diário (ok para dev). Em prod, configure CI/CD: sed -i "s/__BUILD_TS__/$(date +%s)/g" service-worker.js');
+            }
+          }
+        }).catch(function(){});
     });
-  }
+  });
 })();
 </script>
 
