@@ -1870,6 +1870,8 @@ button,a,[role=button]{min-height:44px;}
       <div class="home-tabs" role="tablist">
         <button class="home-tab active" id="htab-oficinas" onclick="homeSetTab('oficinas')" role="tab" aria-selected="true">🔧 Oficinas</button>
         <button class="home-tab" id="htab-pecas" onclick="homeSetTab('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
+        <button class="home-tab" id="htab-motos" onclick="homeSetTab('motos')" role="tab" aria-selected="false">🏍️ Motos</button>
+        <button class="home-tab" id="htab-bikes" onclick="homeSetTab('bikes')" role="tab" aria-selected="false">🚲 Bikes</button>
       </div>
 
       <!-- BUSCA OFICINAS -->
@@ -1919,6 +1921,108 @@ button,a,[role=button]{min-height:44px;}
           🔍 Encontrar oficina agora
         </button>
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">⚡ Resultado em segundos · gratuito para o motorista</div>
+      </div>
+
+
+      <!-- BUSCA MOTOS -->
+      <div class="home-search-box" id="hbox-motos" style="display:none;">
+        <div class="home-search-title">🏍️ Encontre a melhor moto-oficina</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServicoMoto">Serviço para moto</label>
+            <select id="hServicoMoto">
+              <option value="">— Todos os serviços —</option>
+              <option value="revisão de moto">🔧 Revisão de moto</option>
+              <option value="troca de óleo moto">🛢️ Troca de óleo</option>
+              <option value="freios moto">🔴 Freios</option>
+              <option value="pneu moto">⭕ Pneu de moto</option>
+              <option value="corrente relação">⛓️ Corrente e relação</option>
+              <option value="elétrica moto">⚡ Elétrica de moto</option>
+              <option value="carburador injeção moto">⛽ Carburador / Injeção</option>
+              <option value="suspensão moto">🔩 Suspensão</option>
+              <option value="embreagem moto">⚙️ Embreagem</option>
+              <option value="funilaria moto">🎨 Funilaria / Pintura</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidadeMoto">Cidade</label>
+            <select id="hCidadeMoto">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option>
+              <option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option>
+              <option value="Serra">Serra</option>
+              <option value="Viana">Viana</option>
+              <option value="Guarapari">Guarapari</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hMarcaMoto">Marca da moto</label>
+            <select id="hMarcaMoto">
+              <option value="">Todas as marcas</option>
+              <option value="Honda">Honda</option>
+              <option value="Yamaha">Yamaha</option>
+              <option value="Suzuki">Suzuki</option>
+              <option value="Kawasaki">Kawasaki</option>
+              <option value="BMW Motorrad">BMW Motorrad</option>
+              <option value="Ducati">Ducati</option>
+              <option value="Harley-Davidson">Harley-Davidson</option>
+              <option value="Royal Enfield">Royal Enfield</option>
+              <option value="Dafra">Dafra</option>
+              <option value="Shineray">Shineray</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarMoto()">🔍 Encontrar moto-oficina agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🏍️ Especialistas em motos · orçamento no WhatsApp</div>
+      </div>
+
+      <!-- BUSCA BIKES -->
+      <div class="home-search-box" id="hbox-bikes" style="display:none;">
+        <div class="home-search-title">🚲 Encontre o melhor bike-shop</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServicoBike">Serviço para bicicleta</label>
+            <select id="hServicoBike">
+              <option value="">— Todos os serviços —</option>
+              <option value="revisão de bicicleta">🔧 Revisão completa</option>
+              <option value="troca de câmbio bike">⚙️ Câmbio / marcha</option>
+              <option value="freios bike">🛑 Freios (mecânico / hidráulico)</option>
+              <option value="pneu bike">🔵 Troca de pneu / câmara</option>
+              <option value="corrente bike">⛓️ Corrente e transmissão</option>
+              <option value="suspensão bike">🛞 Suspensão (garfo / amortecedor)</option>
+              <option value="rodas bike">🔵 Rodas e aros</option>
+              <option value="limpeza lubrificação bike">🧴 Limpeza e lubrificação</option>
+              <option value="freio hidráulico bike">💧 Freio hidráulico (sangria)</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidadeBike">Cidade</label>
+            <select id="hCidadeBike">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option>
+              <option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option>
+              <option value="Serra">Serra</option>
+              <option value="Viana">Viana</option>
+              <option value="Guarapari">Guarapari</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hTipoBike">Tipo de bicicleta</label>
+            <select id="hTipoBike">
+              <option value="">Todos os tipos</option>
+              <option value="speed">🚴 Speed / Road</option>
+              <option value="mountain">🏔️ Mountain Bike (MTB)</option>
+              <option value="urbana">🏙️ Urbana / City</option>
+              <option value="gravel">🛤️ Gravel</option>
+              <option value="infantil">👶 Infantil</option>
+              <option value="elétrica">⚡ Elétrica (e-bike)</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarBike()">🔍 Encontrar bike-shop agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚲 Bike-shops e oficinas especializadas · ES</div>
       </div>
 
       <!-- BUSCA PEÇAS -->
@@ -2621,7 +2725,7 @@ button,a,[role=button]{min-height:44px;}
     </div>
     <div class="search-bar" role="search">
       <svg class="ico" style="width:15px;height:15px;color:var(--t3)" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="search" id="cliSearch" placeholder="Ex: barulho no freio, carro vibrando, trocar óleo..." onfocus="if(!this.value)renderHistorico()" oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
+      <input type="search" id="cliSearch" placeholder="Ex: freio, óleo, pneu de moto, revisão de bike..." onfocus="if(!this.value)renderHistorico()" oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
       <span id="searchClear" style="font-size:16px;color:var(--t3);cursor:pointer;display:none;" onclick="clearSearch()" aria-label="Limpar busca" role="button" tabindex="0">×</span>
       <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()" aria-expanded="false" aria-controls="filtersPanel" style="min-height:auto;">
         ⚙ Filtros
@@ -2633,6 +2737,8 @@ button,a,[role=button]{min-height:44px;}
       <button class="mode-btn" id="mode-tipos" onclick="setMode('tipos')" role="tab" aria-selected="false">🏪 Tipos</button>
       <button class="mode-btn" id="mode-servicos" onclick="setMode('servicos')" role="tab" aria-selected="false">⚙️ Serviços</button>
       <button class="mode-btn" id="mode-pecas" onclick="setMode('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
+      <button class="mode-btn" id="mode-motos" onclick="setMode('motos')" role="tab" aria-selected="false">🏍️ Motos</button>
+      <button class="mode-btn" id="mode-bikes" onclick="setMode('bikes')" role="tab" aria-selected="false">🚲 Bikes</button>
       <button class="mode-btn" id="mode-mapa" onclick="setMode('mapa')" role="tab" aria-selected="false">🗺️ Mapa</button>
     </div>
   </header>
@@ -3649,7 +3755,44 @@ function demoOficinas(filtros = {}) {
       whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km",
       aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","caminhao"], lat:-20.275, lng:-40.408,
       stats:{impressoes:180, cliques:28, whatsapp:9, orcamentos:2},
-      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]}
+      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]},
+    // ── Moto-shops ──────────────────────────────────────────────
+    { id:"ms001", nome:"MotoCenter ES", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999995001", avaliacao:4.7, totalAvaliacoes:38, distancia:"0,9 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.267, lng:-40.412,
+      stats:{impressoes:520, cliques:145, whatsapp:58, orcamentos:22}, tipo:"motoshop",
+      servicos:[{nome:"Revisão de moto",min:120,max:250,ativo:true},{nome:"Troca de óleo moto",min:50,max:90,ativo:true},{nome:"Freios moto",min:80,max:180,ativo:true},{nome:"Corrente e relação",min:40,max:90,ativo:true},{nome:"Pneu de moto",min:60,max:140,ativo:true}]},
+    { id:"ms002", nome:"Oficina Honda Vitória", cidade:"Vitória", bairro:"Jardim Camburi",
+      whatsapp:"27999995002", avaliacao:4.9, totalAvaliacoes:62, distancia:"2,4 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.260, lng:-40.404,
+      stats:{impressoes:780, cliques:210, whatsapp:82, orcamentos:35}, tipo:"motoshop",
+      servicos:[{nome:"Revisão de moto",min:150,max:300,ativo:true},{nome:"Injeção eletrônica moto",min:120,max:250,ativo:true},{nome:"Embreagem moto",min:180,max:350,ativo:true},{nome:"Suspensão moto",min:200,max:450,ativo:true},{nome:"Elétrica moto",min:80,max:200,ativo:true}]},
+    { id:"ms003", nome:"Moto Rápida Service", cidade:"Cariacica", bairro:"Padre Gabriel",
+      whatsapp:"27999995003", avaliacao:4.4, totalAvaliacoes:25, distancia:"1,5 km",
+      aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["moto"], lat:-20.272, lng:-40.417,
+      stats:{impressoes:290, cliques:75, whatsapp:28, orcamentos:10}, tipo:"motoshop",
+      servicos:[{nome:"Troca de óleo moto",min:45,max:80,ativo:true},{nome:"Pneu de moto",min:60,max:140,ativo:true},{nome:"Freios moto",min:70,max:160,ativo:true},{nome:"Carburador",min:80,max:180,ativo:true}]},
+    { id:"ms004", nome:"Yamaha Oficial ES", cidade:"Serra", bairro:"Carapina",
+      whatsapp:"27999995004", avaliacao:4.8, totalAvaliacoes:54, distancia:"4,2 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.235, lng:-40.395,
+      stats:{impressoes:650, cliques:178, whatsapp:70, orcamentos:28}, tipo:"motoshop",
+      servicos:[{nome:"Revisão de moto",min:130,max:280,ativo:true},{nome:"Funilaria moto",min:200,max:600,ativo:true},{nome:"Embreagem moto",min:160,max:320,ativo:true},{nome:"Suspensão moto",min:180,max:400,ativo:true}]},
+    // ── Bike-shops ──────────────────────────────────────────────
+    { id:"bs001", nome:"BikePro Cariacica", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999996001", avaliacao:4.8, totalAvaliacoes:41, distancia:"1,0 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["bicicleta"], lat:-20.268, lng:-40.415,
+      stats:{impressoes:430, cliques:120, whatsapp:45, orcamentos:18}, tipo:"bikeshop",
+      servicos:[{nome:"Revisão de bicicleta",min:50,max:150,ativo:true},{nome:"Câmbio bike",min:30,max:80,ativo:true},{nome:"Freios bike",min:25,max:90,ativo:true},{nome:"Suspensão bike",min:80,max:250,ativo:true},{nome:"Rodas bike",min:40,max:120,ativo:true}]},
+    { id:"bs002", nome:"Speed & Trail ES", cidade:"Vitória", bairro:"Praia do Canto",
+      whatsapp:"27999996002", avaliacao:4.9, totalAvaliacoes:73, distancia:"3,1 km", plano:"pro",
+      aberto: hour>=9&&hour<19, horario:"até 19h", tipoVeiculo:["bicicleta"], lat:-20.255, lng:-40.300,
+      stats:{impressoes:680, cliques:195, whatsapp:78, orcamentos:31}, tipo:"bikeshop",
+      servicos:[{nome:"Revisão de bicicleta",min:70,max:200,ativo:true},{nome:"Freio hidráulico bike",min:60,max:150,ativo:true},{nome:"Suspensão bike",min:100,max:300,ativo:true},{nome:"Rodas bike",min:60,max:180,ativo:true},{nome:"Pedivela bike",min:50,max:160,ativo:true}]},
+    { id:"bs003", nome:"Bike Shop Serra", cidade:"Serra", bairro:"Serra Sede",
+      whatsapp:"27999996003", avaliacao:4.5, totalAvaliacoes:29, distancia:"5,0 km",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["bicicleta"], lat:-20.215, lng:-40.310,
+      stats:{impressoes:260, cliques:68, whatsapp:22, orcamentos:8}, tipo:"bikeshop",
+      servicos:[{nome:"Pneu bike",min:20,max:60,ativo:true},{nome:"Corrente bike",min:15,max:45,ativo:true},{nome:"Câmbio bike",min:25,max:70,ativo:true},{nome:"Limpeza lubrificação bike",min:30,max:80,ativo:true}]}
   ];
   let r = [...base];
   if (filtros.servico) {
@@ -4797,9 +4940,36 @@ function homeSetTab(tab) {
     t.classList.toggle('active', t.id === 'htab-' + tab);
     t.setAttribute('aria-selected', t.id === 'htab-' + tab);
   });
-  document.getElementById('hbox-oficinas').style.display = tab === 'oficinas' ? '' : 'none';
-  document.getElementById('hbox-pecas').style.display   = tab === 'pecas'    ? '' : 'none';
+  ['oficinas','pecas','motos','bikes'].forEach(id => {
+    const el = document.getElementById('hbox-' + id);
+    if (el) el.style.display = (id === tab) ? '' : 'none';
+  });
   if (tab === 'pecas') pecaInitSelects();
+}
+
+function homeBuscarMoto() {
+  const svc    = document.getElementById('hServicoMoto')?.value || '';
+  const cidade = document.getElementById('hCidadeMoto')?.value || '';
+  const q = svc.trim() || 'moto';
+  if (cidade) { STATE.advFilters = STATE.advFilters || {}; STATE.advFilters.cidade = cidade; }
+  goTo('scCliente');
+  // FIX-10: setMode() apaga cliSearch.value — salvar em STATE.filtroChip ANTES
+  // e restaurar DEPOIS para que renderMotoShops() leia o valor correto.
+  STATE.filtroChip = q;
+  setMode('motos');
+  document.getElementById('cliSearch').value = q;
+}
+
+function homeBuscarBike() {
+  const svc    = document.getElementById('hServicoBike')?.value || '';
+  const cidade = document.getElementById('hCidadeBike')?.value || '';
+  const q = svc.trim() || 'bicicleta';
+  if (cidade) { STATE.advFilters = STATE.advFilters || {}; STATE.advFilters.cidade = cidade; }
+  goTo('scCliente');
+  // FIX-10: mesma correção de homeBuscarMoto — preserva o filtro após setMode().
+  STATE.filtroChip = q;
+  setMode('bikes');
+  document.getElementById('cliSearch').value = q;
 }
 
 function homeLoginOficina() {
@@ -5661,6 +5831,12 @@ function closeModal(id, e) {
     if (id === 'budgetModal') {
       if (window.APP) window.APP.selecionar(null); // limpa fonte de verdade
       if (typeof limparSelecaoOficina === 'function') limparSelecaoOficina();
+      // FIX-3: limpa campos do formulário para que não apareçam pré-preenchidos
+      // ao reabrir o modal para outra oficina após erro de rede ou fechar sem enviar.
+      ['lnome','lwpp','lcarro'].forEach(fid => {
+        const el = document.getElementById(fid);
+        if (el) el.value = '';
+      });
     }
   }
 }
@@ -5668,7 +5844,19 @@ function closeModal(id, e) {
 // ── KEYBOARD ACCESSIBILITY ───────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.modal-overlay.open').forEach(m => {
+      m.classList.remove('open');
+      // FIX-D: Escape deve ter o mesmo comportamento de closeModal() —
+      // limpa os campos do orçamento para não aparecerem pré-preenchidos na reabertura.
+      if (m.id === 'budgetModal') {
+        ['lnome','lwpp','lcarro'].forEach(fid => {
+          const el = document.getElementById(fid);
+          if (el) el.value = '';
+        });
+        if (window.APP) window.APP.selecionar(null);
+        if (typeof limparSelecaoOficina === 'function') limparSelecaoOficina();
+      }
+    });
     // Close filters panel
     document.getElementById('filtersPanel')?.classList.remove('open');
     document.getElementById('filterToggleBtn')?.setAttribute('aria-expanded','false');
@@ -6156,7 +6344,7 @@ function renderOnbSvcList() {
   document.getElementById('onbSvcList').innerHTML = STATE.onbData.servicos.map((s, i) => `
     <div class="svc-item">
       <div class="svc-name">${esc(s.nome)}</div>
-      <div class="svc-price">R$ ${s.min}–${s.max}</div>
+      <div class="svc-price">R$ ${Number(s.min)||0}–${Number(s.max)||0}</div>
       <button class="svc-del" onclick="removeOnbSvc(${i})" aria-label="Remover ${esc(s.nome)}">×</button>
     </div>`).join('');
 }
@@ -6553,6 +6741,39 @@ const DEMO_PECAS = [
   // ── Lâmpadas ──
   {id:'p060',nome:'Lâmpada de farol H7 (par)',desc:'Par de lâmpadas halogêneas H7 55W',preco:28,precoMax:55,compat:['Universal'],loja:'AutoPeças Cariacica',disponivel:true,icon:'💡'},
   {id:'p061',nome:'Kit LED H4/H7 (par)',desc:'Par de lâmpadas LED 6000K plug-and-play',preco:95,precoMax:185,compat:['Universal'],loja:'AutoPeças Cariacica',disponivel:true,icon:'💡'},
+  // ── Peças de Moto ─────────────────────────────────────────────
+  {id:'m001',nome:'Corrente de moto 428H',desc:'Corrente reforçada 428H para motos 125cc–150cc',preco:55,precoMax:90,compat:['Honda CG 160','Yamaha Factor','Pop 110'],loja:'MotoCenter ES',disponivel:true,icon:'⛓️',veiculo:'moto'},
+  {id:'m002',nome:'Kit relação (coroa + pinhão + corrente)',desc:'Kit completo de transmissão para motos 150cc',preco:130,precoMax:220,compat:['Honda Titan 150','Yamaha Factor 150','Fan 150'],loja:'MotoCenter ES',disponivel:true,icon:'⛓️',veiculo:'moto'},
+  {id:'m003',nome:'Pastilha de freio moto dianteira',desc:'Par de pastilhas dianteiras para motos a disco',preco:38,precoMax:75,compat:['Honda CB 300','Yamaha MT-03','Twister'],loja:'AutoPeças Cariacica',disponivel:true,icon:'🔴',veiculo:'moto'},
+  {id:'m004',nome:'Lona de freio moto (tambor)',desc:'Kit de lonas para freio traseiro a tambor',preco:22,precoMax:45,compat:['Honda CG 160','Biz 125','Pop 110'],loja:'MotoCenter ES',disponivel:true,icon:'🔴',veiculo:'moto'},
+  {id:'m005',nome:'Pneu dianteiro moto 90/90-19',desc:'Pneu dianteiro trail/enduro — unidade',preco:150,precoMax:260,compat:['Honda XRE 300','Yamaha Lander','Crosser'],loja:'Pneus Vitória',disponivel:true,icon:'⭕',veiculo:'moto'},
+  {id:'m006',nome:'Pneu traseiro moto 110/80-17',desc:'Pneu traseiro street/sport — unidade',preco:180,precoMax:320,compat:['Honda CB 500F','Yamaha MT-07','Fazer 250'],loja:'Pneus Vitória',disponivel:true,icon:'⭕',veiculo:'moto'},
+  {id:'m007',nome:'Óleo motor moto 20W-50 (1L)',desc:'Óleo mineral para motos 4 tempos',preco:18,precoMax:35,compat:['Universal moto 4T'],loja:'Distribuidora Vitória',disponivel:true,icon:'🛢️',veiculo:'moto'},
+  {id:'m008',nome:'Óleo motor moto 10W-30 semissint. (1L)',desc:'Óleo semissintético para motos modernas',preco:28,precoMax:48,compat:['Universal moto 4T'],loja:'Distribuidora Vitória',disponivel:true,icon:'🛢️',veiculo:'moto'},
+  {id:'m009',nome:'Filtro de óleo moto',desc:'Filtro de óleo 4T — vários modelos',preco:18,precoMax:38,compat:['Honda CG 160','Titan 150','CB 300'],loja:'MotoCenter ES',disponivel:true,icon:'🛢️',veiculo:'moto'},
+  {id:'m010',nome:'Velas de ignição moto (par)',desc:'Par de velas NGK para motores 4T',preco:28,precoMax:55,compat:['Universal moto 4T'],loja:'AutoPeças Cariacica',disponivel:true,icon:'⚡',veiculo:'moto'},
+  {id:'m011',nome:'Bateria de moto 12V 5Ah',desc:'Bateria para motos compactas — 12 meses garantia',preco:120,precoMax:180,compat:['Honda CG','Biz','Pop','Fan'],loja:'Baterias Vitória',disponivel:true,icon:'🔋',veiculo:'moto'},
+  {id:'m012',nome:'Bateria de moto 12V 8Ah',desc:'Bateria para motos médias e grandes',preco:180,precoMax:280,compat:['Honda CB 300','Yamaha MT','Fazer'],loja:'Baterias Vitória',disponivel:true,icon:'🔋',veiculo:'moto'},
+  {id:'m013',nome:'Amortecedor traseiro moto (par)',desc:'Par de amortecedores para motos 150cc',preco:95,precoMax:180,compat:['Honda Titan','CG 160','Yamaha Factor'],loja:'MotoCenter ES',disponivel:true,icon:'🔩',veiculo:'moto'},
+  {id:'m014',nome:'Cabo de embreagem moto',desc:'Cabo de embreagem universal reforçado',preco:25,precoMax:55,compat:['Universal moto'],loja:'MotoCenter ES',disponivel:true,icon:'⚙️',veiculo:'moto'},
+  {id:'m015',nome:'Carburador moto 125cc (PZ26)',desc:'Carburador PZ26 para motores 125–150cc',preco:68,precoMax:130,compat:['Honda Biz 125','CG 125','Pop 110'],loja:'MotoCenter ES',disponivel:true,icon:'⛽',veiculo:'moto'},
+  {id:'m016',nome:'Capacete integral moto',desc:'Capacete integral com viseira fumê — DOT/Inmetro',preco:190,precoMax:380,compat:['Universal'],loja:'MotoCenter ES',disponivel:true,icon:'⛑️',veiculo:'moto'},
+  // ── Peças de Bicicleta ────────────────────────────────────────
+  {id:'b001',nome:'Câmara de ar 26" MTB',desc:'Câmara bead 26 pol para MTB — válvula Presta/Schrader',preco:18,precoMax:35,compat:['Universal MTB 26"'],loja:'BikePro Cariacica',disponivel:true,icon:'🔵',veiculo:'bicicleta'},
+  {id:'b002',nome:'Câmara de ar 29" MTB',desc:'Câmara 29 polegadas para MTB',preco:22,precoMax:42,compat:['Universal MTB 29"'],loja:'BikePro Cariacica',disponivel:true,icon:'🔵',veiculo:'bicicleta'},
+  {id:'b003',nome:'Pneu MTB 26x2.1"',desc:'Pneu com cavados para trilha e estrada — unidade',preco:55,precoMax:120,compat:['Universal MTB 26"'],loja:'Speed & Trail ES',disponivel:true,icon:'🔵',veiculo:'bicicleta'},
+  {id:'b004',nome:'Pneu Speed 700x23c',desc:'Pneu slim para bicicleta speed — unidade',preco:65,precoMax:140,compat:['Universal Speed 700c'],loja:'Speed & Trail ES',disponivel:true,icon:'🔵',veiculo:'bicicleta'},
+  {id:'b005',nome:'Corrente de bike 8v (HG40)',desc:'Corrente para transmissão de 8 velocidades',preco:25,precoMax:65,compat:['Universal 8v'],loja:'BikePro Cariacica',disponivel:true,icon:'⛓️',veiculo:'bicicleta'},
+  {id:'b006',nome:'Corrente de bike 11v',desc:'Corrente leve para 11 velocidades — Shimano/SRAM',preco:55,precoMax:130,compat:['Universal 11v'],loja:'Speed & Trail ES',disponivel:true,icon:'⛓️',veiculo:'bicicleta'},
+  {id:'b007',nome:'Pastilha freio a disco bike',desc:'Par de pastilhas orgânicas para freio hidráulico',preco:35,precoMax:80,compat:['Shimano','SRAM','Tektro'],loja:'Speed & Trail ES',disponivel:true,icon:'🛑',veiculo:'bicicleta'},
+  {id:'b008',nome:'Sapata de freio V-brake (par)',desc:'Par de sapatas V-brake em borracha',preco:14,precoMax:32,compat:['Universal V-Brake'],loja:'BikePro Cariacica',disponivel:true,icon:'🛑',veiculo:'bicicleta'},
+  {id:'b009',nome:'Cassete 8v 11-32 (bike)',desc:'Cassete Shimano HG41 8 velocidades',preco:55,precoMax:95,compat:['Shimano 8v'],loja:'Speed & Trail ES',disponivel:true,icon:'⚙️',veiculo:'bicicleta'},
+  {id:'b010',nome:'Pedivela 44T MTB',desc:'Pedivela em alumínio com coroa 44T',preco:65,precoMax:145,compat:['Universal BB 68mm'],loja:'BikePro Cariacica',disponivel:true,icon:'🔩',veiculo:'bicicleta'},
+  {id:'b011',nome:'Câmbio traseiro Shimano Altus M310',desc:'Câmbio traseiro 8v para MTB e urbana',preco:75,precoMax:130,compat:['Shimano 8v'],loja:'BikePro Cariacica',disponivel:true,icon:'⚙️',veiculo:'bicicleta'},
+  {id:'b012',nome:'Óleo lubrificante corrente bike (100ml)',desc:'Lubrificante para corrente — alta durabilidade',preco:18,precoMax:38,compat:['Universal'],loja:'BikePro Cariacica',disponivel:true,icon:'🧴',veiculo:'bicicleta'},
+  {id:'b013',nome:'Cabo de freio bike (par) + capa',desc:'Par de cabos de freio em inox com capa de nylon',preco:22,precoMax:48,compat:['Universal'],loja:'BikePro Cariacica',disponivel:true,icon:'🔗',veiculo:'bicicleta'},
+  {id:'b014',nome:'Capacete de ciclismo',desc:'Capacete leve com ventilação — adulto',preco:75,precoMax:180,compat:['Universal'],loja:'Speed & Trail ES',disponivel:true,icon:'⛑️',veiculo:'bicicleta'},
+  {id:'b015',nome:'Pedal plataforma alumínio (par)',desc:'Par de pedais de alumínio — MTB/Urbana',preco:55,precoMax:120,compat:['Universal'],loja:'BikePro Cariacica',disponivel:true,icon:'🦶',veiculo:'bicicleta'},
 ];
 
 // ── CATÁLOGO DE VEÍCULOS BRASILEIROS ────────────────────────────
@@ -6854,7 +7075,9 @@ function pecaAutocomplete(val) {
   const pecasFornSalvas = (() => {
     try { return JSON.parse(localStorage.getItem('mb_pecas_forn') || '[]'); } catch { return []; }
   })();
-  const todas = [...(DEMO_PECAS || []), ...(window._PECAS_LIVE || []), ...pecasFornSalvas];
+  const _veiculoFiltro = STATE.modo === 'motos' ? 'moto' : STATE.modo === 'bikes' ? 'bicicleta' : null;
+  const todas = [...(DEMO_PECAS || []), ...(window._PECAS_LIVE || []), ...pecasFornSalvas]
+    .filter(p => !_veiculoFiltro || (p.veiculo || 'carro') === _veiculoFiltro);
   // Deduplicar por id
   const seen = new Set();
   const unicas = todas.filter(p => { if (seen.has(p.id)) return false; seen.add(p.id); return true; });
@@ -6945,15 +7168,19 @@ const DEMO_SERVICOS_AGRUPADOS = [
   {id:'sv006',nome:'Suspensão (amortecedores)',cat:'Suspensão',icon:'🔩',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:280,max:450,avaliacao:4.8},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:300,max:500,avaliacao:4.9}]},
   {id:'sv007',nome:'Elétrica automotiva',cat:'Elétrica',icon:'⚡',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:80,max:200,avaliacao:4.3}]},
   // ── Motos
-  {id:'sv008',nome:'Revisão de moto',cat:'Moto',icon:'🏍️',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:120,max:250,avaliacao:4.8},{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:100,max:200,avaliacao:4.3}]},
-  {id:'sv009',nome:'Troca de óleo (moto)',cat:'Moto',icon:'🛢️',cor:'var(--gg)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:50,max:90,avaliacao:4.8},{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:45,max:80,avaliacao:4.3}]},
-  {id:'sv010',nome:'Freios de moto',cat:'Moto',icon:'🔴',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:80,max:180,avaliacao:4.9}]},
-  {id:'sv011',nome:'Pneu de moto',cat:'Moto',icon:'⭕',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:60,max:140,avaliacao:4.8}]},
+  {id:'sv008',nome:'Revisão de moto',cat:'Moto',icon:'🏍️',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:120,max:250,avaliacao:4.7},{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:150,max:300,avaliacao:4.9},{id:'ms003',nome:'Moto Rápida Service',dist:'1,5 km',min:100,max:200,avaliacao:4.4}]},
+  {id:'sv009',nome:'Troca de óleo (moto)',cat:'Moto',icon:'🛢️',cor:'var(--gg)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:50,max:90,avaliacao:4.7},{id:'ms003',nome:'Moto Rápida Service',dist:'1,5 km',min:45,max:80,avaliacao:4.4}]},
+  {id:'sv010',nome:'Freios de moto',cat:'Moto',icon:'🔴',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:80,max:180,avaliacao:4.7},{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:90,max:200,avaliacao:4.9}]},
+  {id:'sv011',nome:'Pneu de moto',cat:'Moto',icon:'⭕',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:60,max:140,avaliacao:4.7},{id:'ms003',nome:'Moto Rápida Service',dist:'1,5 km',min:55,max:130,avaliacao:4.4}]},
+  {id:'sv012',nome:'Corrente e relação',cat:'Moto',icon:'⛓️',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:40,max:90,avaliacao:4.7}]},
+  {id:'sv013',nome:'Elétrica de moto',cat:'Moto',icon:'⚡',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:80,max:200,avaliacao:4.9}]},
+  {id:'sv014',nome:'Suspensão de moto',cat:'Moto',icon:'🔩',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:200,max:450,avaliacao:4.9},{id:'ms004',nome:'Yamaha Oficial ES',dist:'4,2 km',min:180,max:400,avaliacao:4.8}]},
   // ── Bicicletas
-  {id:'sv012',nome:'Revisão de bicicleta',cat:'Bicicleta',icon:'🚲',cor:'rgba(0,208,132,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:40,max:120,avaliacao:4.3}]},
-  {id:'sv013',nome:'Troca de câmbio (bike)',cat:'Bicicleta',icon:'⚙️',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:30,max:80,avaliacao:4.3}]},
-  {id:'sv014',nome:'Freios de bicicleta',cat:'Bicicleta',icon:'🛑',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:25,max:60,avaliacao:4.3}]},
-  {id:'sv015',nome:'Troca de pneu (bike)',cat:'Bicicleta',icon:'🔵',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:20,max:50,avaliacao:4.3}]},
+  {id:'sv015',nome:'Revisão de bicicleta',cat:'Bicicleta',icon:'🚲',cor:'rgba(0,208,132,0.12)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:50,max:150,avaliacao:4.8},{id:'bs002',nome:'Speed & Trail ES',dist:'3,1 km',min:70,max:200,avaliacao:4.9}]},
+  {id:'sv016',nome:'Câmbio de bicicleta',cat:'Bicicleta',icon:'⚙️',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:30,max:80,avaliacao:4.8},{id:'bs003',nome:'Bike Shop Serra',dist:'5,0 km',min:25,max:70,avaliacao:4.5}]},
+  {id:'sv017',nome:'Freios de bicicleta',cat:'Bicicleta',icon:'🛑',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:25,max:90,avaliacao:4.8},{id:'bs002',nome:'Speed & Trail ES',dist:'3,1 km',min:40,max:120,avaliacao:4.9}]},
+  {id:'sv018',nome:'Pneu de bicicleta',cat:'Bicicleta',icon:'🔵',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:20,max:60,avaliacao:4.8},{id:'bs003',nome:'Bike Shop Serra',dist:'5,0 km',min:18,max:55,avaliacao:4.5}]},
+  {id:'sv019',nome:'Suspensão de bicicleta',cat:'Bicicleta',icon:'🛞',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'bs002',nome:'Speed & Trail ES',dist:'3,1 km',min:100,max:300,avaliacao:4.9}]},
 ];
 
 const TIPOS_ESTABELECIMENTO = [
@@ -6979,6 +7206,17 @@ const DEMO_ESTABELECIMENTOS = {
   pneu:[{id:'pn001',nome:'Pneus Vitória Centro',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999991001',avaliacao:4.6,avaliacoes:34,distancia:'1,1 km',aberto:true,horario:'até 18h',tipo:'pneu',servicos:[{nome:'Troca de pneu',min:35,max:60,ativo:true},{nome:'Balanceamento',min:20,max:30,ativo:true}]}],
   eletrica:[{id:'el001',nome:'AutoElétrica Souza',cidade:'Cariacica',bairro:'Padre Gabriel',whatsapp:'27999992001',avaliacao:4.7,avaliacoes:28,distancia:'1,4 km',aberto:true,horario:'até 17h',tipo:'eletrica',servicos:[{nome:'Diagnóstico elétrico',min:80,max:150,ativo:true}]}],
   funilaria:[{id:'fu001',nome:'Funilaria Premium',cidade:'Cariacica',bairro:'Itaquari',whatsapp:'27999993001',avaliacao:4.5,avaliacoes:19,distancia:'2,8 km',aberto:false,horario:'abre 8h',tipo:'funilaria',servicos:[{nome:'Amassado simples',min:150,max:400,ativo:true}]}],
+  moto:[
+    {id:'ms001',nome:'MotoCenter ES',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999995001',avaliacao:4.7,avaliacoes:38,distancia:'0,9 km',aberto:true,horario:'até 18h',tipo:'moto',servicos:[{nome:'Revisão de moto',min:120,max:250,ativo:true},{nome:'Troca de óleo moto',min:50,max:90,ativo:true},{nome:'Corrente e relação',min:40,max:90,ativo:true}]},
+    {id:'ms002',nome:'Oficina Honda Vitória',cidade:'Vitória',bairro:'Jardim Camburi',whatsapp:'27999995002',avaliacao:4.9,avaliacoes:62,distancia:'2,4 km',aberto:true,horario:'até 18h',tipo:'moto',servicos:[{nome:'Revisão de moto',min:150,max:300,ativo:true},{nome:'Elétrica moto',min:80,max:200,ativo:true}]},
+    {id:'ms003',nome:'Moto Rápida Service',cidade:'Cariacica',bairro:'Padre Gabriel',whatsapp:'27999995003',avaliacao:4.4,avaliacoes:25,distancia:'1,5 km',aberto:true,horario:'até 17h',tipo:'moto',servicos:[{nome:'Freios moto',min:70,max:160,ativo:true},{nome:'Pneu de moto',min:60,max:140,ativo:true}]},
+    {id:'ms004',nome:'Yamaha Oficial ES',cidade:'Serra',bairro:'Carapina',whatsapp:'27999995004',avaliacao:4.8,avaliacoes:54,distancia:'4,2 km',aberto:true,horario:'até 18h',tipo:'moto',servicos:[{nome:'Revisão de moto',min:130,max:280,ativo:true},{nome:'Suspensão moto',min:180,max:400,ativo:true}]},
+  ],
+  bicicleta:[
+    {id:'bs001',nome:'BikePro Cariacica',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999996001',avaliacao:4.8,avaliacoes:41,distancia:'1,0 km',aberto:true,horario:'até 18h',tipo:'bicicleta',servicos:[{nome:'Revisão de bicicleta',min:50,max:150,ativo:true},{nome:'Freios bike',min:25,max:90,ativo:true},{nome:'Suspensão bike',min:80,max:250,ativo:true}]},
+    {id:'bs002',nome:'Speed & Trail ES',cidade:'Vitória',bairro:'Praia do Canto',whatsapp:'27999996002',avaliacao:4.9,avaliacoes:73,distancia:'3,1 km',aberto:true,horario:'até 19h',tipo:'bicicleta',servicos:[{nome:'Revisão de bicicleta',min:70,max:200,ativo:true},{nome:'Freio hidráulico bike',min:60,max:150,ativo:true},{nome:'Rodas bike',min:60,max:180,ativo:true}]},
+    {id:'bs003',nome:'Bike Shop Serra',cidade:'Serra',bairro:'Serra Sede',whatsapp:'27999996003',avaliacao:4.5,avaliacoes:29,distancia:'5,0 km',aberto:true,horario:'até 18h',tipo:'bicicleta',servicos:[{nome:'Pneu bike',min:20,max:60,ativo:true},{nome:'Câmbio bike',min:25,max:70,ativo:true},{nome:'Limpeza lubrificação bike',min:30,max:80,ativo:true}]},
+  ],
 };
 
 const FILTERS = {
@@ -6992,6 +7230,16 @@ const FILTERS = {
   servicos:[
     {label:'Todos',val:''},{label:'Manutenção',val:'manutenção'},{label:'Freios',val:'freios'},
     {label:'Suspensão',val:'suspensão'},{label:'Elétrica',val:'elétrica'},{label:'Ar-condicionado',val:'ar-condicionado'},
+  ],
+  motos:[
+    {label:'Todos',val:''},{label:'Revisão',val:'revisão de moto'},{label:'Óleo',val:'troca de óleo moto'},
+    {label:'Freios',val:'freios moto'},{label:'Pneu',val:'pneu moto'},{label:'Corrente',val:'corrente relação'},
+    {label:'Elétrica',val:'elétrica moto'},{label:'Carburador',val:'carburador injeção moto'},{label:'Embreagem',val:'embreagem moto'},
+  ],
+  bikes:[
+    {label:'Todos',val:''},{label:'Revisão',val:'revisão de bicicleta'},{label:'Câmbio',val:'troca de câmbio bike'},
+    {label:'Freios',val:'freios bike'},{label:'Pneu',val:'pneu bike'},{label:'Corrente',val:'corrente bike'},
+    {label:'Suspensão',val:'suspensão bike'},{label:'Rodas',val:'rodas bike'},{label:'Limpeza',val:'limpeza lubrificação bike'},
   ],
   pecas:[
     {label:'Todas',val:''},{label:'Filtros',val:'filtro'},{label:'Freios',val:'freio'},
@@ -7123,6 +7371,18 @@ function setMode(modo) {
     if (cliBody)  cliBody.style.display  = '';
     renderOfertas();
     pedirPermissaoNotificacao();
+  } else if (modo === 'motos') {
+    const mapaCont = document.getElementById('mapaContainer');
+    const cliBody  = document.querySelector('.cli-body');
+    if (mapaCont) mapaCont.style.display = 'none';
+    if (cliBody)  cliBody.style.display  = '';
+    renderMotoShops();
+  } else if (modo === 'bikes') {
+    const mapaCont = document.getElementById('mapaContainer');
+    const cliBody  = document.querySelector('.cli-body');
+    if (mapaCont) mapaCont.style.display = 'none';
+    if (cliBody)  cliBody.style.display  = '';
+    renderBikeShops();
   } else {
     const mapaCont = document.getElementById('mapaContainer');
     const cliBody  = document.querySelector('.cli-body');
@@ -7177,6 +7437,8 @@ async function runSearch() {
     if (STATE.modo === 'oficinas') await loadOficinas();
     else if (STATE.modo === 'tipos') renderTipos();
     else if (STATE.modo === 'servicos') renderServicosCliente();
+    else if (STATE.modo === 'motos') renderMotoShops();
+    else if (STATE.modo === 'bikes') renderBikeShops();
     else renderPecas();
   } catch(e) {
     logE('[runSearch] erro:', e);
@@ -7307,6 +7569,126 @@ function renderOficinas() {
         <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
         <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
         <button class="btn btn-ghost btn-sm btn-icon" onclick="event.stopPropagation();abrirPerfil('${esc(of.id)}')" title="Ver perfil público" style="width:36px;flex-shrink:0;">🔗</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+// ── MOTO-SHOPS ──────────────────────────────────────────────────
+function renderMotoShops() {
+  const list = document.getElementById('resultsList');
+  // FIX-7: exibir skeleton enquanto filtra/renderiza — consistente com loadOficinas().
+  list.innerHTML = [1,2,3].map(() => `
+    <div class="of-card" style="pointer-events:none;">
+      <div class="of-top">
+        <div class="of-avatar" style="background:var(--s2);animation:skpulse 1.4s ease infinite;"></div>
+        <div class="of-info" style="width:100%;">
+          <div style="height:14px;width:60%;background:var(--s2);border-radius:6px;margin-bottom:8px;animation:skpulse 1.4s ease infinite;"></div>
+          <div style="height:11px;width:40%;background:var(--s2);border-radius:6px;animation:skpulse 1.4s ease infinite;"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        ${[1,2,3].map(()=>`<div style="height:20px;width:80px;background:var(--s2);border-radius:6px;animation:skpulse 1.4s ease infinite;"></div>`).join('')}
+      </div>
+      <div style="height:34px;background:var(--s2);border-radius:var(--r);animation:skpulse 1.4s ease infinite;"></div>
+    </div>`).join('');
+  document.getElementById('resultsCount').innerHTML = '';
+  const q = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
+  let shops = demoOficinas({}).filter(o => (o.tipoVeiculo||[]).includes('moto') || o.tipo === 'motoshop');
+  if (q && q !== 'moto') {
+    shops = shops.filter(o =>
+      o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
+      (o.servicos||[]).some(s => s.nome.toLowerCase().includes(q))
+    );
+  }
+  document.getElementById('resultsCount').innerHTML =
+    `<strong>${shops.length}</strong> moto-oficina${shops.length!==1?'s':''} encontrada${shops.length!==1?'s':''}`;
+  if (!shops.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🏍️</div><div class="empty-title">Nenhuma moto-oficina encontrada</div><div class="empty-sub">Tente outro serviço ou remova os filtros.</div><div style="margin-top:16px;"><button class="chip active" onclick="clearSearch()">Ver todas</button></div></div>';
+    return;
+  }
+  list.innerHTML = shops.map((of, _i) => {
+    const svcs = (of.servicos||[]).slice(0,4).map(s => `<span class="svc-tag">${esc(s.nome)}</span>`).join('');
+    const preco = of.servicos?.[0] ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta';
+    const statusTxt = esc(of.aberto ? '● Aberto · '+(of.horario||'') : '● Fechado · '+(of.horario||''));
+    const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
+    return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" onclick="openBudget('${esc(of.id)}')" tabindex="0" aria-label="${esc(of.nome)}" style="animation-delay:${_i*40}ms">
+      <div class="of-top">
+        <div class="of-avatar" aria-hidden="true" style="font-size:20px;display:flex;align-items:center;justify-content:center;">🏍️</div>
+        <div class="of-info">
+          <div class="of-name">${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${esc(of.nome)}</div>
+          <div class="of-meta">
+            <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade||'')}</span>
+            <span class="of-stars">${of.totalAvaliacoes?'★ '+esc(String(of.avaliacao||''))+' <span>('+of.totalAvaliacoes+')</span>':'<span style="font-size:11px;color:var(--t3);font-style:italic;">Sem avaliações ainda</span>'}</span>
+            <span class="${statusClass}">${statusTxt}</span>
+          </div>
+        </div>
+        <div class="of-price-badge">${preco}</div>
+      </div>
+      <div class="of-services">${svcs}</div>
+      <div class="of-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
+        <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
+      </div>
+    </article>`;
+  }).join('');
+}
+
+// ── BIKE-SHOPS ──────────────────────────────────────────────────
+function renderBikeShops() {
+  const list = document.getElementById('resultsList');
+  // FIX-7: skeleton loading — consistente com loadOficinas().
+  list.innerHTML = [1,2,3].map(() => `
+    <div class="of-card" style="pointer-events:none;">
+      <div class="of-top">
+        <div class="of-avatar" style="background:var(--s2);animation:skpulse 1.4s ease infinite;"></div>
+        <div class="of-info" style="width:100%;">
+          <div style="height:14px;width:60%;background:var(--s2);border-radius:6px;margin-bottom:8px;animation:skpulse 1.4s ease infinite;"></div>
+          <div style="height:11px;width:40%;background:var(--s2);border-radius:6px;animation:skpulse 1.4s ease infinite;"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:14px;">
+        ${[1,2,3].map(()=>`<div style="height:20px;width:80px;background:var(--s2);border-radius:6px;animation:skpulse 1.4s ease infinite;"></div>`).join('')}
+      </div>
+      <div style="height:34px;background:var(--s2);border-radius:var(--r);animation:skpulse 1.4s ease infinite;"></div>
+    </div>`).join('');
+  document.getElementById('resultsCount').innerHTML = '';
+  const q = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
+  let shops = demoOficinas({}).filter(o => (o.tipoVeiculo||[]).includes('bicicleta') || o.tipo === 'bikeshop');
+  if (q && q !== 'bicicleta') {
+    shops = shops.filter(o =>
+      o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
+      (o.servicos||[]).some(s => s.nome.toLowerCase().includes(q))
+    );
+  }
+  document.getElementById('resultsCount').innerHTML =
+    `<strong>${shops.length}</strong> bike-shop${shops.length!==1?'s':''} encontrado${shops.length!==1?'s':''}`;
+  if (!shops.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🚲</div><div class="empty-title">Nenhum bike-shop encontrado</div><div class="empty-sub">Tente outro serviço ou remova os filtros.</div><div style="margin-top:16px;"><button class="chip active" onclick="clearSearch()">Ver todos</button></div></div>';
+    return;
+  }
+  list.innerHTML = shops.map((of, _i) => {
+    const svcs = (of.servicos||[]).slice(0,4).map(s => `<span class="svc-tag">${esc(s.nome)}</span>`).join('');
+    const preco = of.servicos?.[0] ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta';
+    const statusTxt = esc(of.aberto ? '● Aberto · '+(of.horario||'') : '● Fechado · '+(of.horario||''));
+    const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
+    return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" onclick="openBudget('${esc(of.id)}')" tabindex="0" aria-label="${esc(of.nome)}" style="animation-delay:${_i*40}ms">
+      <div class="of-top">
+        <div class="of-avatar" aria-hidden="true" style="font-size:20px;display:flex;align-items:center;justify-content:center;">🚲</div>
+        <div class="of-info">
+          <div class="of-name">${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${esc(of.nome)}</div>
+          <div class="of-meta">
+            <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade||'')}</span>
+            <span class="of-stars">${of.totalAvaliacoes?'★ '+esc(String(of.avaliacao||''))+' <span>('+of.totalAvaliacoes+')</span>':'<span style="font-size:11px;color:var(--t3);font-style:italic;">Sem avaliações ainda</span>'}</span>
+            <span class="${statusClass}">${statusTxt}</span>
+          </div>
+        </div>
+        <div class="of-price-badge">${preco}</div>
+      </div>
+      <div class="of-services">${svcs}</div>
+      <div class="of-actions">
+        <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
+        <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
       </div>
     </article>`;
   }).join('');
@@ -7662,18 +8044,18 @@ async function openBudget(id) {
       <div style="font-size:12px;color:var(--t3);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.07em;">Seus dados para contato</div>
       <div class="lead-form">
         <div class="form-group">
-          <input class="form-input" id="lnome" placeholder="Seu nome completo" aria-label="Nome completo" autocomplete="name">
+          <input class="form-input" id="lnome" placeholder="Seu nome completo" aria-label="Nome completo" autocomplete="name" maxlength="100">
           <span class="field-error" id="lnomeErr">Nome é obrigatório</span>
         </div>
         <div class="form-group">
           <div class="phone-mask-wrap">
             <span class="phone-flag" aria-hidden="true">🇧🇷</span>
-            <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" autocomplete="tel" aria-label="Seu WhatsApp">
+            <input class="form-input" id="lwpp" placeholder="(27) 9 9999-0000" type="tel" oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)" autocomplete="tel" aria-label="Seu WhatsApp" maxlength="15">
           </div>
           <span class="field-error" id="lwppErr">WhatsApp inválido</span>
         </div>
         <div class="form-group">
-          <input class="form-input" id="lcarro" placeholder="Modelo do carro (ex: Gol 1.0 2019)" autocomplete="off" aria-label="Modelo do carro">
+          <input class="form-input" id="lcarro" placeholder="Modelo do carro (ex: Gol 1.0 2019)" autocomplete="off" aria-label="Modelo do carro" maxlength="80">
         </div>
       </div>
       <div style="display:flex;gap:10px;margin-top:4px;">
@@ -7699,7 +8081,12 @@ async function openBudget(id) {
     </div>`;
 
   document.getElementById('bm-nome').textContent = of.nome;
-  document.getElementById('bm-sub').textContent = svc ? ('Orçamento: ' + svc.nome) : 'Solicitar orçamento';
+  // FIX-11: indica o tipo de estabelecimento no subtítulo quando é moto-shop ou bike-shop,
+  // para que o usuário saiba que o orçamento é para o veículo correto.
+  const isMoto = (of.tipoVeiculo||[]).includes('moto') || of.tipo === 'motoshop';
+  const isBike = (of.tipoVeiculo||[]).includes('bicicleta') || of.tipo === 'bikeshop';
+  const tipoLabel = isMoto ? '🏍️ Moto-shop · ' : isBike ? '🚲 Bike-shop · ' : '';
+  document.getElementById('bm-sub').textContent = svc ? (tipoLabel + 'Orçamento: ' + svc.nome) : (tipoLabel || '') + 'Solicitar orçamento';
   document.getElementById('bm-body').innerHTML = body;
   openModal('budgetModal');
 }
@@ -7727,7 +8114,9 @@ async function enviarLead(ofId) {
   if (!valid) return;
 
   // Rate limit: máx 3 orçamentos por minuto por oficina
-  if (!checkRateLimit('lead:' + resolvedOfId, 3, 60000)) {
+  // FIX-1: usar rateLimit() (localStorage) em vez de checkRateLimit() (Map em memória).
+  // checkRateLimit é zerado a cada F5/reload; rateLimit persiste na aba.
+  if (!rateLimit('lead:' + resolvedOfId, 3, 60000)) {
     toast('Muitas solicitações. Aguarde um momento e tente novamente.', 'warning');
     return;
   }
@@ -7764,7 +8153,8 @@ function wppOficina(id) {
   if (!of?.whatsapp) { toast('WhatsApp não cadastrado', 'warning'); return; }
   const svc = STATE.filtroServico || 'serviço';
   const msg = encodeURIComponent(`Olá! Vi o perfil da ${of.nome} no MecBusca e tenho interesse em orçamento para: ${svc}.`);
-  window.open(`https://wa.me/55${of.whatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank', 'noopener');
+  // FIX-6: adicionado 'noreferrer' — evita window.opener attack (mesma proteção das outras chamadas).
+  window.open(`https://wa.me/55${of.whatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank', 'noopener,noreferrer');
 }
 
 function openBudgetPeca(id) {
@@ -7812,6 +8202,13 @@ async function enviarLeadPeca(pecaId) {
   if (!nome) { showFieldError('lnome-peca', 'lnomeErr-peca'); valid = false; }
   if (!validatePhone(wpp)) { showFieldError('lwpp-peca', 'lwppErr-peca'); valid = false; }
   if (!valid) return;
+
+  // FIX-2: rate limit para leads de peças (mesmo critério do enviarLead).
+  // Sem isso, o endpoint aceita spam ilimitado.
+  if (!rateLimit('leadPeca:' + pecaId, 3, 300000)) {
+    toast('Muitas solicitações. Aguarde alguns minutos.', 'warning');
+    return;
+  }
   STATE._submitting = true;
   setBtnLoading('btnEnviarLeadPeca', 'enviarLeadPecaText', 'enviarLeadPecaSpin', true);
   try {
@@ -8071,7 +8468,11 @@ function renderOfertas() {
 
   list.innerHTML = promos.map((p, i) => {
     const urg = formatUrgencia(p.validade, p.vagasRestantes);
-    const descPct = p.precoAntigo ? Math.round((1 - p.precoNovo/p.precoAntigo)*100) : 0;
+    // FIX-4: coerce para Number antes de inserir em innerHTML — previne XSS
+    // caso o campo venha corrompido do Firestore com payload como <img onerror=...>.
+    const precoNovo = Number(p.precoNovo) || 0;
+    const precoAntigo = Number(p.precoAntigo) || 0;
+    const descPct = precoAntigo ? Math.round((1 - precoNovo/precoAntigo)*100) : 0;
     const isUltHoras = (p.validade - Date.now()) < 24*3600*1000;
     return `<article class="promo-feed-card ${p.tipo}" style="animation-delay:${i*50}ms"
       onclick="promoClick('${esc(p.id)}','${esc(p.oficinaId)}')"
@@ -8083,8 +8484,8 @@ function renderOfertas() {
       <div class="promo-desc">${esc(p.desc)}</div>
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:10px;flex-wrap:wrap;">
         <div>
-          ${p.precoAntigo ? `<span class="promo-price-old">R$ ${p.precoAntigo}</span> ` : ''}
-          <span class="promo-price-new">R$ ${p.precoNovo}</span>
+          ${precoAntigo ? `<span class="promo-price-old">R$ ${precoAntigo}</span> ` : ''}
+          <span class="promo-price-new">R$ ${precoNovo}</span>
           ${descPct > 0 ? `<span style="font-size:11px;background:rgba(0,208,132,0.15);color:var(--g);font-weight:700;border-radius:5px;padding:2px 6px;margin-left:6px;">-${descPct}%</span>` : ''}
         </div>
         ${p.vagasRestantes !== null && p.vagasRestantes <= 4 ? `<span class="promo-vagas">🚨 ${p.vagasRestantes} vaga${p.vagasRestantes!==1?'s':''} restante${p.vagasRestantes!==1?'s':''}</span>` : ''}
@@ -8116,7 +8517,8 @@ function wppPromo(promoId) {
   const of = STATE.oficinas.find(o => o.id === p.oficinaId);
   const wpp = of?.whatsapp || of?.wpp || '27999990000';
   const msg = encodeURIComponent(`Olá! Vi a promoção "${p.titulo}" no MecBusca (R$${p.precoNovo}). Ainda está disponível?`);
-  window.open(`https://wa.me/55${wpp}?text=${msg}`, '_blank');
+  // FIX-A: adicionado 'noopener,noreferrer' — evita window.opener attack.
+  window.open(`https://wa.me/55${wpp}?text=${msg}`, '_blank', 'noopener,noreferrer');
   Analytics.track('promo_wpp', { promoId, oficinaId: p.oficinaId });
 }
 
@@ -8359,8 +8761,8 @@ function promoPreviewUpdate() {
     <div class="promo-desc">${esc(desc)}</div>
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
       <div>
-        ${mockPromo.precoAntigo ? `<span class="promo-price-old">R$ ${mockPromo.precoAntigo}</span> ` : ''}
-        <span class="promo-price-new">R$ ${precoV}</span>
+        ${mockPromo.precoAntigo ? `<span class="promo-price-old">R$ ${Number(mockPromo.precoAntigo)||0}</span> ` : ''}
+        <span class="promo-price-new">R$ ${Number(precoV)||0}</span>
         ${descPct > 0 ? `<span style="font-size:11px;background:rgba(0,208,132,0.15);color:var(--g);font-weight:700;border-radius:5px;padding:2px 6px;margin-left:6px;">-${descPct}%</span>` : ''}
       </div>
       ${vagas && vagas <= 4 ? `<span class="promo-vagas">🚨 ${vagas} vagas restantes</span>` : ''}
@@ -8625,7 +9027,7 @@ function renderSvcPainelList() {
       <!-- Info -->
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:600;color:var(--t);margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(s.nome)}</div>
-        <div style="font-size:13px;font-weight:700;color:var(--g);">R$ ${s.min}${s.max && s.max !== s.min ? '–'+s.max : ''}</div>
+        <div style="font-size:13px;font-weight:700;color:var(--g);">R$ ${Number(s.min)||0}${s.max && s.max !== s.min ? '–'+(Number(s.max)||0) : ''}</div>
         ${s.foto ? '<div style="font-size:10px;color:var(--g);margin-top:3px;opacity:0.7;">📷 com foto</div>' : '<div style="font-size:10px;color:var(--t3);margin-top:3px;">sem foto — clique para adicionar</div>'}
       </div>
       <!-- Controles -->
@@ -9401,7 +9803,7 @@ async function renderPerfil(of) {
           ? svcs.map(s => `
             <div class="perfil-svc-row">
               <span class="perfil-svc-name">${esc(s.nome)}</span>
-              <span class="perfil-svc-price">R$ ${s.min}${s.max&&s.max!==s.min?' – R$ '+s.max:''}</span>
+              <span class="perfil-svc-price">R$ ${Number(s.min)||0}${s.max&&s.max!==s.min?' – R$ '+(Number(s.max)||0):''}</span>
             </div>`).join('')
           : '<div style="color:var(--t3);font-size:13px;">Consulte valores via WhatsApp.</div>'}
       </div>
@@ -12651,7 +13053,7 @@ Quando precisar escalar → [ESCALAR]`;
       '\n\n(Enviado pelo MecBusca)'
     );
     salvarHistoricoAna('escalou_humano');
-    window.open('https://wa.me/' + ANA_REAL_WPP + '?text=' + msg, '_blank', 'noopener');
+    window.open('https://wa.me/' + ANA_REAL_WPP + '?text=' + msg, '_blank', 'noopener,noreferrer');
   };
 
   // ── Geolocalização ──
