@@ -6051,24 +6051,38 @@ async function submitAvaliacao(ofId) {
   }
 }
 
-// ── GEOLOCALIZAÇÃO REAL ───────────────────────────────────────────
+// ── GEOLOCALIZAÇÃO REAL (não-bloqueante) ──────────────────────────
+// O callback é chamado IMEDIATAMENTE para não travar o fluxo.
+// Se a geo resolver depois, a busca é refeita silenciosamente em background.
 function pedirGeolocalizacao(callback) {
-  if (!navigator.geolocation) { callback(); return; }
-  // Só pede uma vez por sessão
-  if (window._geoAsked) { callback(); return; }
+  // Executa o fluxo agora, sem esperar a geo
+  callback();
+
+  if (!navigator.geolocation) return;
+  // Só pede a permissão uma vez por sessão
+  if (window._geoAsked) return;
   window._geoAsked = true;
+
   navigator.geolocation.getCurrentPosition(
     pos => {
+      const wasEmpty = !STATE.userLat;
       STATE.userLat = pos.coords.latitude;
       STATE.userLng = pos.coords.longitude;
       // Atualiza label de localização
       const locEl = document.getElementById('cliLoc');
       if (locEl) locEl.innerHTML = '📍 Perto de mim';
       log(`📍 Geo: ${STATE.userLat.toFixed(4)}, ${STATE.userLng.toFixed(4)}`);
-      callback();
+      // Refaz a busca em background apenas se a geo estava ausente antes
+      // (evita refazer quando o usuário já tinha geo da sessão anterior)
+      if (wasEmpty && typeof runSearch === 'function') {
+        const scCliente = document.getElementById('scCliente');
+        if (scCliente && scCliente.classList.contains('active')) {
+          runSearch();
+        }
+      }
     },
-    err => { log('Geo negada ou erro:', err.message); callback(); },
-    { timeout: 5000, maximumAge: 300000 }
+    err => { log('Geo negada ou erro:', err.message); },
+    { timeout: 8000, maximumAge: 300000 }
   );
 }
 
@@ -11526,24 +11540,19 @@ window.addEventListener('beforeinstallprompt', e => {
     return;
   }
 
-  // Vamos mostrar nosso banner customizado → preventDefault é seguro aqui
+  // Só chama preventDefault se o banner existe — sem ele, prompt() nunca seria
+  // chamado e o Chrome emitiria o aviso. Sem banner: deixa o mini-infobar nativo.
+  if (!banner) return;
+
+  // Banner presente → preventDefault é seguro: prompt() SERÁ chamado pelo botão
   e.preventDefault();
   _deferredInstall = e;
   window._pwaPrompt = e;
 
   // Mostrar após 8s para não interromper a experiência inicial
-  if (banner) {
-    setTimeout(() => {
-      if (_deferredInstall && banner) banner.style.display = 'flex';
-    }, 8000);
-  }
-
-  // Garantia: se página for fechada sem prompt() ter sido chamado,
-  // remover a referência para não vazar memória (não evita o aviso, mas é clean)
-  window.addEventListener('pagehide', () => {
-    _deferredInstall = null;
-    window._pwaPrompt = null;
-  }, { once: true });
+  setTimeout(() => {
+    if (_deferredInstall) banner.style.display = 'flex';
+  }, 8000);
 });
 
 document.getElementById('btnInstallYes')?.addEventListener('click', () => {
@@ -11578,13 +11587,17 @@ function triggerPwaInstall() {
   const sub = document.getElementById('desktop-install-sub');
   // Se o prompt PWA foi capturado, disparar diretamente
   if (window._pwaPrompt) {
-    window._pwaPrompt.prompt();
-    window._pwaPrompt.userChoice.then(result => {
+    // FIX: zera a ref ANTES de chamar prompt() — igual ao btnInstallYes —
+    // para evitar que um segundo clique chame prompt() num evento já consumido.
+    const ref = window._pwaPrompt;
+    window._pwaPrompt = null;
+    _deferredInstall = null;
+    ref.prompt();
+    ref.userChoice.then(result => {
       if (result.outcome === 'accepted') {
         if (sub) sub.textContent = '✅ App instalado com sucesso!';
         _pwaLS('set', 'mb_installed', '1');
       }
-      window._pwaPrompt = null;
     });
     return;
   }
