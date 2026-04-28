@@ -11521,35 +11521,29 @@ function _pwaLS(op, key, val) {
 
 let _deferredInstall = null;
 window.addEventListener('beforeinstallprompt', e => {
-  // FIX PWA: A regra do Chrome é simples:
-  //   SE chamar preventDefault() → DEVE chamar prompt() antes do unload.
-  //   SE não chamar preventDefault() → Chrome mostra o mini-infobar nativo.
+  // FIX DEFINITIVO: NUNCA chamar preventDefault() aqui.
   //
-  // Bug anterior: chamava preventDefault() mesmo quando ia esconder o banner
-  // (usuário já havia descartado), e nunca chamava prompt() → aviso no console.
+  // Qualquer chamada a preventDefault() obriga a chamar prompt() antes do
+  // unload. Como exibimos o banner com delay (setTimeout 8s) o usuário pode
+  // fechar a aba antes — tornando impossível garantir que prompt() será
+  // chamado, o que gera o aviso no console inevitavelmente.
   //
-  // Solução: só chamar preventDefault() quando CERTAMENTE vamos mostrar o banner.
+  // Estrategia correta:
+  //   Nao chamar preventDefault() -> Chrome exibe o mini-infobar nativo
+  //   (pequeno, discreto) sem travar nada.
+  //   Guardar o evento para que nosso botao possa chamar prompt() quando
+  //   o usuario clicar explicitamente — fluxo 100% controlado.
+
+  _deferredInstall = e;
+  window._pwaPrompt = e;
 
   const dismissed = _pwaLS('get', 'mb_install_dismissed');
   const installed  = _pwaLS('get', 'mb_installed');
   const banner     = document.getElementById('installBanner');
 
-  // Usuário já instalou ou descartou nos últimos 7 dias → deixa Chrome gerenciar
-  if (installed || (dismissed && Date.now() - Number(dismissed) < 7 * 24 * 3600_000)) {
-    // NÃO chama preventDefault — Chrome mostra mini-infobar nativo discreto
-    return;
-  }
-
-  // Só chama preventDefault se o banner existe — sem ele, prompt() nunca seria
-  // chamado e o Chrome emitiria o aviso. Sem banner: deixa o mini-infobar nativo.
+  if (installed || (dismissed && Date.now() - Number(dismissed) < 7 * 24 * 3600_000)) return;
   if (!banner) return;
 
-  // Banner presente → preventDefault é seguro: prompt() SERÁ chamado pelo botão
-  e.preventDefault();
-  _deferredInstall = e;
-  window._pwaPrompt = e;
-
-  // Mostrar após 8s para não interromper a experiência inicial
   setTimeout(() => {
     if (_deferredInstall) banner.style.display = 'flex';
   }, 8000);
