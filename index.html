@@ -8712,9 +8712,12 @@ function loadPainel() {
   preloadPainelData();
   // Wire realtime listener for new leads
   if (window._leadsUnsub) window._leadsUnsub(); // cleanup previous
+  const _snapshotId = STATE.oficinaAtual?.id;
+  // Nao assina snapshot com ID demo — evita erro de indice antes da autenticacao real
+  if (!_snapshotId || oficina_id_is_demo(_snapshotId)) return;
   setTimeout(() => {
   window._leadsUnsub = window.FB.onLeadsSnapshot(
-    STATE.oficinaAtual?.id || 'of001',
+    _snapshotId,
     leads => {
       const novos = leads.filter(l => l.status === 'novo').length;
       const shouldBeep = novos > _prevLeadCount;
@@ -13936,6 +13939,9 @@ Quando precisar escalar → [ESCALAR]`;
 
   function showIndexBanner() {
     if (localStorage.getItem(INDEX_KEY)) return;
+    // Só mostrar quando o painel da oficina estiver ativo — nunca na home/splash
+    const painel = document.getElementById('scPainel');
+    if (!painel || !painel.classList.contains('active')) return;
     // FIX B3: se o índice foi criado recentemente, tenta a query antes de mostrar banner
     const created = localStorage.getItem('mb_index_created');
     if (created && (Date.now() - Number(created)) < 10 * 60 * 1000) {
