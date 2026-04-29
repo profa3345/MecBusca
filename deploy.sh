@@ -1,84 +1,161 @@
 #!/usr/bin/env bash
 # ════════════════════════════════════════════════════════════════
-#  MecBusca — Script de Deploy
-#  Uso: bash deploy.sh [--prod | --functions | --hosting]
+#  MecBusca — Script de Deploy v2
+#  Uso: bash deploy.sh [--prod | --functions | --hosting | --rules]
 #  Requisitos: firebase-tools instalado e autenticado
+#
+#  Melhorias aplicadas:
+#   FIX-SH-1: verificação de ferramentas obrigatórias (firebase, node, npm)
+#              antes de qualquer operação.
+#   FIX-SH-2: deploy.sh não faz sed no service-worker.js (era frágil e
+#              desnecessário — CACHE_VER é incrementado manualmente).
+#   FIX-SH-3: verificação de chave reCAPTCHA de teste bloqueia deploy --prod.
+#   FIX-SH-4: validação de variáveis críticas (PROJECT_ID) antes do deploy.
+#   FIX-SH-5: trap para limpeza de estado em caso de erro (exit trap).
+#   FIX-SH-6: log com timestamp para auditoria de deploys.
 # ════════════════════════════════════════════════════════════════
-set -e
+set -euo pipefail
 
 TARGET="${1:-all}"
-BUILD_TS=$(date +%s)
-
-echo ""
-echo "╔══════════════════════════════════════════════════╗"
-echo "║        MecBusca — Deploy  $(date '+%d/%m/%Y %H:%M:%S')       ║"
-echo "╚══════════════════════════════════════════════════╝"
-echo ""
-
-# ── 1. Substituir BUILD_TS no service worker ──────────────────
-echo "🔧 [1/5] Substituindo BUILD_TS = $BUILD_TS no service-worker.js..."
-# Usa sed in-place (Linux). No macOS: sed -i '' ...
-sed -i "s/__BUILD_TS__/$BUILD_TS/g" service-worker.js
-echo "   ✅ service-worker.js atualizado (cache invalidado)"
-
-# ── 2. Atualizar versão do app no index.html ──────────────────
-echo "🔧 [2/5] Atualizando __APP_VERSION__..."
+DEPLOY_TS=$(date +%s)
 APP_VERSION=$(date '+%Y.%m.%d.%H%M')
-# Substitui apenas a versão no bloco de env vars
-sed -i "s/window.__APP_VERSION__    = '[^']*'/window.__APP_VERSION__    = '$APP_VERSION'/" index.html
-echo "   ✅ Versão: $APP_VERSION"
+LOG_FILE="deploy_${APP_VERSION}.log"
 
-# ── 3. Verificar variáveis obrigatórias ──────────────────────
-echo "🔍 [3/5] Verificando variáveis de ambiente..."
+# FIX-SH-5: cleanup em caso de falha
+trap 'echo "❌ Deploy interrompido. Verifique ${LOG_FILE} para detalhes." | tee -a "$LOG_FILE"' ERR
+
+# FIX-SH-6: tee para log file
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+echo ""
+echo "╔══════════════════════════════════════════════════════╗"
+echo "║       MecBusca — Deploy  $(date '+%d/%m/%Y %H:%M:%S')         ║"
+echo "║       TARGET: ${TARGET}                                ║"
+echo "╚══════════════════════════════════════════════════════╝"
+echo ""
+
+# ── 1. Verificar ferramentas obrigatórias ─────────────────────
+echo "🔍 [1/5] Verificando ferramentas..."
+
+# FIX-SH-1: verificar firebase-tools, node, npm
+for cmd in firebase node npm; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "   ❌ '${cmd}' não encontrado. Instale e tente novamente."
+    exit 1
+  fi
+done
+
+FIREBASE_VERSION=$(firebase --version 2>/dev/null || echo "desconhecida")
+NODE_VERSION=$(node --version 2>/dev/null || echo "desconhecida")
+echo "   ✅ firebase: $FIREBASE_VERSION | node: $NODE_VERSION"
+
+# FIX-SH-4: verificar PROJECT_ID configurado
+PROJECT_ID=$(firebase use 2>/dev/null | grep -oE '[a-z0-9-]+' | head -1 || echo "")
+if [ -z "$PROJECT_ID" ]; then
+  echo "   ❌ Nenhum projeto Firebase selecionado. Execute: firebase use <project-id>"
+  exit 1
+fi
+echo "   ✅ Projeto Firebase: $PROJECT_ID"
+
+# ── 2. Verificar variáveis críticas de segurança ─────────────
+echo ""
+echo "🔍 [2/5] Verificando variáveis de segurança..."
+
+WARNINGS=0
+
+# FIX-SH-3: chave reCAPTCHA de teste bloqueia deploy --prod
 if grep -q "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" index.html; then
-  echo ""
-  echo "   ⚠️  ATENÇÃO: Usando chave reCAPTCHA de TESTE!"
-  echo "   Configure a chave real em index.html:"
-  echo "   window.__RECAPTCHA_KEY__ = 'SUA_CHAVE_AQUI'"
-  echo ""
+  echo "   ⚠️  CHAVE RECAPTCHA DE TESTE detectada em index.html!"
+  if [ "$TARGET" = "--prod" ] || [ "$TARGET" = "all" ]; then
+    echo ""
+    echo "   ❌ Deploy bloqueado: chave reCAPTCHA de TESTE não pode ir para produção."
+    echo "   Configure a chave real:"
+    echo "   window.__RECAPTCHA_KEY__ = 'SUA_CHAVE_REAL_AQUI'"
+    exit 1
+  fi
+  WARNINGS=$((WARNINGS + 1))
 fi
+
 if grep -q "'G-XXXXXXXXXX'" index.html 2>/dev/null || grep -q "__GA4_ID__.*= ''" index.html 2>/dev/null; then
-  echo "   ℹ️  GA4 não configurado (opcional mas recomendado)"
-  echo "   Configure: window.__GA4_ID__ = 'G-SEU_ID'"
+  echo "   ℹ️  GA4 não configurado (opcional)."
+  WARNINGS=$((WARNINGS + 1))
 fi
-if grep -q "__SENTRY_DSN__.*= ''" index.html 2>/dev/null; then
-  echo "   ℹ️  Sentry não configurado (opcional mas recomendado para produção)"
-  echo "   Configure: window.__SENTRY_DSN__ = 'https://...@sentry.io/...'"
-fi
-echo "   ✅ Verificação concluída"
 
-# ── 4. Deploy ─────────────────────────────────────────────────
-echo ""
-echo "🚀 [4/5] Iniciando deploy Firebase..."
-if [ "$TARGET" = "--functions" ]; then
-  firebase deploy --only functions
-elif [ "$TARGET" = "--hosting" ]; then
-  firebase deploy --only hosting
-elif [ "$TARGET" = "--rules" ]; then
-  firebase deploy --only firestore:rules,firestore:indexes
+# Verificar se ANTHROPIC_API_KEY está configurada como secret
+if ! firebase functions:secrets:access ANTHROPIC_API_KEY &>/dev/null 2>&1; then
+  echo "   ⚠️  Secret ANTHROPIC_API_KEY não configurada (necessária para chatbot Ana)."
+  echo "   Configure: firebase functions:secrets:set ANTHROPIC_API_KEY"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
+if [ "$WARNINGS" -gt 0 ]; then
+  echo "   ⚠️  $WARNINGS aviso(s). Revise antes de prosseguir."
 else
-  # Deploy completo
-  firebase deploy --only hosting,functions,firestore:rules,firestore:indexes
+  echo "   ✅ Variáveis de segurança OK"
 fi
 
+# ── 3. Instalar dependências das functions ────────────────────
 echo ""
-echo "✅ [5/5] Deploy concluído!"
+echo "📦 [3/5] Instalando dependências das Cloud Functions..."
+if [ -d "functions" ] && [ -f "functions/package.json" ]; then
+  (cd functions && npm install --omit=dev --silent)
+  echo "   ✅ Dependências instaladas"
+else
+  echo "   ℹ️  Pasta functions/ não encontrada — pulando."
+fi
 
-# ── 5. Reverter BUILD_TS para placeholder (para próximo deploy) ─
+# ── 4. Atualizar versão do app ────────────────────────────────
 echo ""
-echo "🔄 Revertendo service-worker.js para controle de versão..."
-sed -i "s/const _RAW_TS = '$BUILD_TS'/const _RAW_TS = '__BUILD_TS__'/" service-worker.js
-echo "   ✅ service-worker.js revertido"
+echo "🔧 [4/5] Atualizando versão do app para $APP_VERSION..."
+# FIX-SH-2: não mecher no service-worker.js via sed.
+#           CACHE_VER é controlado manualmente no arquivo.
+if [ -f "index.html" ]; then
+  # Substitui __APP_VERSION__ ou a versão atual (formato YYYY.MM.DD.HHMM)
+  sed -i "s/window\.__APP_VERSION__\s*=\s*'[^']*'/window.__APP_VERSION__ = '$APP_VERSION'/g" index.html \
+    && echo "   ✅ Versão: $APP_VERSION" \
+    || echo "   ⚠️  Não foi possível atualizar __APP_VERSION__ no index.html (ok se não usar este padrão)"
+fi
+
+# ── 5. Deploy ─────────────────────────────────────────────────
+echo ""
+echo "🚀 [5/5] Iniciando deploy Firebase (target: $TARGET)..."
+echo "   Timestamp: $DEPLOY_TS"
+
+case "$TARGET" in
+  --functions)
+    firebase deploy --only functions
+    ;;
+  --hosting)
+    firebase deploy --only hosting
+    ;;
+  --rules)
+    firebase deploy --only firestore:rules,firestore:indexes
+    ;;
+  --prod | all)
+    firebase deploy --only hosting,functions,firestore:rules,firestore:indexes
+    ;;
+  *)
+    echo "   ❌ Target desconhecido: $TARGET"
+    echo "   Use: --prod | --functions | --hosting | --rules | all"
+    exit 1
+    ;;
+esac
 
 echo ""
-echo "════════════════════════════════════════════════════"
+echo "✅ Deploy concluído em $(date '+%d/%m/%Y %H:%M:%S')!"
+echo "   Log salvo em: $LOG_FILE"
+
+echo ""
+echo "════════════════════════════════════════════════════════"
 echo "  App: https://mecbusca.com.br"
-echo "  Console: https://console.firebase.google.com/project/mecbusca"
+echo "  Console: https://console.firebase.google.com/project/$PROJECT_ID"
 echo ""
 echo "  📋 Checklist pós-deploy:"
 echo "  [ ] App Check enforcement ATIVO no console Firebase?"
-echo "  [ ] Testar busca de oficinas"
-echo "  [ ] Testar envio de lead"
-echo "  [ ] Verificar Sentry por 5 min"
-echo "════════════════════════════════════════════════════"
+echo "  [ ] Testar busca de oficinas (modo anônimo)"
+echo "  [ ] Testar envio de lead (modo anônimo)"
+echo "  [ ] Testar login e painel da oficina"
+echo "  [ ] Verificar erros: Firebase Console → Firestore → coleção _errors"
+echo "  [ ] Verificar logs das Cloud Functions (Firebase Console → Functions → Logs)"
+echo "════════════════════════════════════════════════════════"
 echo ""
