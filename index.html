@@ -2156,10 +2156,57 @@ button,a,[role=button]{min-height:44px;}
       ══════════════════════════════════════════════════════════ -->
       <div class="home-search-box" id="hbox-bikes-oficinas" style="display:none;">
         <div class="home-search-title">🔧 Bike-shops e oficinas</div>
+
+        <!-- Toggle elétrica / não-elétrica -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button id="hBikeEletricaNao" onclick="bikeSetEletrica(false)"
+            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b2);background:var(--gg2);color:var(--g);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
+            🚲 Não elétrica
+          </button>
+          <button id="hBikeEletricaSim" onclick="bikeSetEletrica(true)"
+            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b);background:transparent;color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
+            ⚡ Elétrica (E-bike)
+          </button>
+        </div>
+
         <div class="home-fields">
+          <!-- Tipo de bicicleta com modelos dinâmicos -->
+          <div class="home-field">
+            <label for="hTipoBike">Tipo de bicicleta</label>
+            <select id="hTipoBike" onchange="bikeUpdateModelos('hModeloBike','hTipoBike')">
+              <option value="">Todos os tipos</option>
+              <!-- não-elétricas -->
+              <option value="speed" class="bike-nao-eletrica">🚴 Speed / Road</option>
+              <option value="mountain" class="bike-nao-eletrica">🏔️ Mountain Bike (MTB)</option>
+              <option value="urbana" class="bike-nao-eletrica">🏙️ Urbana / City</option>
+              <option value="gravel" class="bike-nao-eletrica">🛤️ Gravel</option>
+              <option value="infantil" class="bike-nao-eletrica">👶 Infantil</option>
+              <option value="dobrável" class="bike-nao-eletrica">🔀 Dobrável</option>
+              <option value="bmx" class="bike-nao-eletrica">🤸 BMX / Dirt</option>
+              <!-- elétricas (ocultas por padrão) -->
+              <option value="ebike-urbana" class="bike-eletrica" style="display:none;">⚡ E-bike Urbana</option>
+              <option value="ebike-mountain" class="bike-eletrica" style="display:none;">⚡ E-MTB</option>
+              <option value="ebike-speed" class="bike-eletrica" style="display:none;">⚡ E-Road / Speed</option>
+              <option value="ebike-cargo" class="bike-eletrica" style="display:none;">⚡ E-Cargo / Carga</option>
+              <option value="ebike-dobravel" class="bike-eletrica" style="display:none;">⚡ E-bike Dobrável</option>
+              <option value="outro">✏️ Outro (descrever)</option>
+            </select>
+          </div>
+
+          <!-- Modelo dinâmico por tipo -->
+          <div class="home-field">
+            <label for="hModeloBike">Modelo / Marca</label>
+            <select id="hModeloBike" onchange="bikeCheckOutro('hModeloBike','hModeloBikeOutro')">
+              <option value="">— Selecione o tipo primeiro —</option>
+            </select>
+            <input id="hModeloBikeOutro" type="text" placeholder="Descreva o modelo ou marca..."
+              style="display:none;margin-top:6px;width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+          </div>
+
+          <!-- Serviço -->
           <div class="home-field home-field-full">
-            <label for="hServicoBike">Serviço para bicicleta</label>
-            <select id="hServicoBike">
+            <label for="hServicoBike">Serviço desejado</label>
+            <select id="hServicoBike" onchange="bikeCheckOutro('hServicoBike','hServicoBikeOutro')">
               <option value="">— Todos os serviços —</option>
               <option value="revisão de bicicleta">🔧 Revisão completa</option>
               <option value="troca de câmbio bike">⚙️ Câmbio / marcha</option>
@@ -2169,8 +2216,16 @@ button,a,[role=button]{min-height:44px;}
               <option value="suspensão bike">🛞 Suspensão</option>
               <option value="rodas bike">🔵 Rodas e aros</option>
               <option value="limpeza lubrificação bike">🧴 Limpeza e lubrificação</option>
+              <!-- serviços extras para e-bike, aparecerão sempre mas fazem sentido c/ elétrica -->
+              <option value="bateria ebike">🔋 Bateria / carregador (E-bike)</option>
+              <option value="motor ebike">⚡ Motor elétrico (E-bike)</option>
+              <option value="controlador ebike">🖥️ Controlador / display (E-bike)</option>
+              <option value="outro">✏️ Outro (descrever)</option>
             </select>
+            <input id="hServicoBikeOutro" type="text" placeholder="Descreva o serviço que precisa..."
+              style="display:none;margin-top:6px;width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
           </div>
+
           <div class="home-field">
             <label for="hCidadeBike">Cidade</label>
             <select id="hCidadeBike">
@@ -2178,18 +2233,6 @@ button,a,[role=button]{min-height:44px;}
               <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
               <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
               <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-            </select>
-          </div>
-          <div class="home-field">
-            <label for="hTipoBike">Tipo de bicicleta</label>
-            <select id="hTipoBike">
-              <option value="">Todos os tipos</option>
-              <option value="speed">🚴 Speed / Road</option>
-              <option value="mountain">🏔️ Mountain Bike (MTB)</option>
-              <option value="urbana">🏙️ Urbana / City</option>
-              <option value="gravel">🛤️ Gravel</option>
-              <option value="infantil">👶 Infantil</option>
-              <option value="elétrica">⚡ E-bike</option>
             </select>
           </div>
         </div>
@@ -2200,6 +2243,19 @@ button,a,[role=button]{min-height:44px;}
       <!-- BUSCA: BIKES — PEÇAS -->
       <div class="home-search-box" id="hbox-bikes-pecas" style="display:none;">
         <div class="home-search-title">🔩 Peças para bicicletas</div>
+
+        <!-- Toggle elétrica / não-elétrica -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button id="hBikePecaEletricaNao" onclick="bikeSetEletricaPeca(false)"
+            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b2);background:var(--gg2);color:var(--g);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
+            🚲 Não elétrica
+          </button>
+          <button id="hBikePecaEletricaSim" onclick="bikeSetEletricaPeca(true)"
+            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b);background:transparent;color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
+            ⚡ Elétrica (E-bike)
+          </button>
+        </div>
+
         <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
           <label for="hPecaBike">Peça ou componente</label>
           <div style="position:relative;">
@@ -2210,20 +2266,42 @@ button,a,[role=button]{min-height:44px;}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
           <div>
             <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo de bike</label>
-            <select id="hTipoPecaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+            <select id="hTipoPecaBike" onchange="bikeUpdateModelos('hModeloPecaBike','hTipoPecaBike');bikeCheckOutro('hTipoPecaBike','hTipoPecaBikeOutro')"
+              style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
               <option value="">Todos os tipos</option>
-              <option value="speed">Speed / Road</option><option value="mountain">Mountain (MTB)</option>
-              <option value="urbana">Urbana</option><option value="elétrica">E-bike</option>
+              <option value="speed">Speed / Road</option>
+              <option value="mountain">Mountain (MTB)</option>
+              <option value="urbana">Urbana / City</option>
+              <option value="gravel">Gravel</option>
+              <option value="infantil">Infantil</option>
+              <option value="dobrável">Dobrável</option>
+              <option value="bmx">BMX / Dirt</option>
+              <option value="ebike-urbana" class="bike-peca-eletrica" style="display:none;">⚡ E-bike Urbana</option>
+              <option value="ebike-mountain" class="bike-peca-eletrica" style="display:none;">⚡ E-MTB</option>
+              <option value="ebike-speed" class="bike-peca-eletrica" style="display:none;">⚡ E-Road</option>
+              <option value="ebike-cargo" class="bike-peca-eletrica" style="display:none;">⚡ E-Cargo</option>
+              <option value="outro">✏️ Outro</option>
             </select>
+            <input id="hTipoPecaBikeOutro" type="text" placeholder="Descreva o tipo..."
+              style="display:none;margin-top:6px;width:100%;padding:9px 12px;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
           </div>
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
-            <select id="hCidadePecaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Modelo / Marca</label>
+            <select id="hModeloPecaBike" onchange="bikeCheckOutro('hModeloPecaBike','hModeloPecaBikeOutro')"
+              style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">— Selecione o tipo —</option>
             </select>
+            <input id="hModeloPecaBikeOutro" type="text" placeholder="Modelo ou marca..."
+              style="display:none;margin-top:6px;width:100%;padding:9px 12px;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
           </div>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
+          <select id="hCidadePecaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+            <option value="">Todas as cidades</option>
+            <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+            <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+          </select>
         </div>
         <button class="home-search-btn" onclick="homeBuscarPecaBike()">🔍 Encontrar peça para bike</button>
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Componentes e acessórios para bicicletas · ES</div>
@@ -2232,16 +2310,32 @@ button,a,[role=button]{min-height:44px;}
       <!-- BUSCA: BIKES — LAVA-JATO -->
       <div class="home-search-box" id="hbox-bikes-lavajato" style="display:none;">
         <div class="home-search-title">🚿 Limpeza de bicicletas</div>
+
+        <!-- Toggle elétrica / não-elétrica -->
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button id="hBikeLavaEletricaNao" onclick="bikeSetEletricaLava(false)"
+            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b2);background:var(--gg2);color:var(--g);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
+            🚲 Não elétrica
+          </button>
+          <button id="hBikeLavaEletricaSim" onclick="bikeSetEletricaLava(true)"
+            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b);background:transparent;color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
+            ⚡ Elétrica (E-bike)
+          </button>
+        </div>
+
         <div class="home-fields">
           <div class="home-field home-field-full">
             <label for="hServicoLavaJatoBike">Serviço</label>
-            <select id="hServicoLavaJatoBike">
+            <select id="hServicoLavaJatoBike" onchange="bikeCheckOutro('hServicoLavaJatoBike','hServicoLavaJatoBikeOutro')">
               <option value="">— Todos os serviços —</option>
               <option value="lavagem bicicleta">🚿 Lavagem completa</option>
               <option value="limpeza lubrificação bike">🧴 Limpeza + lubrificação</option>
               <option value="polimento quadro bike">💎 Polimento de quadro</option>
               <option value="higienização bicicleta">🧹 Higienização</option>
+              <option value="outro">✏️ Outro (descrever)</option>
             </select>
+            <input id="hServicoLavaJatoBikeOutro" type="text" placeholder="Descreva o serviço..."
+              style="display:none;margin-top:6px;width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
           </div>
           <div class="home-field">
             <label for="hCidadeLavaJatoBike">Cidade</label>
@@ -2262,6 +2356,133 @@ button,a,[role=button]{min-height:44px;}
         </div>
         <button class="home-search-btn" onclick="homeBuscarLavaJato('bike')">🔍 Encontrar lavagem agora</button>
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚲 Limpeza especializada em bikes · ES</div>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════════
+           BUSCA: CAMINHÃO — OFICINAS
+      ══════════════════════════════════════════════════════════ -->
+      <div class="home-search-box" id="hbox-caminhao-oficinas" style="display:none;">
+        <div class="home-search-title">🔧 Oficinas para caminhões</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServicoCaminhao">Serviço para caminhão</label>
+            <select id="hServicoCaminhao">
+              <option value="">— Todos os serviços —</option>
+              <option value="revisão caminhão">🔧 Revisão completa</option>
+              <option value="troca de óleo caminhão">🛢️ Troca de óleo</option>
+              <option value="freios caminhão">🔴 Freios e tambores</option>
+              <option value="pneu caminhão">⭕ Pneu / recapagem</option>
+              <option value="suspensão caminhão">🔩 Suspensão</option>
+              <option value="elétrica caminhão">⚡ Elétrica / painel</option>
+              <option value="injeção diesel caminhão">⛽ Injeção diesel / bicos</option>
+              <option value="embreagem caminhão">⚙️ Embreagem</option>
+              <option value="diferencial caminhão">⚙️ Diferencial / câmbio</option>
+              <option value="funilaria caminhão">🎨 Funilaria / pintura</option>
+              <option value="ar condicionado caminhão">❄️ Ar condicionado</option>
+              <option value="rastreador caminhão">📡 Rastreamento / telemetria</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidadeCaminhao">Cidade</label>
+            <select id="hCidadeCaminhao">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
+              <option value="Linhares">Linhares</option><option value="Cachoeiro de Itapemirim">Cachoeiro</option>
+              <option value="Colatina">Colatina</option><option value="São Mateus">São Mateus</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hTipoCaminhao">Tipo de caminhão</label>
+            <select id="hTipoCaminhao">
+              <option value="">Todos os tipos</option>
+              <option value="leve">🚚 Leve (até 3,5t)</option>
+              <option value="médio">🚛 Médio (3,5t – 16t)</option>
+              <option value="pesado">🚛 Pesado (acima de 16t)</option>
+              <option value="truck">🚜 Truck / Bitruck</option>
+              <option value="carreta">🚛 Carreta / Bi-trem</option>
+              <option value="van">🚐 Van / Furgão</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarCaminhao()">🔍 Buscar agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚛 Especialistas em caminhões · orçamento no WhatsApp</div>
+      </div>
+
+      <!-- BUSCA: CAMINHÃO — PEÇAS -->
+      <div class="home-search-box" id="hbox-caminhao-pecas" style="display:none;">
+        <div class="home-search-title">🔩 Peças para caminhões</div>
+        <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
+          <label for="hPecaCaminhao">Peça ou componente</label>
+          <div style="position:relative;">
+            <input id="hPecaCaminhao" type="text" placeholder="Ex: filtro de combustível, tambor de freio, bico injetor..." autocomplete="off" style="padding-right:36px;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca do caminhão</label>
+            <select id="hMarcaCaminhao" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todas as marcas</option>
+              <option value="Volkswagen">Volkswagen</option><option value="Mercedes-Benz">Mercedes-Benz</option>
+              <option value="Volvo">Volvo</option><option value="Scania">Scania</option>
+              <option value="DAF">DAF</option><option value="Iveco">Iveco</option>
+              <option value="MAN">MAN</option><option value="Ford">Ford</option>
+              <option value="Agrale">Agrale</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
+            <select id="hCidadePecaCaminhao" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+              <option value="Linhares">Linhares</option><option value="Colatina">Colatina</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarPecaCaminhao()">🔍 Encontrar peça para caminhão</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Peças originais e paralelas para caminhões · ES</div>
+      </div>
+
+      <!-- BUSCA: CAMINHÃO — LAVA-JATO -->
+      <div class="home-search-box" id="hbox-caminhao-lavajato" style="display:none;">
+        <div class="home-search-title">🚿 Lava-Jatos para caminhões</div>
+        <div class="home-fields">
+          <div class="home-field home-field-full">
+            <label for="hServicoLavaJatoCaminhao">Serviço</label>
+            <select id="hServicoLavaJatoCaminhao">
+              <option value="">— Todos os serviços —</option>
+              <option value="lavagem simples caminhão">🚿 Lavagem simples</option>
+              <option value="lavagem completa caminhão">✨ Lavagem completa</option>
+              <option value="higienização cabine caminhão">🧹 Higienização de cabine</option>
+              <option value="lavagem motor caminhão">⚙️ Lavagem de motor</option>
+              <option value="polimento cabine caminhão">💎 Polimento de cabine</option>
+              <option value="limpeza baú caminhão">📦 Limpeza de baú / caçamba</option>
+              <option value="vitrificação caminhão">🛡️ Vitrificação</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hCidadeLavaJatoCaminhao">Cidade</label>
+            <select id="hCidadeLavaJatoCaminhao">
+              <option value="">Todas as cidades</option>
+              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
+              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
+              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
+            </select>
+          </div>
+          <div class="home-field">
+            <label for="hPrecoMaxLavaJatoCaminhao">Preço máximo</label>
+            <select id="hPrecoMaxLavaJatoCaminhao">
+              <option value="">Qualquer preço</option>
+              <option value="80">Até R$ 80</option><option value="150">Até R$ 150</option>
+              <option value="250">Até R$ 250</option><option value="400">Até R$ 400</option>
+            </select>
+          </div>
+        </div>
+        <button class="home-search-btn" onclick="homeBuscarLavaJato('caminhao')">🔍 Encontrar lava-jato agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚛 Lavagem especializada em caminhões · ES</div>
       </div>
 
       <!-- BUSCA PEÇAS (legado — mantido para compatibilidade com homeSetTab('pecas')) -->
@@ -2394,6 +2615,23 @@ button,a,[role=button]{min-height:44px;}
               <div style="color:var(--t3);font-size:18px;flex-shrink:0;">›</div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- ── PARA LAVA-JATOS ── -->
+        <div style="margin-bottom:14px;">
+          <div style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:0.09em;font-weight:600;margin-bottom:8px;">🚿 Para lava-jatos</div>
+          <div onclick="openOverlay('scLavaJatoCadastro')" role="button" tabindex="0"
+            style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(91,156,246,0.07);border:1.5px solid rgba(91,156,246,0.25);border-radius:var(--r);cursor:pointer;transition:all 0.15s;"
+            onmouseenter="this.style.background='rgba(91,156,246,0.14)';this.style.borderColor='rgba(91,156,246,0.5)'"
+            onmouseleave="this.style.background='rgba(91,156,246,0.07)';this.style.borderColor='rgba(91,156,246,0.25)'"
+            onkeydown="if(event.key==='Enter')openOverlay('scLavaJatoCadastro')">
+            <div style="width:40px;height:40px;border-radius:10px;background:rgba(91,156,246,0.12);border:1px solid rgba(91,156,246,0.25);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🚿</div>
+            <div style="flex:1;text-align:left;">
+              <div style="font-size:13.5px;font-weight:600;color:var(--t);">Cadastre seu lava-jato — grátis</div>
+              <div style="font-size:11.5px;color:var(--t3);margin-top:1px;">Clientes buscando lavagem encontram você na hora</div>
+            </div>
+            <div style="color:var(--bl);font-size:18px;flex-shrink:0;">›</div>
           </div>
         </div>
 
@@ -4724,7 +4962,7 @@ async function cadastrarFornecedor() {
 // ── OVERLAY SYSTEM ───────────────────────────────────────────────
 // scAuth, scOnboarding, scFornecedor are overlays (modal/drawer), not screens.
 // They sit on top of whatever screen is active.
-const OVERLAYS = ['scAuth', 'scOnboarding', 'scFornecedor'];
+const OVERLAYS = ['scAuth', 'scOnboarding', 'scFornecedor', 'scLavaJatoCadastro'];
 
 function openOverlay(id) {
   const el = document.getElementById(id);
@@ -4754,6 +4992,12 @@ function openOverlay(id) {
       if (typeof fpInitSelects === 'function') fpInitSelects();
       if (typeof renderFpCatalogo === 'function') renderFpCatalogo();
     }, 100);
+  }
+  // Inicializa cadastro de lava-jato
+  if (id === 'scLavaJatoCadastro') {
+    setTimeout(() => {
+      if (typeof ljCadastroInit === 'function') ljCadastroInit();
+    }, 80);
   }
 }
 
@@ -5181,7 +5425,7 @@ let _homeSubtab    = 'oficinas';
 function homeSetCategoria(cat) {
   _homeCategoria = cat;
   _homeSubtab    = 'oficinas';
-  ['carros','motos','bikes'].forEach(c => {
+  ['carros','motos','bikes','caminhao'].forEach(c => {
     const btn = document.getElementById('htab-' + c);
     if (btn) { btn.classList.toggle('active', c === cat); btn.setAttribute('aria-selected', c === cat); }
   });
@@ -5220,9 +5464,9 @@ function homeSetTab(tab) {
 
 // ── Lava-Jato search handler ─────────────────────────────────────
 function homeBuscarLavaJato(tipo) {
-  const servicoEl  = document.getElementById({ carro:'hServicoLavaJatoCarro', moto:'hServicoLavaJatoMoto', bike:'hServicoLavaJatoBike' }[tipo]);
-  const cidadeEl   = document.getElementById({ carro:'hCidadeLavaJatoCarro',  moto:'hCidadeLavaJatoMoto',  bike:'hCidadeLavaJatoBike'  }[tipo]);
-  const precoEl    = document.getElementById({ carro:'hPrecoMaxLavaJatoCarro',moto:'hPrecoMaxLavaJatoMoto',bike:'hPrecoMaxLavaJatoBike' }[tipo]);
+  const servicoEl  = document.getElementById({ carro:'hServicoLavaJatoCarro', moto:'hServicoLavaJatoMoto', bike:'hServicoLavaJatoBike', caminhao:'hServicoLavaJatoCaminhao' }[tipo]);
+  const cidadeEl   = document.getElementById({ carro:'hCidadeLavaJatoCarro',  moto:'hCidadeLavaJatoMoto',  bike:'hCidadeLavaJatoBike',  caminhao:'hCidadeLavaJatoCaminhao'  }[tipo]);
+  const precoEl    = document.getElementById({ carro:'hPrecoMaxLavaJatoCarro',moto:'hPrecoMaxLavaJatoMoto',bike:'hPrecoMaxLavaJatoBike', caminhao:'hPrecoMaxLavaJatoCaminhao' }[tipo]);
   const servico    = servicoEl?.value || 'lava-jato';
   const cidade     = cidadeEl?.value  || '';
   const precoMax   = precoEl?.value   || '';
@@ -5251,12 +5495,19 @@ function homeBuscarPecaMoto() {
 }
 
 function homeBuscarPecaBike() {
-  const peca  = document.getElementById('hPecaBike')?.value  || '';
-  const tipo  = document.getElementById('hTipoPecaBike')?.value || '';
-  const cidade= document.getElementById('hCidadePecaBike')?.value|| '';
-  if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = [peca, tipo].filter(Boolean).join(' ') || 'peças bicicleta';
+  const peca   = document.getElementById('hPecaBike')?.value || '';
+  // resolve "Outro" — usa o input de texto se selecionado
+  const tipoSel= document.getElementById('hTipoPecaBike')?.value || '';
+  const tipo   = tipoSel === 'outro'
+    ? (document.getElementById('hTipoPecaBikeOutro')?.value || '') : tipoSel;
+  const modeloSel = document.getElementById('hModeloPecaBike')?.value || '';
+  const modelo = modeloSel === 'outro'
+    ? (document.getElementById('hModeloPecaBikeOutro')?.value || '') : modeloSel;
+  const cidade = document.getElementById('hCidadePecaBike')?.value || '';
+  const q = [peca, modelo, tipo].filter(Boolean).join(' ') || 'peças bicicleta';
+  if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = q;
   if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
-  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'pecas', veiculo:'bike', peca });
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'pecas', veiculo:'bike', peca, tipo, modelo });
   goTo('scCliente'); setMode('pecas');
   pedirGeolocalizacao(() => runSearch());
 }
@@ -5275,15 +5526,153 @@ function homeBuscarMoto() {
 }
 
 function homeBuscarBike() {
-  const svc    = document.getElementById('hServicoBike')?.value || '';
-  const cidade = document.getElementById('hCidadeBike')?.value || '';
-  const q = svc.trim() || 'bicicleta';
+  // resolve "Outro" para serviço e tipo
+  const svcSel = document.getElementById('hServicoBike')?.value || '';
+  const svc    = svcSel === 'outro'
+    ? (document.getElementById('hServicoBikeOutro')?.value || '') : svcSel;
+  const tipoSel = document.getElementById('hTipoBike')?.value || '';
+  const tipo    = tipoSel === 'outro'
+    ? (document.getElementById('hTipoBikeOutro')?.value || '') : tipoSel;
+  const modeloSel = document.getElementById('hModeloBike')?.value || '';
+  const modelo    = modeloSel === 'outro'
+    ? (document.getElementById('hModeloBikeOutro')?.value || '') : modeloSel;
+  const cidade  = document.getElementById('hCidadeBike')?.value || '';
+  const eletrica = document.getElementById('hBikeEletricaSim')?.classList.contains('bike-toggle-on') || false;
+  const q = [svc, modelo, tipo, eletrica ? 'elétrica' : ''].filter(Boolean).join(' ').trim() || 'bicicleta';
   if (cidade) { STATE.advFilters = STATE.advFilters || {}; STATE.advFilters.cidade = cidade; }
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'oficina', veiculo:'bike', servico:svc, eletrica, tipo, modelo });
   goTo('scCliente');
-  // FIX-10: mesma correção de homeBuscarMoto — preserva o filtro após setMode().
   STATE.filtroChip = q;
   setMode('bikes');
   document.getElementById('cliSearch').value = q;
+}
+
+// ── BIKE HELPERS ─────────────────────────────────────────────────
+
+// Modelos por tipo de bicicleta
+const _BIKE_MODELOS = {
+  speed:         ['Trek Domane','Trek Émonda','Specialized Tarmac','Specialized Roubaix','Giant Defy','Cannondale Synapse','Scott Addict','Bianchi Oltre','Merida Scultura','Caloi 10','Outro'],
+  mountain:      ['Trek Marlin','Trek Fuel EX','Specialized Stumpjumper','Specialized Epic','Giant Talon','Giant Trance','Cannondale Trail','Scott Spark','Merida Big Nine','Oggi Big Wheel','Caloi Explorer','Outro'],
+  urbana:        ['Caloi City Tour','Caloi Easy Rider','Oggi On Road','Trek FX','Giant Escape','Specialized Sirrus','Cannondale Quick','Gios Frisco','Sense Move','Schwinn','Outro'],
+  gravel:        ['Trek Checkpoint','Specialized Diverge','Giant Revolt','Cannondale Topstone','Scott Speedster Gravel','Merida Silex','Bianchi Arcadex','Outro'],
+  infantil:      ['Caloi Ceci','Trek Precaliber','Specialized Riprock','Giant ARX','Monark','Outro'],
+  dobrável:      ['Dobrinha','Dahon Vybe','Tern Link','Caloi Easy','Brompton','Schwinn Loop','Outro'],
+  bmx:           ['Caloi BMX','Haro Downtown','GT Performer','Kink Gap','Sunday Blueprint','Mongoose Legion','Outro'],
+  'ebike-urbana':  ['Trek Verve+','Specialized Turbo Como','Giant Explore E+','Caloi E-Vibe Urban','Sense e-Move','Outro'],
+  'ebike-mountain':['Trek Rail','Specialized Turbo Levo','Giant Trance X E+','Cannondale Moterra','Scott Patron','Outro'],
+  'ebike-speed':   ['Trek Domane+','Specialized Turbo Creo','Giant Road E+','Outro'],
+  'ebike-cargo':   ['Tern GSD','Urban Arrow','Specialized Globe Haul','Outro'],
+  'ebike-dobravel':['Brompton Electric','Tern Vektron','Dahon Ciao','Outro'],
+};
+
+// Popula o select de modelos de acordo com o tipo selecionado
+function bikeUpdateModelos(selectModeloId, selectTipoId) {
+  const tipo     = document.getElementById(selectTipoId)?.value || '';
+  const selModelo = document.getElementById(selectModeloId);
+  if (!selModelo) return;
+  const modelos  = _BIKE_MODELOS[tipo] || [];
+  selModelo.innerHTML = modelos.length
+    ? ['<option value="">— Selecione o modelo —</option>',
+       ...modelos.map(m => `<option value="${m === 'Outro' ? 'outro' : m}">${m === 'Outro' ? '✏️ Outro (digitar)' : m}</option>`)
+      ].join('')
+    : '<option value="">— Selecione o tipo primeiro —</option>';
+  // Oculta o input "Outro" quando o tipo muda
+  const outroId = selectModeloId + 'Outro';
+  const outroEl = document.getElementById(outroId);
+  if (outroEl) outroEl.style.display = 'none';
+}
+
+// Exibe/oculta o input de texto quando "Outro" é selecionado num select
+function bikeCheckOutro(selectId, inputId) {
+  const sel = document.getElementById(selectId);
+  const inp = document.getElementById(inputId);
+  if (!sel || !inp) return;
+  if (sel.value === 'outro') {
+    inp.style.display = 'block';
+    inp.focus();
+  } else {
+    inp.style.display = 'none';
+    inp.value = '';
+  }
+}
+
+// ── Toggle elétrica — Oficinas ────────────────────────────────
+function bikeSetEletrica(eletrica) {
+  _bikeToggle('hBikeEletricaSim','hBikeEletricaNao', eletrica);
+  _bikeFilterOpcoes('hTipoBike', eletrica);
+  // reseta modelo ao trocar
+  document.getElementById('hModeloBike').innerHTML = '<option value="">— Selecione o tipo primeiro —</option>';
+  const mo = document.getElementById('hModeloBikeOutro'); if (mo) { mo.style.display='none'; mo.value=''; }
+}
+
+// ── Toggle elétrica — Peças ───────────────────────────────────
+function bikeSetEletricaPeca(eletrica) {
+  _bikeToggle('hBikePecaEletricaSim','hBikePecaEletricaNao', eletrica);
+  _bikeFilterOpcoes('hTipoPecaBike', eletrica);
+  document.getElementById('hModeloPecaBike').innerHTML = '<option value="">— Selecione o tipo primeiro —</option>';
+  const mo = document.getElementById('hModeloPecaBikeOutro'); if (mo) { mo.style.display='none'; mo.value=''; }
+}
+
+// ── Toggle elétrica — Lava-Jato ───────────────────────────────
+function bikeSetEletricaLava(eletrica) {
+  _bikeToggle('hBikeLavaEletricaSim','hBikeLavaEletricaNao', eletrica);
+}
+
+// Aplica o estilo ativo/inativo nos botões toggle
+function _bikeToggle(idSim, idNao, eletrica) {
+  const btnSim = document.getElementById(idSim);
+  const btnNao = document.getElementById(idNao);
+  if (!btnSim || !btnNao) return;
+  if (eletrica) {
+    btnSim.style.background = 'var(--gg2)'; btnSim.style.color = 'var(--g)';
+    btnSim.style.borderColor = 'var(--b2)'; btnSim.classList.add('bike-toggle-on');
+    btnNao.style.background = 'transparent'; btnNao.style.color = 'var(--t2)';
+    btnNao.style.borderColor = 'var(--b)'; btnNao.classList.remove('bike-toggle-on');
+  } else {
+    btnNao.style.background = 'var(--gg2)'; btnNao.style.color = 'var(--g)';
+    btnNao.style.borderColor = 'var(--b2)'; btnNao.classList.add('bike-toggle-on');
+    btnSim.style.background = 'transparent'; btnSim.style.color = 'var(--t2)';
+    btnSim.style.borderColor = 'var(--b)'; btnSim.classList.remove('bike-toggle-on');
+  }
+}
+
+// Mostra/oculta opções elétricas e não-elétricas no select de tipo
+function _bikeFilterOpcoes(selectId, mostrarEletrica) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.value = '';
+  Array.from(sel.options).forEach(opt => {
+    if (opt.classList.contains('bike-eletrica') || opt.classList.contains('bike-peca-eletrica')) {
+      opt.style.display = mostrarEletrica ? '' : 'none';
+    } else if (opt.classList.contains('bike-nao-eletrica')) {
+      opt.style.display = mostrarEletrica ? 'none' : '';
+    }
+  });
+}
+
+
+function homeBuscarCaminhao() {
+  const svc    = document.getElementById('hServicoCaminhao')?.value || '';
+  const cidade = document.getElementById('hCidadeCaminhao')?.value || '';
+  const tipo   = document.getElementById('hTipoCaminhao')?.value || '';
+  const q = [svc, tipo].filter(Boolean).join(' ').trim() || 'caminhão';
+  if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
+  if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = q;
+  STATE._buscarVeiculo = 'caminhao';
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'oficina', veiculo:'caminhao', servico: svc, cidade });
+  goTo('scCliente');
+  pedirGeolocalizacao(() => { runSearch(); applyAdvFilters?.(); });
+}
+
+function homeBuscarPecaCaminhao() {
+  const peca  = document.getElementById('hPecaCaminhao')?.value || '';
+  const marca = document.getElementById('hMarcaCaminhao')?.value || '';
+  const cidade= document.getElementById('hCidadePecaCaminhao')?.value || '';
+  if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = [peca, marca].filter(Boolean).join(' ') || 'peças caminhão';
+  if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
+  if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'pecas', veiculo:'caminhao', peca, marca });
+  goTo('scCliente'); setMode('pecas');
+  pedirGeolocalizacao(() => runSearch());
 }
 
 function homeLoginOficina() {
@@ -7750,67 +8139,169 @@ function setMode(modo) {
 }
 
 // ── renderLavaJatos ──────────────────────────────────────────────
+// Palavras-chave que identificam um lava-jato nos serviços indexados
+const _LJ_KEYWORDS = ['lava','lavagem','lavajato','polimento','higieniza','cristaliza','cera ','vitrifica','dry wash','sanitiza','detailing'];
+
+function _isLavaJato(o) {
+  if (o.tipoEstabelecimento === 'lavajato') return true;
+  return (o.servicos||[]).some(s => {
+    const n = s.nome.toLowerCase();
+    return _LJ_KEYWORDS.some(k => n.includes(k));
+  });
+}
+
+// Badges de veículos atendidos pelo lava-jato
+function _ljVeiculoBadges(lj) {
+  const tv = lj.tipoVeiculo || [];
+  const map = {
+    carro:'🚗 Carros', moto:'🏍️ Motos', caminhao:'🚛 Caminhões',
+    onibus:'🚌 Ônibus', bicicleta:'🚲 Bikes', eletrico:'⚡ Elétricos'
+  };
+  return tv.map(v => map[v] ? `<span style="font-size:10px;padding:2px 7px;background:rgba(91,156,246,0.12);color:var(--bl);border-radius:6px;white-space:nowrap;">${map[v]}</span>` : '').filter(Boolean).join('');
+}
+
 function renderLavaJatos() {
   const list = document.getElementById('resultsList');
   if (!list) return;
 
-  // Filtros da home
   const cidade   = document.getElementById('fCidade')?.value   || '';
+  const bairro   = document.getElementById('fBairro')?.value   || '';
   const precoMax = STATE._buscarLavaJatoPrecoMax                || null;
   const veiculo  = STATE._buscarVeiculo                         || '';
+  const servico  = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
 
   list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--t3);"><div style="font-size:32px;margin-bottom:10px;">🚿</div>Buscando lava-jatos...</div>';
+  document.getElementById('resultsCount').innerHTML = '';
 
-  window.FB?.listarOficinas({ cidade }).then(ofs => {
-    // Filtra por tipo lava-jato (tipoEstabelecimento ou servico com keyword)
-    let ljs = ofs.filter(o =>
-      o.tipoEstabelecimento === 'lavajato' ||
-      (o.servicos||[]).some(s => s.nome.toLowerCase().includes('lava') || s.nome.toLowerCase().includes('lavagem') || s.nome.toLowerCase().includes('polimento') || s.nome.toLowerCase().includes('higieniza'))
-    );
+  const source = (window.FB?.ready() ? window.FB.listarOficinas({ cidade }) : Promise.resolve([])).catch(() => Promise.resolve([]));
+
+  source.then(ofs => {
+    // Combina Firestore + demo
+    const demo = (window.demoLavaJatos ? window.demoLavaJatos() : []);
+    const todos = [...demo, ...ofs.filter(o => !demo.find(d => d.id === o.id))];
+
+    // 1. Filtra apenas lava-jatos
+    let ljs = todos.filter(_isLavaJato);
+
+    // 2. Filtra por veículo (se usuário veio de aba de veículo específico)
     if (veiculo && veiculo !== 'carro') {
-      ljs = ljs.filter(o => (o.tipoVeiculo||[]).includes(veiculo) || (o.servicos||[]).some(s => s.nome.toLowerCase().includes(veiculo)));
+      ljs = ljs.filter(o =>
+        (o.tipoVeiculo||[]).includes(veiculo) ||
+        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(veiculo))
+      );
     }
-    if (precoMax) {
-      ljs = ljs.filter(o => (o.servicos||[]).some(s => (s.min||999) <= precoMax));
+
+    // 3. Filtra por serviço buscado (texto livre)
+    if (servico && servico !== 'lava-jato' && servico !== 'lavajato') {
+      const filtered = ljs.filter(o =>
+        o.nome.toLowerCase().includes(servico) ||
+        (o.bairro||'').toLowerCase().includes(servico) ||
+        (o.cidade||'').toLowerCase().includes(servico) ||
+        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(servico))
+      );
+      if (filtered.length) ljs = filtered;
     }
+
+    // 4. Filtra por cidade e bairro
+    if (cidade) ljs = ljs.filter(o => (o.cidade||'').toLowerCase().includes(cidade.toLowerCase()));
+    if (bairro) ljs = ljs.filter(o => (o.bairro||'').toLowerCase().includes(bairro.toLowerCase()));
+
+    // 5. Filtra por preço
+    if (precoMax) ljs = ljs.filter(o => (o.servicos||[]).some(s => (s.min||999) <= precoMax));
+
+    // Ordena: abertos primeiro, depois por avaliação
+    ljs.sort((a, b) => {
+      if (a.aberto && !b.aberto) return -1;
+      if (!a.aberto && b.aberto) return 1;
+      return (b.avaliacao||0) - (a.avaliacao||0);
+    });
 
     if (!ljs.length) {
-      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🚿</div><div class="empty-title">Nenhum lava-jato encontrado</div><div class="empty-sub">Tente outra cidade ou remova o filtro de preço.</div><div style="margin-top:14px;"><button class="chip active" onclick="setMode(&apos;oficinas&apos;)">Ver todas as oficinas</button></div></div>';
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🚿</div><div class="empty-title">Nenhum lava-jato encontrado</div><div class="empty-sub">Tente outra cidade, outro serviço ou remova os filtros.</div><div style="margin-top:14px;"><button class="chip active" onclick="setMode('oficinas')">Ver todas as oficinas</button></div></div>';
+      document.getElementById('resultsCount').innerHTML = '';
       return;
     }
 
-    document.getElementById('resultsCount').innerHTML = '<strong>' + ljs.length + '</strong> lava-jato' + (ljs.length !== 1 ? 's' : '') + ' encontrado' + (ljs.length !== 1 ? 's' : '');
+    document.getElementById('resultsCount').innerHTML =
+      '<strong>' + ljs.length + '</strong> lava-jato' + (ljs.length!==1?'s':'') + ' encontrado' + (ljs.length!==1?'s':'') +
+      (veiculo && veiculo!=='carro' ? ' <span style="font-size:11px;color:var(--bl);">para ' + veiculo + '</span>' : '');
 
     list.innerHTML = ljs.map((lj, i) => {
-      const ini = esc((lj.nome||'LJ').slice(0,2).toUpperCase());
-      const svcs = (lj.servicos||[]).filter(s => s.ativo).slice(0, 4);
-      const precos = svcs.map(s => `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--b);font-size:12px;"><span style="color:var(--t2);">${esc(s.nome)}</span><span style="color:var(--g);font-weight:700;">R$ ${s.min}${s.max && s.max !== s.min ? '–'+s.max : ''}</span></div>`).join('');
-      return `<article class="of-card" data-id="${esc(lj.id)}" style="animation-delay:${i*40}ms" onclick="openBudget('${esc(lj.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(lj.id)}')" aria-label="${esc(lj.nome)}">
+      const ini    = esc((lj.nome||'LJ').slice(0,2).toUpperCase());
+      const svcs   = (lj.servicos||[]).filter(s => s.ativo).slice(0, 4);
+      const precos = svcs.map(s =>
+        `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--b);font-size:12px;">
+          <span style="color:var(--t2);">${esc(s.nome)}</span>
+          <span style="color:var(--g);font-weight:700;">${s.min ? 'R$ '+s.min+(s.max&&s.max!==s.min?'–'+s.max:'') : 'Sob consulta'}</span>
+        </div>`).join('');
+      const badges = _ljVeiculoBadges(lj);
+      const statusColor = lj.aberto ? 'var(--g)' : 'var(--t3)';
+      return `<article class="of-card" data-id="${esc(lj.id)}" style="animation-delay:${i*40}ms"
+        onclick="openBudget('${esc(lj.id)}')" tabindex="0"
+        onkeypress="if(event.key==='Enter')openBudget('${esc(lj.id)}')"
+        aria-label="${esc(lj.nome)}">
         <div class="of-top">
-          <div class="of-avatar" aria-hidden="true">${ini}</div>
-          <div class="of-info">
+          <div class="of-avatar" aria-hidden="true" style="background:rgba(91,156,246,0.15);color:var(--bl);font-size:20px;display:flex;align-items:center;justify-content:center;">🚿</div>
+          <div class="of-info" style="flex:1;">
             <div class="of-name">🚿 ${esc(lj.nome)}</div>
             <div class="of-loc">📍 ${esc(lj.bairro||'')}${lj.bairro&&lj.cidade?', ':''}${esc(lj.cidade||'')}</div>
-            <div style="font-size:11px;color:${lj.aberto?'var(--g)':'var(--t3)'};">${lj.aberto?'● Aberto':'● Fechado'}${lj.horario?' · '+esc(lj.horario):''}</div>
+            <div style="font-size:11px;color:${statusColor};">${lj.aberto?'● Aberto':'● Fechado'}${lj.horario?' · '+esc(lj.horario):''}</div>
+            ${badges ? '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:5px;">' + badges + '</div>' : ''}
           </div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">
-            ${lj.avaliacao ? `<div style="font-size:13px;font-weight:700;color:var(--t);">★ ${lj.avaliacao.toFixed(1)}</div>` : ''}
-          </div>
+          ${lj.avaliacao ? `<div style="font-size:13px;font-weight:700;color:var(--t);flex-shrink:0;">★ ${lj.avaliacao.toFixed(1)}</div>` : ''}
         </div>
         ${svcs.length ? `<div style="margin:10px 0 4px;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--b);"><div style="font-size:11px;color:var(--t3);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">💰 Tabela de preços</div>${precos}</div>` : ''}
         <div style="margin-top:10px;display:flex;gap:8px;">
           <button class="btn btn-primary btn-sm" style="flex:1;" onclick="event.stopPropagation();openBudget('${esc(lj.id)}')">📋 Pedir orçamento</button>
-          ${lj.wpp ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();window.open('https://wa.me/55${String(lj.wpp).replace(/\D/g,'')}','_blank','noopener,noreferrer')" style="padding:0 14px;">💬 WhatsApp</button>` : ''}
+          ${lj.wpp ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();window.open('https://wa.me/55'+String(lj.wpp||'').replace(/\D/g,''),'_blank','noopener,noreferrer')" style="padding:0 14px;">💬 WhatsApp</button>` : ''}
         </div>
       </article>`;
     }).join('');
 
-    // Reset flags
     STATE._buscarLavaJato         = false;
     STATE._buscarLavaJatoPrecoMax = null;
-  }).catch(() => {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Erro ao buscar lava-jatos</div><div class="empty-sub">Verifique sua conexão e tente novamente.</div></div>';
   });
+}
+
+// ── Demo de lava-jatos (enquanto Firestore não tem dados reais) ──
+function demoLavaJatos() {
+  const hour = new Date().getHours();
+  return [
+    { id:'lj001', nome:'Lava-Jato Cristal', cidade:'Cariacica', bairro:'Campo Grande',
+      wpp:'27999997001', avaliacao:4.7, totalAvaliacoes:52, distancia:'0,5 km', plano:'pro',
+      aberto: hour>=7&&hour<19, horario:'até 19h',
+      tipoEstabelecimento:'lavajato', tipoVeiculo:['carro','moto'],
+      servicos:[
+        {nome:'Lavagem simples',min:20,max:20,ativo:true},{nome:'Lavagem completa',min:45,max:45,ativo:true},
+        {nome:'Polimento de carroceria',min:80,max:120,ativo:true},{nome:'Higienização interna',min:60,max:90,ativo:true},
+        {nome:'Lavagem simples moto',min:15,max:15,ativo:true}
+      ]},
+    { id:'lj002', nome:'Auto Spa Vila Velha', cidade:'Vila Velha', bairro:'Itaparica',
+      wpp:'27999997002', avaliacao:4.9, totalAvaliacoes:88, distancia:'2,2 km', plano:'pro',
+      aberto: hour>=8&&hour<18, horario:'até 18h',
+      tipoEstabelecimento:'lavajato', tipoVeiculo:['carro','caminhao','eletrico'],
+      servicos:[
+        {nome:'Lavagem completa',min:50,max:50,ativo:true},{nome:'Vitrificação de carroceria',min:200,max:350,ativo:true},
+        {nome:'Cristalização de vidros',min:90,max:90,ativo:true},{nome:'Limpeza sem água (dry wash)',min:35,max:35,ativo:true},
+        {nome:'Sanitização (ozônio)',min:80,max:80,ativo:true},{nome:'Lavagem externa caminhão',min:120,max:180,ativo:true}
+      ]},
+    { id:'lj003', nome:'Bike Wash ES', cidade:'Vitória', bairro:'Jardim Camburi',
+      wpp:'27999997003', avaliacao:4.5, totalAvaliacoes:19, distancia:'3,0 km',
+      aberto: hour>=9&&hour<18, horario:'até 18h',
+      tipoEstabelecimento:'lavajato', tipoVeiculo:['bicicleta','moto','eletrico'],
+      servicos:[
+        {nome:'Lavagem bicicleta',min:15,max:15,ativo:true},{nome:'Limpeza + lubrificação',min:25,max:25,ativo:true},
+        {nome:'Limpeza motor e-bike',min:40,max:60,ativo:true},{nome:'Lavagem simples moto',min:18,max:18,ativo:true}
+      ]},
+    { id:'lj004', nome:'Flash Car Serra', cidade:'Serra', bairro:'Carapina',
+      wpp:'27999997004', avaliacao:4.2, totalAvaliacoes:31, distancia:'4,8 km',
+      aberto: hour>=7&&hour<18, horario:'até 18h',
+      tipoEstabelecimento:'lavajato', tipoVeiculo:['carro','moto','caminhao'],
+      servicos:[
+        {nome:'Lavagem simples',min:18,max:18,ativo:true},{nome:'Lavagem completa',min:40,max:40,ativo:true},
+        {nome:'Higienização interna',min:55,max:80,ativo:true},{nome:'Lavagem completa caminhão',min:100,max:150,ativo:true}
+      ]},
+  ];
 }
 
 function renderFilters() {
@@ -14106,6 +14597,619 @@ Quando precisar escalar → [ESCALAR]`;
   });
 })();
 </script>
+
+
+<script>
+// ════════════════════════════════════════════════════════════
+//  CADASTRO DE LAVA-JATO — ljState, renderização e submit
+// ════════════════════════════════════════════════════════════
+
+const LJ_BAIRROS = {
+  'Vitória':    ['Praia do Canto','Jardim Camburi','Jardim da Penha','Centro','Bento Ferreira','Enseada do Suá','Mata da Praia','Goiabeiras','Outro'],
+  'Vila Velha': ['Centro','Itaparica','Praia da Costa','Cobi','Glória','Paul','Outro'],
+  'Cariacica':  ['Campo Grande','Padre Gabriel','Nova Rosa da Penha','Itaquari','Cariacica Sede','Outro'],
+  'Serra':      ['Serra Sede','Carapina','Novo Horizonte','Outro'],
+  'Viana':      ['Centro','Outro'],
+  'Guarapari':  ['Centro','Perocão','Muquiçaba','Outro'],
+};
+
+// Catálogo de serviços por tipo de veículo
+const LJ_SERVICOS_POR_VEICULO = {
+  carro: {
+    label: '🚗 Carros',
+    servicos: [
+      { nome: 'Lavagem simples',        icone: '🚿' },
+      { nome: 'Lavagem completa',        icone: '✨' },
+      { nome: 'Lavagem detalhada',       icone: '🔍' },
+      { nome: 'Higienização interna',    icone: '🧹' },
+      { nome: 'Polimento de carroceria', icone: '💎' },
+      { nome: 'Cristalização de vidros', icone: '🔮' },
+      { nome: 'Vitrificação de carroceria', icone: '🛡️' },
+      { nome: 'Cera e proteção',         icone: '🪣' },
+      { nome: 'Limpeza de motor',        icone: '⚙️' },
+      { nome: 'Limpeza de estofados',    icone: '🪑' },
+      { nome: 'Limpeza de teto',         icone: '☁️' },
+      { nome: 'Sanitização (ozônio)',    icone: '🧪' },
+    ]
+  },
+  moto: {
+    label: '🏍️ Motos',
+    servicos: [
+      { nome: 'Lavagem simples moto',    icone: '🚿' },
+      { nome: 'Lavagem completa moto',   icone: '✨' },
+      { nome: 'Polimento de moto',       icone: '💎' },
+      { nome: 'Limpeza de motor moto',   icone: '⚙️' },
+      { nome: 'Lubrificação de corrente',icone: '⛓️' },
+      { nome: 'Limpeza de corrente',     icone: '🔗' },
+    ]
+  },
+  caminhao: {
+    label: '🚛 Caminhões / Vans',
+    servicos: [
+      { nome: 'Lavagem externa caminhão', icone: '🚿' },
+      { nome: 'Lavagem completa caminhão',icone: '✨' },
+      { nome: 'Higienização cabine',      icone: '🧹' },
+      { nome: 'Limpeza de baú / carroceria',icone: '📦' },
+      { nome: 'Polimento caminhão',       icone: '💎' },
+    ]
+  },
+  onibus: {
+    label: '🚌 Ônibus',
+    servicos: [
+      { nome: 'Lavagem externa ônibus',   icone: '🚿' },
+      { nome: 'Higienização interna ônibus',icone: '🧹' },
+      { nome: 'Sanitização ônibus',       icone: '🧪' },
+      { nome: 'Polimento ônibus',         icone: '💎' },
+    ]
+  },
+  bicicleta: {
+    label: '🚲 Bicicletas',
+    servicos: [
+      { nome: 'Lavagem bicicleta',       icone: '🚿' },
+      { nome: 'Limpeza + lubrificação',  icone: '🧴' },
+      { nome: 'Polimento de quadro',     icone: '💎' },
+      { nome: 'Higienização bike',       icone: '🧹' },
+      { nome: 'Limpeza motor e-bike',    icone: '⚡' },
+    ]
+  },
+  eletrico: {
+    label: '⚡ Elétricos / Híbridos',
+    servicos: [
+      { nome: 'Lavagem veículo elétrico',icone: '🚿' },
+      { nome: 'Limpeza sem água (dry wash)',icone: '💧' },
+      { nome: 'Higienização interna elétrico',icone: '🧹' },
+      { nome: 'Polimento elétrico',      icone: '💎' },
+      { nome: 'Cristalização elétrico',  icone: '🔮' },
+    ]
+  },
+};
+
+let _ljStep = 0;
+const _ljData = {
+  nome: '', cidade: '', bairro: '', endereco: '', wpp: '', email: '',
+  tipoVeiculo: [], servicosPorVeiculo: {}, servicosExtras: {},
+  horario: { abre: '08:00', fecha: '18:00', dias: ['seg','ter','qua','qui','sex','sab'] },
+  tipoEstabelecimento: 'lavajato', plano: 'basico', ativo: true,
+};
+
+function ljCadastroInit() {
+  _ljStep = 0;
+  ljGoToStep(0);
+  // Reseta erros
+  ['ljNomeErr','ljCidadeErr','ljWppErr','ljEmailErr','ljVeiculosErr'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+function ljUpdateBairros() {
+  const cidade = document.getElementById('ljCidade')?.value || '';
+  const sel    = document.getElementById('ljBairro');
+  const outro  = document.getElementById('ljBairroOutro');
+  if (!sel) return;
+  const bairros = LJ_BAIRROS[cidade] || ['Outro'];
+  sel.innerHTML = '<option value="">Selecione</option>' +
+    bairros.map(b => b === 'Outro'
+      ? '<option value="__outro__">Outro bairro...</option>'
+      : `<option>${b}</option>`).join('');
+  sel.onchange = () => {
+    if (outro) outro.style.display = sel.value === '__outro__' ? 'block' : 'none';
+  };
+  if (outro) outro.style.display = 'none';
+}
+
+function ljVeiculoChange() {
+  const errEl = document.getElementById('ljVeiculosErr');
+  const marcados = document.querySelectorAll('#ljVeiculosChips input:checked').length;
+  if (errEl) errEl.style.display = marcados > 0 ? 'none' : errEl.style.display;
+}
+
+// ── Renderiza seção de serviços por veículo selecionado ──────
+function ljRenderServicos() {
+  const veiculos = Array.from(document.querySelectorAll('#ljVeiculosChips input:checked')).map(c => c.value);
+  const container = document.getElementById('ljServicosPorVeiculo');
+  if (!container) return;
+
+  container.innerHTML = veiculos.map(v => {
+    const cfg = LJ_SERVICOS_POR_VEICULO[v];
+    if (!cfg) return '';
+    const extras = (_ljData.servicosExtras[v] || []);
+    return `
+    <div style="margin-bottom:20px;border:1px solid var(--b);border-radius:var(--rl);overflow:hidden;">
+      <div style="padding:12px 16px;background:var(--bg3);border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px;">
+        <span style="font-size:15px;">${cfg.label.split(' ')[0]}</span>
+        <span style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--t);">${cfg.label.split(' ').slice(1).join(' ')}</span>
+      </div>
+      <div style="padding:12px 16px;">
+        <div style="font-size:11px;color:var(--t3);margin-bottom:10px;">Marque os serviços que você oferece e defina os preços:</div>
+        ${cfg.servicos.map((s, si) => `
+          <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;">
+            <input type="checkbox" id="ljSvc_${v}_${si}" value="${s.nome}"
+              onchange="ljSvcChange('${v}','${s.nome}',this.checked,'ljPreco_${v}_${si}')"
+              style="width:15px;height:15px;accent-color:var(--g);flex-shrink:0;">
+            <span style="flex:1;font-size:13px;color:var(--t2);">${s.icone} ${s.nome}</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:11px;color:var(--t3);">R$</span>
+              <input type="number" id="ljPreco_${v}_${si}" min="1" max="9999" placeholder="—"
+                style="width:60px;padding:4px 6px;background:var(--bg4);border:1px solid var(--b);border-radius:6px;color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;"
+                oninput="ljPrecoChange('${v}','${s.nome}',this.value)"
+                disabled>
+            </div>
+          </label>`).join('')}
+        <!-- Serviços extras (digitados pelo usuário) -->
+        ${extras.map((ex, ei) => `
+          <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <input type="checkbox" checked style="width:15px;height:15px;accent-color:var(--g);flex-shrink:0;"
+              onchange="if(!this.checked)ljRemoveExtra('${v}',${ei})">
+            <span style="flex:1;font-size:13px;color:var(--am);">✏️ ${ex.nome}</span>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <span style="font-size:11px;color:var(--t3);">R$</span>
+              <input type="number" min="1" max="9999" placeholder="—" value="${ex.preco||''}"
+                style="width:60px;padding:4px 6px;background:var(--bg4);border:1px solid var(--b);border-radius:6px;color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;"
+                oninput="ljExtraPreco('${v}',${ei},this.value)">
+            </div>
+          </div>`).join('')}
+        <!-- Botão adicionar serviço extra -->
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;">
+          <input type="text" id="ljExtraInput_${v}" placeholder="Adicionar outro serviço..."
+            style="flex:1;padding:8px 12px;background:var(--bg4);border:1px solid var(--b2);border-radius:8px;color:var(--t);font-size:12.5px;font-family:'DM Sans',sans-serif;outline:none;"
+            onkeydown="if(event.key==='Enter'){ljAddExtra('${v}');event.preventDefault();}">
+          <button onclick="ljAddExtra('${v}')"
+            style="padding:8px 14px;background:var(--gg2);border:1px solid var(--b2);border-radius:8px;color:var(--g);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+            + Adicionar
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function ljSvcChange(veiculo, nome, checked, precoId) {
+  const inp = document.getElementById(precoId);
+  if (inp) inp.disabled = !checked;
+  if (!_ljData.servicosPorVeiculo[veiculo]) _ljData.servicosPorVeiculo[veiculo] = {};
+  if (checked) {
+    _ljData.servicosPorVeiculo[veiculo][nome] = _ljData.servicosPorVeiculo[veiculo][nome] || null;
+  } else {
+    delete _ljData.servicosPorVeiculo[veiculo][nome];
+  }
+}
+
+function ljPrecoChange(veiculo, nome, valor) {
+  if (!_ljData.servicosPorVeiculo[veiculo]) _ljData.servicosPorVeiculo[veiculo] = {};
+  _ljData.servicosPorVeiculo[veiculo][nome] = Number(valor) || null;
+}
+
+function ljAddExtra(veiculo) {
+  const inp = document.getElementById('ljExtraInput_' + veiculo);
+  const nome = inp?.value?.trim();
+  if (!nome) return;
+  if (!_ljData.servicosExtras[veiculo]) _ljData.servicosExtras[veiculo] = [];
+  _ljData.servicosExtras[veiculo].push({ nome, preco: null });
+  inp.value = '';
+  ljRenderServicos(); // re-renderiza com o novo item
+}
+
+function ljRemoveExtra(veiculo, idx) {
+  if (_ljData.servicosExtras[veiculo]) {
+    _ljData.servicosExtras[veiculo].splice(idx, 1);
+    ljRenderServicos();
+  }
+}
+
+function ljExtraPreco(veiculo, idx, valor) {
+  if (_ljData.servicosExtras[veiculo] && _ljData.servicosExtras[veiculo][idx]) {
+    _ljData.servicosExtras[veiculo][idx].preco = Number(valor) || null;
+  }
+}
+
+// ── Navegação entre steps ────────────────────────────────────
+function ljGoToStep(to) {
+  const STEPS = ['ljStep0','ljStep1','ljStep2','ljStepSuccess'];
+  document.querySelectorAll('#scLavaJatoCadastro .onb-step').forEach(s => s.classList.remove('active'));
+  const target = to >= 3 ? 'ljStepSuccess' : STEPS[to];
+  document.getElementById(target)?.classList.add('active');
+  _ljStep = to;
+
+  // Barra de progresso (3 segmentos)
+  for (let i = 0; i < 3; i++) {
+    const seg = document.getElementById('ljSeg' + i);
+    if (!seg) continue;
+    seg.classList.remove('active','done');
+    if (i < to) seg.classList.add('done');
+    else if (i === to && to < 3) seg.classList.add('active');
+  }
+
+  const labels = [
+    'Passo 1 de 3 — Dados do estabelecimento',
+    'Passo 2 de 3 — Serviços por veículo',
+    'Passo 3 de 3 — Horários & revisão',
+    'Cadastro concluído!',
+  ];
+  const pl = document.getElementById('ljProgLabel');
+  if (pl) pl.textContent = labels[Math.min(to, 3)];
+
+  const btnBack = document.getElementById('ljBtnBack');
+  const btnNext = document.getElementById('ljBtnNext');
+  const footer  = document.getElementById('ljFooter');
+  if (btnBack) btnBack.style.display = (to > 0 && to < 3) ? 'flex' : 'none';
+  if (footer)  footer.style.display  = to >= 3 ? 'none' : 'flex';
+  const isFinal = to === 2;
+  if (btnNext) {
+    btnNext.setAttribute('data-lj-mode', isFinal ? 'finalizar' : 'continuar');
+    document.getElementById('ljBtnNextText').textContent = isFinal ? '🚀 Publicar meu lava-jato' : 'Continuar →';
+  }
+
+  const body = document.getElementById('ljDrawerBody');
+  if (body) body.scrollTop = 0;
+}
+
+function ljPrevStep() { if (_ljStep > 0) ljGoToStep(_ljStep - 1); }
+
+function ljNextStep() {
+  const mode = document.getElementById('ljBtnNext')?.getAttribute('data-lj-mode');
+  if (mode === 'finalizar') { ljFinalizar(); return; }
+
+  // ── Validações por step ──────────────────────────────────
+  if (_ljStep === 0) {
+    const nome   = document.getElementById('ljNome')?.value.trim();
+    const wpp    = document.getElementById('ljWpp')?.value.trim();
+    const cidade = document.getElementById('ljCidade')?.value.trim();
+    const email  = document.getElementById('ljEmail')?.value.trim();
+    const veics  = document.querySelectorAll('#ljVeiculosChips input:checked').length;
+    let ok = true;
+    if (!nome)   { document.getElementById('ljNomeErr').style.display='block'; ok=false; }
+    else           document.getElementById('ljNomeErr').style.display='none';
+    if (!validatePhone(wpp)) { document.getElementById('ljWppErr').style.display='block'; ok=false; }
+    else                       document.getElementById('ljWppErr').style.display='none';
+    if (!cidade) { document.getElementById('ljCidadeErr').style.display='block'; ok=false; }
+    else           document.getElementById('ljCidadeErr').style.display='none';
+    if (!email || !validateEmail(email)) { document.getElementById('ljEmailErr').style.display='block'; ok=false; }
+    else                                   document.getElementById('ljEmailErr').style.display='none';
+    if (!veics)  { document.getElementById('ljVeiculosErr').style.display='block'; ok=false; }
+    else           document.getElementById('ljVeiculosErr').style.display='none';
+    if (!ok) return;
+    // Coleta dados do step 0
+    _ljData.nome    = nome;
+    _ljData.cidade  = cidade;
+    const bSel = document.getElementById('ljBairro');
+    const bOut = document.getElementById('ljBairroOutro');
+    _ljData.bairro  = (bSel?.value === '__outro__' ? bOut?.value.trim() : bSel?.value) || '';
+    _ljData.endereco = document.getElementById('ljEndereco')?.value.trim() || '';
+    _ljData.wpp      = wpp.replace(/\D/g,'');
+    _ljData.email    = email;
+    _ljData.tipoVeiculo = Array.from(document.querySelectorAll('#ljVeiculosChips input:checked')).map(c=>c.value);
+    // Renderiza step 1 com os veículos selecionados
+    ljRenderServicos();
+    ljGoToStep(1);
+    return;
+  }
+
+  if (_ljStep === 1) {
+    // Verifica se ao menos 1 serviço foi marcado em qualquer veículo
+    const algumMarcado = document.querySelectorAll('#ljServicosPorVeiculo input[type="checkbox"]:checked').length;
+    if (!algumMarcado) {
+      toast('Selecione ao menos um serviço para continuar.', 'warning');
+      return;
+    }
+    // Coleta serviços selecionados com preços
+    _ljData.servicosPorVeiculo = {};
+    document.querySelectorAll('#ljServicosPorVeiculo input[type="checkbox"]').forEach(ck => {
+      if (!ck.checked || !ck.id.startsWith('ljSvc_')) return;
+      const parts  = ck.id.split('_');
+      const vei    = parts[1];
+      const si     = parts[2];
+      const nome   = ck.value;
+      const preco  = Number(document.getElementById('ljPreco_' + vei + '_' + si)?.value) || 0;
+      if (!_ljData.servicosPorVeiculo[vei]) _ljData.servicosPorVeiculo[vei] = [];
+      _ljData.servicosPorVeiculo[vei].push({ nome, min: preco, max: preco, ativo: true });
+    });
+    // Adiciona extras
+    _ljData.tipoVeiculo.forEach(v => {
+      if (!_ljData.servicosExtras[v]) return;
+      if (!_ljData.servicosPorVeiculo[v]) _ljData.servicosPorVeiculo[v] = [];
+      _ljData.servicosExtras[v].forEach(ex => {
+        _ljData.servicosPorVeiculo[v].push({ nome: ex.nome, min: ex.preco||0, max: ex.preco||0, ativo: true });
+      });
+    });
+    // Gera lista flat de todos os serviços (para indexação na busca)
+    _ljData.servicos = Object.values(_ljData.servicosPorVeiculo).flat();
+    // Preenche revisão (step 2)
+    const vLabels = {carro:'🚗 Carros',moto:'🏍️ Motos',caminhao:'🚛 Caminhões',onibus:'🚌 Ônibus',bicicleta:'🚲 Bikes',eletrico:'⚡ Elétricos'};
+    document.getElementById('ljRevNome').textContent = _ljData.nome;
+    document.getElementById('ljRevLoc').textContent  = [_ljData.bairro, _ljData.cidade].filter(Boolean).join(', ') || '—';
+    document.getElementById('ljRevWpp').textContent  = _ljData.wpp || '—';
+    document.getElementById('ljRevVeiculos').textContent = (_ljData.tipoVeiculo||[]).map(v=>vLabels[v]||v).join(', ') || '—';
+    const totalSvcs = _ljData.servicos.length;
+    document.getElementById('ljRevServicos').textContent = totalSvcs
+      ? _ljData.servicos.slice(0,3).map(s=>s.nome).join(', ') + (totalSvcs>3 ? ` +${totalSvcs-3} outros` : '')
+      : '—';
+    ljGoToStep(2);
+    return;
+  }
+}
+
+async function ljFinalizar() {
+  if (window._ljSubmitting) return;
+  window._ljSubmitting = true;
+
+  // Coleta horários
+  _ljData.horario.abre   = document.getElementById('ljAbreAs')?.value || '08:00';
+  _ljData.horario.fecha  = document.getElementById('ljFechaAs')?.value || '18:00';
+  _ljData.horario.dias   = Array.from(document.querySelectorAll('#ljDiasChips input:checked')).map(c=>c.value);
+  _ljData.plano          = 'basico';
+  _ljData.ativo          = true;
+  _ljData.stats          = { impressoes:0, cliques:0, whatsapp:0, orcamentos:0 };
+  _ljData.tipoEstabelecimento = 'lavajato';
+
+  const btnText    = document.getElementById('ljBtnNextText');
+  const btnSpinner = document.getElementById('ljBtnNextSpinner');
+  if (btnText)    btnText.style.display    = 'none';
+  if (btnSpinner) btnSpinner.style.display = 'inline-block';
+
+  try {
+    if (window.__fbReadyPromise) await window.__fbReadyPromise;
+
+    let user = window.FB?.getCurrentUser() || null;
+    if (window.FB?.ready() && !user) {
+      const arr = new Uint8Array(9);
+      crypto.getRandomValues(arr);
+      const senha = 'LJ' + Array.from(arr).map(b=>b.toString(36)).join('').slice(0,10) + '!';
+      user = await window.FB.register(_ljData.email, senha, _ljData.nome);
+      // Aguarda confirmação do auth state
+      await new Promise((res, rej) => {
+        const unsub = window.FB.onAuthChange(u => { if(u){unsub();res(u);} });
+        setTimeout(() => { unsub(); rej(new Error('auth-timeout')); }, 8000);
+      });
+      window.FB?.sendWelcomePasswordReset?.(_ljData.email);
+    }
+
+    const payload = { ..._ljData };
+    const id = window.FB?.ready()
+      ? await window.FB.cadastrarOficina(payload, user)
+      : 'lj_demo_' + Date.now();
+
+    window.Services?.Search?.invalidar();
+    toast('🎉 Lava-jato cadastrado com sucesso!', 'success');
+    ljGoToStep(3);
+
+  } catch(e) {
+    const msgs = {
+      'auth/email-already-in-use': 'Este e-mail já tem cadastro. Faça login.',
+      'auth/invalid-email':        'E-mail inválido.',
+      'permission-denied':         'Sem permissão. Faça login.',
+    };
+    toast(msgs[e.code] || e.message || 'Erro ao salvar. Tente novamente.', 'error');
+  } finally {
+    window._ljSubmitting = false;
+    if (btnText)    btnText.style.display    = 'inline';
+    if (btnSpinner) btnSpinner.style.display = 'none';
+  }
+}
+</script>
+
+<!-- ══════════════════════════════════════════════════════════
+     DRAWER: CADASTRO DE LAVA-JATO
+════════════════════════════════════════════════════════════ -->
+<div class="drawer-overlay" id="scLavaJatoCadastro" role="dialog" aria-modal="true"
+  aria-label="Cadastro de lava-jato" onclick="closeOverlay('scLavaJatoCadastro',event)">
+  <div class="drawer" onclick="event.stopPropagation()" style="display:flex;flex-direction:column;height:100%;max-height:100vh;">
+
+    <!-- Header -->
+    <div class="drawer-header" style="flex-shrink:0;">
+      <button class="modal-close" style="position:static;" onclick="closeOverlay('scLavaJatoCadastro')" aria-label="Fechar">×</button>
+      <div style="margin:0 auto 0 12px;">
+        <span style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--t);">🚿 Cadastro de <em style="color:var(--bl);font-style:normal;">Lava-Jato</em></span>
+      </div>
+    </div>
+
+    <!-- Barra de progresso -->
+    <div class="onb-progress-wrap" style="flex-shrink:0;">
+      <div class="steps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+        <div class="step-seg active" id="ljSeg0"></div>
+        <div class="step-seg" id="ljSeg1"></div>
+        <div class="step-seg" id="ljSeg2"></div>
+      </div>
+      <div class="onb-prog-label" id="ljProgLabel">Passo 1 de 3 — Dados do estabelecimento</div>
+    </div>
+
+    <!-- Corpo scrollável -->
+    <div class="drawer-body" style="flex:1;overflow-y:auto;" id="ljDrawerBody">
+
+      <!-- ══ STEP 0: Dados básicos ══ -->
+      <div class="onb-step active" id="ljStep0">
+        <div class="onb-step-icon">🚿</div>
+        <div class="step-title">Dados do lava-jato</div>
+        <div class="step-sub">Essas informações aparecem para os clientes na busca.</div>
+
+        <div class="form-group">
+          <label class="form-label" for="ljNome">Nome do estabelecimento <span style="color:var(--g)">*</span></label>
+          <input class="form-input" id="ljNome" placeholder="Ex: Lava-Jato Cristal" autocomplete="organization">
+          <span class="field-error" id="ljNomeErr">Nome é obrigatório</span>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="ljCidade">Cidade <span style="color:var(--g)">*</span></label>
+            <select class="form-input" id="ljCidade" onchange="ljUpdateBairros()">
+              <option value="">Selecione</option>
+              <option>Vitória</option><option>Vila Velha</option><option selected>Cariacica</option>
+              <option>Serra</option><option>Viana</option><option>Guarapari</option>
+              <option>Fundão</option><option>Linhares</option>
+              <option>Cachoeiro de Itapemirim</option><option>Colatina</option>
+              <option>São Mateus</option><option>Aracruz</option>
+              <option value="Outra">Outra cidade do ES</option>
+            </select>
+            <span class="field-error" id="ljCidadeErr">Cidade obrigatória</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ljBairro">Bairro</label>
+            <select class="form-input" id="ljBairro"><option value="">Selecione a cidade</option></select>
+            <input class="form-input" id="ljBairroOutro" placeholder="Nome do bairro" style="display:none;margin-top:6px;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ljEndereco">Endereço completo</label>
+          <input class="form-input" id="ljEndereco" placeholder="Av. Principal, 500">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ljWpp">WhatsApp (com DDD) <span style="color:var(--g)">*</span></label>
+          <div class="phone-mask-wrap">
+            <span class="phone-flag">🇧🇷</span>
+            <input class="form-input" id="ljWpp" placeholder="(27) 9 9999-0000" type="tel"
+              oninput="phoneMask(this)" onpaste="setTimeout(()=>phoneMask(this),0)">
+          </div>
+          <span class="field-error" id="ljWppErr">WhatsApp inválido (precisa de 11 dígitos)</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ljEmail">E-mail da conta <span style="color:var(--g)">*</span></label>
+          <input class="form-input" id="ljEmail" placeholder="contato@lavajato.com" type="email" autocomplete="email">
+          <span class="field-error" id="ljEmailErr">E-mail obrigatório para criar sua conta</span>
+        </div>
+
+        <!-- Veículos atendidos -->
+        <div class="form-group">
+          <label class="form-label">Veículos atendidos <span style="color:var(--g)">*</span></label>
+          <div style="font-size:11.5px;color:var(--t3);margin-bottom:10px;">Selecione todos os tipos. Isso determina em quais buscas você aparece.</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;" id="ljVeiculosChips">
+            <label class="forn-espec-chip">
+              <input type="checkbox" value="carro" onchange="ljVeiculoChange()" id="ljVCarro">
+              <span>🚗 Carros</span>
+            </label>
+            <label class="forn-espec-chip">
+              <input type="checkbox" value="moto" onchange="ljVeiculoChange()" id="ljVMoto">
+              <span>🏍️ Motos</span>
+            </label>
+            <label class="forn-espec-chip">
+              <input type="checkbox" value="caminhao" onchange="ljVeiculoChange()" id="ljVCaminhao">
+              <span>🚛 Caminhões / Vans</span>
+            </label>
+            <label class="forn-espec-chip">
+              <input type="checkbox" value="onibus" onchange="ljVeiculoChange()" id="ljVOnibus">
+              <span>🚌 Ônibus</span>
+            </label>
+            <label class="forn-espec-chip">
+              <input type="checkbox" value="bicicleta" onchange="ljVeiculoChange()" id="ljVBike">
+              <span>🚲 Bicicletas</span>
+            </label>
+            <label class="forn-espec-chip">
+              <input type="checkbox" value="eletrico" onchange="ljVeiculoChange()" id="ljVEletrico">
+              <span>⚡ Elétricos / Híbridos</span>
+            </label>
+          </div>
+          <span class="field-error" id="ljVeiculosErr" style="display:none;">Selecione ao menos um tipo de veículo</span>
+        </div>
+
+      </div><!-- /ljStep0 -->
+
+      <!-- ══ STEP 1: Serviços por veículo ══ -->
+      <div class="onb-step" id="ljStep1">
+        <div class="onb-step-icon">🧴</div>
+        <div class="step-title">Serviços oferecidos</div>
+        <div class="step-sub">Selecione os serviços de cada veículo. Eles aparecem nos resultados de busca dos clientes.</div>
+        <div id="ljServicosPorVeiculo"></div>
+      </div><!-- /ljStep1 -->
+
+      <!-- ══ STEP 2: Horários + Revisão ══ -->
+      <div class="onb-step" id="ljStep2">
+        <div class="onb-step-icon">🕐</div>
+        <div class="step-title">Horários & revisão</div>
+        <div class="step-sub">Confirme seus dados antes de publicar.</div>
+
+        <!-- Horários simplificados para lava-jato -->
+        <div class="form-group">
+          <label class="form-label">Dias de funcionamento</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="ljDiasChips">
+            <label class="forn-espec-chip"><input type="checkbox" value="seg" checked><span>Seg</span></label>
+            <label class="forn-espec-chip"><input type="checkbox" value="ter" checked><span>Ter</span></label>
+            <label class="forn-espec-chip"><input type="checkbox" value="qua" checked><span>Qua</span></label>
+            <label class="forn-espec-chip"><input type="checkbox" value="qui" checked><span>Qui</span></label>
+            <label class="forn-espec-chip"><input type="checkbox" value="sex" checked><span>Sex</span></label>
+            <label class="forn-espec-chip"><input type="checkbox" value="sab" checked><span>Sáb</span></label>
+            <label class="forn-espec-chip"><input type="checkbox" value="dom"><span>Dom</span></label>
+          </div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Abre às</label>
+              <select class="form-input" id="ljAbreAs">
+                <option>06:00</option><option>07:00</option><option selected>08:00</option>
+                <option>09:00</option><option>10:00</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Fecha às</label>
+              <select class="form-input" id="ljFechaAs">
+                <option>16:00</option><option>17:00</option><option selected>18:00</option>
+                <option>19:00</option><option>20:00</option><option>21:00</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card de revisão -->
+        <div class="review-card" style="margin-top:16px;">
+          <div style="font-size:12px;font-weight:700;color:var(--bl);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">📋 Resumo do cadastro</div>
+          <div class="review-row">🏢 <strong id="ljRevNome">—</strong></div>
+          <div class="review-row">📍 <strong id="ljRevLoc">—</strong></div>
+          <div class="review-row">📞 <strong id="ljRevWpp">—</strong></div>
+          <div class="review-row">🚗 <strong id="ljRevVeiculos">—</strong></div>
+          <div class="review-row">🧴 <strong id="ljRevServicos">—</strong></div>
+        </div>
+      </div><!-- /ljStep2 -->
+
+      <!-- ══ STEP SUCCESS ══ -->
+      <div class="onb-step" id="ljStepSuccess">
+        <div class="success-wrap">
+          <div class="success-icon">✅</div>
+          <div class="success-title">Lava-jato cadastrado!</div>
+          <div class="success-sub">Seu perfil já está visível no MecBusca.<br>Clientes podem te encontrar agora mesmo.</div>
+          <div class="success-detail">
+            <div class="success-detail-row"><span class="success-check">✓</span> Perfil publicado na busca</div>
+            <div class="success-detail-row"><span class="success-check">✓</span> Serviços indexados por veículo</div>
+            <div class="success-detail-row"><span class="success-check">✓</span> WhatsApp ativo para contato</div>
+            <div class="success-detail-row"><span class="success-check">✓</span> Plano gratuito ativo</div>
+          </div>
+          <button class="btn btn-primary" style="margin-bottom:12px;" onclick="closeOverlay('scLavaJatoCadastro');loadPainel();">Acessar meu painel →</button>
+          <button class="btn btn-ghost" onclick="goTo('scCliente');setMode('lavajato')">Ver lava-jatos como cliente</button>
+        </div>
+      </div>
+
+    </div><!-- /drawer-body -->
+
+    <!-- Rodapé de navegação -->
+    <div class="onb-footer" id="ljFooter">
+      <button class="onb-btn-back" id="ljBtnBack" style="display:none;" onclick="ljPrevStep()">← Voltar</button>
+      <button class="onb-btn-next" id="ljBtnNext" onclick="ljNextStep()">
+        <span id="ljBtnNextText">Continuar →</span>
+        <span id="ljBtnNextSpinner" style="display:none;"><span class="spinner"></span></span>
+      </button>
+    </div>
+
+  </div>
+</div><!-- /scLavaJatoCadastro -->
 
 </body>
 </html>
