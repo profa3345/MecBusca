@@ -12,8 +12,27 @@
       "collectionGroup": "oficinas",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "ativo",   "order": "ASCENDING" },
-        { "fieldPath": "cidade",  "order": "ASCENDING" }
+        { "fieldPath": "ativo",          "order": "ASCENDING" },
+        { "fieldPath": "cidade",         "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "oficinas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ativo",          "order": "ASCENDING" },
+        { "fieldPath": "cidade",         "order": "ASCENDING" },
+        { "fieldPath": "avaliacaoMedia", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "oficinas",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ativo",          "order": "ASCENDING" },
+        { "fieldPath": "cidade",         "order": "ASCENDING" },
+        { "fieldPath": "servicos",       "arrayConfig": "CONTAINS" },
+        { "fieldPath": "avaliacaoMedia", "order": "DESCENDING" }
       ]
     },
     {
@@ -23,7 +42,36 @@
         { "fieldPath": "uid",      "order": "ASCENDING" },
         { "fieldPath": "criadoEm", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "avaliacoes",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "nota",     "order": "DESCENDING" },
+        { "fieldPath": "criadoEm", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "_ratelimits",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ttl", "order": "ASCENDING" }
+      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    {
+      "collectionGroup": "oficinas",
+      "fieldPath": "servicos",
+      "indexes": [
+        { "order": "ASCENDING",  "queryScope": "COLLECTION" },
+        { "arrayConfig": "CONTAINS", "queryScope": "COLLECTION" }
+      ]
+    },
+    {
+      "collectionGroup": "leads",
+      "fieldPath": "ip",
+      "indexes": []
+    }
+  ]
 }

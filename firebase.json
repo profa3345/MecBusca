@@ -1,10 +1,26 @@
 {
   "hosting": {
     "public": ".",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**", "functions/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "functions/**",
+      "*.rules",
+      "*.indexes.json",
+      "*.md"
+    ],
     "rewrites": [
       { "source": "/sitemap.xml", "function": "sitemapXml" },
-      { "source": "**", "destination": "/index.html" }
+      { "source": "/api/leads",   "function": "criarLead" },
+      { "source": "**",           "destination": "/index.html" }
+    ],
+    "redirects": [
+      {
+        "source": "/oficina",
+        "destination": "/buscar",
+        "type": 301
+      }
     ],
     "headers": [
       {
@@ -12,7 +28,7 @@
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.anthropic.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none'; base-uri 'self';"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.anthropic.com https://www.google-analytics.com https://analytics.google.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
           },
           {
             "key": "X-Frame-Options",
@@ -23,36 +39,69 @@
             "value": "nosniff"
           },
           {
+            "key": "X-XSS-Protection",
+            "value": "1; mode=block"
+          },
+          {
             "key": "Referrer-Policy",
             "value": "strict-origin-when-cross-origin"
           },
           {
             "key": "Permissions-Policy",
-            "value": "geolocation=(self), microphone=(), camera=()"
+            "value": "geolocation=(self), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()"
           },
           {
             "key": "Strict-Transport-Security",
-            "value": "max-age=31536000; includeSubDomains; preload"
+            "value": "max-age=63072000; includeSubDomains; preload"
+          },
+          {
+            "key": "Cross-Origin-Opener-Policy",
+            "value": "same-origin-allow-popups"
+          },
+          {
+            "key": "Cross-Origin-Resource-Policy",
+            "value": "same-origin"
           }
         ]
       },
       {
-        "source": "**/*.@(js|css)",
+        "source": "**/*.@(js|css|woff2|woff|ttf)",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
         ]
       },
       {
+        "source": "**/*.@(png|jpg|jpeg|gif|webp|svg|ico)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+        ]
+      },
+      {
         "source": "index.html",
         "headers": [
-          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Pragma",        "value": "no-cache" }
+        ]
+      },
+      {
+        "source": "manifest.json",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400" },
+          { "key": "Content-Type",  "value": "application/manifest+json" }
         ]
       },
       {
         "source": "service-worker.js",
         "headers": [
-          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-          { "key": "Service-Worker-Allowed", "value": "/" }
+          { "key": "Cache-Control",        "value": "no-cache, no-store, must-revalidate" },
+          { "key": "Service-Worker-Allowed","value": "/" },
+          { "key": "Content-Type",         "value": "application/javascript" }
+        ]
+      },
+      {
+        "source": "offline.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400" }
         ]
       }
     ]
@@ -65,14 +114,22 @@
     {
       "source": "functions",
       "codebase": "default",
-      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log"]
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.test.js",
+        "*.spec.js",
+        "coverage/**"
+      ]
     }
   ],
   "emulators": {
-    "auth": { "port": 9099 },
+    "auth":      { "port": 9099 },
     "functions": { "port": 5001 },
     "firestore": { "port": 8080 },
-    "hosting": { "port": 5000 },
-    "ui": { "enabled": true }
+    "hosting":   { "port": 5000 },
+    "ui":        { "enabled": true, "port": 4000 }
   }
 }
