@@ -26,7 +26,7 @@ const FIREBASE_CONFIG = {
   storageBucket:     "mecbusca.appspot.com",
   messagingSenderId: "000000000000",
   appId:             "1:000000000000:web:xxxxxxxxxxxx",
-  measurementId:     "G-TXZG30WZ60",        // GA4 Measurement ID (da screenshot)
+  measurementId:     window.__GA4_ID__ || "G-TXZG30WZ60", // GA4 — override via window.__GA4_ID__
 };
 
 // ── Estado singleton ──────────────────────────────────────────────────────────
@@ -194,13 +194,36 @@ const MecAuth = {
 
   /** Cadastro com e-mail e senha */
   async cadastrar(email, password, nome) {
-    const { createUserWithEmailAndPassword, updateProfile } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    const { createUserWithEmailAndPassword, updateProfile, sendEmailVerification } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
     const authInst = await getAuthInst();
     try {
       const cred = await createUserWithEmailAndPassword(authInst, email.trim(), password);
       if (nome) await updateProfile(cred.user, { displayName: nome.trim() });
+      // FIX SEC-2: send email verification
+      try {
+        await sendEmailVerification(cred.user, {
+          url: `${location.origin}/?verificado=1`,
+        });
+      } catch (verErr) {
+        // Não bloquear o cadastro se verificação falhar
+        console.warn('[MecAuth] sendEmailVerification falhou:', verErr.message);
+      }
       MecAnalytics.track('sign_up', { method: 'email' });
-      return { user: cred.user };
+      return { user: cred.user, verificacaoEnviada: true };
+    } catch (err) {
+      throw normalizeError(err);
+    }
+  },
+
+  /** Reenvia e-mail de verificação */
+  async reenviarVerificacao() {
+    const authInst = await getAuthInst();
+    const user = authInst.currentUser;
+    if (!user) throw { code: 'unauthenticated', message: 'Faça login primeiro.' };
+    if (user.emailVerified) throw { code: 'already-verified', message: 'E-mail já verificado.' };
+    const { sendEmailVerification } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js');
+    try {
+      await sendEmailVerification(user, { url: `${location.origin}/?verificado=1` });
     } catch (err) {
       throw normalizeError(err);
     }
@@ -409,6 +432,72 @@ const MecSW = {
   },
 };
 
+// ── FCM Push Notifications ───────────────────────────────────────────────────
+const MecPush = {
+  /** Pede permissão de notificação e salva token FCM no perfil da oficina.
+   *  Retorna o token FCM ou null se não suportado/negado/sem VAPID configurada.
+   */
+  async requestAndSaveToken(oficinaId) {
+    // Pré-requisitos
+    if (!('Notification' in window)) {
+      console.info('[MecPush] Notificações não suportadas neste browser.');
+      return null;
+    }
+    const vapidKey = window.__FCM_VAPID_KEY__;
+    if (!vapidKey) {
+      console.warn('[MecPush] window.__FCM_VAPID_KEY__ não configurada. Defina antes do deploy.');
+      return null;
+    }
+
+    try {
+      // Verificar suporte a Firebase Messaging (falha em Safari sem permissão)
+      const { getMessaging, getToken, isSupported } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+      const supported = await isSupported().catch(() => false);
+      if (!supported) {
+        console.info('[MecPush] Firebase Messaging não suportado neste browser.');
+        return null;
+      }
+
+      // Pedir permissão
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        console.info('[MecPush] Permissão de notificação negada pelo usuário.');
+        return null;
+      }
+
+      // Garantir que Firebase está inicializado
+      await initFirebase();
+      const messaging = getMessaging(_app);
+      const token = await getToken(messaging, {
+        vapidKey,
+        serviceWorkerRegistration: await navigator.serviceWorker.ready,
+      });
+
+      if (token && oficinaId) {
+        const db = await getDB();
+        const { doc, updateDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+        await updateDoc(doc(db, 'oficinas', oficinaId), {
+          fcmToken:      token,
+          fcmUpdatedAt:  new Date().toISOString(),
+          fcmUserAgent:  navigator.userAgent.slice(0, 120),
+        });
+        console.info('[MecPush] Token FCM salvo com sucesso.');
+      }
+      return token;
+    } catch (err) {
+      console.warn('[MecPush] Falha ao obter token FCM:', err.message);
+      return null;
+    }
+  },
+
+  /** Mostra banner de solicitação de notificação se ainda não pediu */
+  promptIfNeeded(oficinaId) {
+    if (Notification.permission === 'default' && oficinaId) {
+      emit('push-permission-needed', { oficinaId });
+    }
+  },
+};
+
 // ── Exports para o app ────────────────────────────────────────────────────────
 window.MecBusca = {
   init: initFirebase,
@@ -416,6 +505,7 @@ window.MecBusca = {
   db: MecDB,
   analytics: MecAnalytics,
   sw: MecSW,
+  push: MecPush,
   normalizeError,
 };
 
@@ -427,4 +517,9 @@ if (document.readyState === 'loading') {
 }
 
 // Auto-inicializar Firebase de forma não-bloqueante
-initFirebase().catch(err => console.error('[FL] Falha na inicialização:', err));
+initFirebase()
+  .then(() => {
+    // Notificar o app que Firebase + Analytics estão prontos
+    window.dispatchEvent(new CustomEvent('mecbusca:firebase-ready', { detail: { analytics: _analytics } }));
+  })
+  .catch(err => console.error('[FL] Falha na inicialização:', err));

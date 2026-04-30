@@ -76,8 +76,20 @@ if grep -q "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI" index.html; then
   WARNINGS=$((WARNINGS + 1))
 fi
 
-if grep -q "'G-XXXXXXXXXX'" index.html 2>/dev/null || grep -q "__GA4_ID__.*= ''" index.html 2>/dev/null; then
-  echo "   ℹ️  GA4 não configurado (opcional)."
+# Check GA4 — G-XXXXXXXXXX placeholder means not configured
+if grep -q "'G-XXXXXXXXXX'" index.html 2>/dev/null; then
+  echo "   ⚠️  GA4 ID ainda é placeholder (G-XXXXXXXXXX). Configure window.__GA4_ID__."
+  WARNINGS=$((WARNINGS + 1))
+fi
+
+# Check FCM VAPID key
+if grep -qE "__FCM_VAPID_KEY__.*=.*''" index.html 2>/dev/null; then
+  echo "   ⚠️  FCM VAPID key vazia. Notificações push não funcionarão em produção."
+  echo "   Obter em: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates"
+  echo "   Depois definir: window.__FCM_VAPID_KEY__ = 'sua-chave-vapid'"
+  if [ "$TARGET" = "--prod" ] || [ "$TARGET" = "all" ]; then
+    echo "   ℹ️  Continuando deploy (push é opcional)..."
+  fi
   WARNINGS=$((WARNINGS + 1))
 fi
 
@@ -86,6 +98,13 @@ if ! firebase functions:secrets:access ANTHROPIC_API_KEY &>/dev/null 2>&1; then
   echo "   ⚠️  Secret ANTHROPIC_API_KEY não configurada (necessária para chatbot Ana)."
   echo "   Configure: firebase functions:secrets:set ANTHROPIC_API_KEY"
   WARNINGS=$((WARNINGS + 1))
+fi
+
+# Verificar GA4 API Secret (para Measurement Protocol server-side)
+if ! firebase functions:secrets:access GA4_API_SECRET &>/dev/null 2>&1; then
+  echo "   ℹ️  GA4_API_SECRET não configurada (conversões server-side desativadas)."
+  echo "   Para ativar: firebase functions:secrets:set GA4_API_SECRET"
+  echo "   Obter em: Google Analytics → Admin → Data Streams → Measurement Protocol API secrets"
 fi
 
 if [ "$WARNINGS" -gt 0 ]; then
@@ -157,5 +176,11 @@ echo "  [ ] Testar envio de lead (modo anônimo)"
 echo "  [ ] Testar login e painel da oficina"
 echo "  [ ] Verificar erros: Firebase Console → Firestore → coleção _errors"
 echo "  [ ] Verificar logs das Cloud Functions (Firebase Console → Functions → Logs)"
+echo ""
+echo "  📈 Growth checklist:"
+echo "  [ ] GA4 recebendo eventos? → analytics.google.com → Realtime"
+echo "  [ ] Lead de teste gerou evento generate_lead no GA4?"
+echo "  [ ] FCM VAPID configurada? (se não: push desativado)"
+echo "  [ ] Sitemap acessível? → curl https://mecbusca.com.br/sitemap.xml | head -5"
 echo "════════════════════════════════════════════════════════"
 echo ""

@@ -65,13 +65,22 @@
   window.__RECAPTCHA_KEY__  = window.__RECAPTCHA_KEY__  || '6LcOk80sAAAAAOfce8OHBKw6tRzKbPadFAZAbv1u';
 
   // 2. Google Analytics 4 — obter em analytics.google.com
-  window.__GA4_ID__         = window.__GA4_ID__         || '';  // ← ex: 'G-XXXXXXXXXX'
+  window.__GA4_ID__         = window.__GA4_ID__         || 'G-TXZG30WZ60'; // ← GA4 Measurement ID
 
   // 3. Sentry DSN — obter em sentry.io após criar o projeto
   window.__SENTRY_DSN__     = window.__SENTRY_DSN__     || '';  // ← ex: 'https://abc@o123.ingest.sentry.io/456'
 
   // 4. Versão do app — atualizar a cada deploy para rastrear regressões
   window.__APP_VERSION__    = '1.2.0'; // ← incrementar a cada release
+
+  // 5. Firebase Web Push (FCM) — VAPID key
+  // Obter em: Firebase Console → Project Settings → Cloud Messaging → Web Push certificates
+  window.__FCM_VAPID_KEY__  = window.__FCM_VAPID_KEY__  || '';  // ← colar chave aqui antes do deploy
+
+  // 6. Algolia (ativar quando ultrapassar ~500 oficinas)
+  // Definir USE_CLOUD_SEARCH = true no bloco de busca quando pronto.
+  window.__ALGOLIA_APP_ID__      = window.__ALGOLIA_APP_ID__      || '';  // ← App ID
+  window.__ALGOLIA_SEARCH_KEY__  = window.__ALGOLIA_SEARCH_KEY__  || '';  // ← Search-only key (nunca Admin)
 })();
 </script>
 
@@ -746,6 +755,26 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
   font-size:11.5px;color:var(--t3);padding-left:33px;
 }
 /* ── Row 2: copyright + controls ── */
+.home-footer-faleconosco{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:10px 0 8px;
+  border-top:1px solid rgba(255,255,255,0.05);
+  margin-bottom:12px;flex-wrap:wrap;
+}
+.home-footer-faleconosco-title{
+  font-size:11.5px;color:var(--t2);letter-spacing:0.02em;font-weight:500;
+}
+.home-footer-wpp-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:14px;padding:4px 11px;
+  color:var(--t2);font-size:11.5px;font-weight:500;
+  font-family:'DM Sans',sans-serif;
+  text-decoration:none;transition:all 0.15s;cursor:pointer;
+}
+.home-footer-wpp-btn svg{opacity:0.7;}
+.home-footer-wpp-btn:hover{border-color:rgba(255,255,255,0.22);color:var(--t);}
 .home-footer-row2{
   display:flex;align-items:center;
   justify-content:space-between;
@@ -1928,14 +1957,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidade">Cidade</label>
-            <select id="hCidade" onchange="homeUpdateBairros()">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-              <option value="Linhares">Linhares</option><option value="Cachoeiro de Itapemirim">Cachoeiro</option>
-              <option value="Colatina">Colatina</option><option value="São Mateus">São Mateus</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstado" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidade" type="text" placeholder="Cidade" autocomplete="address-level2" oninput="homeUpdateBairros()" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
           <div class="home-field">
             <label for="hBairro">Bairro</label>
@@ -1980,12 +2011,16 @@ button,a,[role=button]{min-height:44px;}
         </div>
         <div class="home-field" style="margin-bottom:12px;">
           <label for="hCidadePeca">Cidade</label>
-          <select id="hCidadePeca" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-            <option value="">Todas as cidades</option>
-            <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-            <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-            <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-          </select>
+          <div style="display:flex;gap:6px;"><select id="hEstadoPeca" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePeca" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
         </div>
         <button class="home-search-btn" onclick="homeBuscarPeca()">🔍 Encontrar peça agora</button>
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Fornecedores e lojas de autopeças · ES</div>
@@ -2012,12 +2047,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidadeLavaJatoCarro">Cidade</label>
-            <select id="hCidadeLavaJatoCarro">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoLavaJatoCarro" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadeLavaJatoCarro" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
           <div class="home-field">
             <label for="hPrecoMaxLavaJatoCarro">Preço máximo</label>
@@ -2057,12 +2096,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidadeMoto">Cidade</label>
-            <select id="hCidadeMoto">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoMoto" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadeMoto" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
           <div class="home-field">
             <label for="hMarcaMoto">Marca da moto</label>
@@ -2103,11 +2146,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div>
             <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
-            <select id="hCidadePecaMoto" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoPecaMoto" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePecaMoto" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
         </div>
         <button class="home-search-btn" onclick="homeBuscarPecaMoto()">🔍 Encontrar peça para moto</button>
@@ -2132,11 +2180,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidadeLavaJatoMoto">Cidade</label>
-            <select id="hCidadeLavaJatoMoto">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoLavaJatoMoto" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadeLavaJatoMoto" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
           <div class="home-field">
             <label for="hPrecoMaxLavaJatoMoto">Preço máximo</label>
@@ -2228,12 +2281,16 @@ button,a,[role=button]{min-height:44px;}
 
           <div class="home-field">
             <label for="hCidadeBike">Cidade</label>
-            <select id="hCidadeBike">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoBike" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadeBike" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
         </div>
         <button class="home-search-btn" onclick="homeBuscarBike()">🔍 Encontrar bike-shop agora</button>
@@ -2297,11 +2354,16 @@ button,a,[role=button]{min-height:44px;}
         </div>
         <div style="margin-bottom:12px;">
           <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
-          <select id="hCidadePecaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-            <option value="">Todas as cidades</option>
-            <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-            <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-          </select>
+          <div style="display:flex;gap:6px;"><select id="hEstadoPecaBike" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePecaBike" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
         </div>
         <button class="home-search-btn" onclick="homeBuscarPecaBike()">🔍 Encontrar peça para bike</button>
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Componentes e acessórios para bicicletas · ES</div>
@@ -2339,11 +2401,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidadeLavaJatoBike">Cidade</label>
-            <select id="hCidadeLavaJatoBike">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoLavaJatoBike" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadeLavaJatoBike" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
           <div class="home-field">
             <label for="hPrecoMaxLavaJatoBike">Preço máximo</label>
@@ -2384,14 +2451,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidadeCaminhao">Cidade</label>
-            <select id="hCidadeCaminhao">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-              <option value="Linhares">Linhares</option><option value="Cachoeiro de Itapemirim">Cachoeiro</option>
-              <option value="Colatina">Colatina</option><option value="São Mateus">São Mateus</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoCaminhao" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadeCaminhao" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
           <div class="home-field">
             <label for="hTipoCaminhao">Tipo de caminhão</label>
@@ -2434,12 +2503,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div>
             <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
-            <select id="hCidadePecaCaminhao" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-              <option value="Linhares">Linhares</option><option value="Colatina">Colatina</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoPecaCaminhao" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePecaCaminhao" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
         </div>
         <button class="home-search-btn" onclick="homeBuscarPecaCaminhao()">🔍 Encontrar peça para caminhão</button>
@@ -2465,12 +2538,16 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidadeLavaJatoCaminhao">Cidade</label>
-            <select id="hCidadeLavaJatoCaminhao">
-              <option value="">Todas as cidades</option>
-              <option value="Vitória">Vitória</option><option value="Vila Velha">Vila Velha</option>
-              <option value="Cariacica" selected>Cariacica</option><option value="Serra">Serra</option>
-              <option value="Viana">Viana</option><option value="Guarapari">Guarapari</option>
-            </select>
+            <div style="display:flex;gap:6px;"><select id="hEstadoLavaJatoCaminhao" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadeLavaJatoCaminhao" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
           </div>
           <div class="home-field">
             <label for="hPrecoMaxLavaJatoCaminhao">Preço máximo</label>
@@ -2761,15 +2838,28 @@ button,a,[role=button]{min-height:44px;}
             </svg>
             <span class="home-footer-brand">Mec<em>Busca</em></span>
           </div>
-          <span class="home-footer-tagline">Marketplace de oficinas mecânicas · ES · Brasil</span>
+          <span class="home-footer-tagline">Marketplace de oficinas mecânicas · Brasil</span>
         </div>
+      </div>
+
+      <!-- Row Fale Conosco -->
+      <div class="home-footer-faleconosco">
+        <span class="home-footer-faleconosco-title">Dúvidas e Sugestões</span>
+        <a href="https://wa.me/5527999243874" target="_blank" rel="noopener noreferrer"
+           class="home-footer-wpp-btn" aria-label="Fale conosco pelo WhatsApp">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" width="18" height="18">
+            <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+            <path d="M12 0C5.373 0 0 5.373 0 12c0 2.136.562 4.14 1.541 5.875L0 24l6.294-1.508A11.954 11.954 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.822 9.822 0 0 1-5.006-1.366l-.359-.214-3.737.895.944-3.631-.234-.374A9.818 9.818 0 0 1 2.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+          </svg>
+          Fale Conosco
+        </a>
       </div>
 
       <!-- Row 2: copyright + controls -->
       <div class="home-footer-row2">
         <span class="home-footer-copy">© 2026 MecBusca · Todos os direitos reservados</span>
         <div class="home-footer-row2-right">
-          <span class="home-footer-badge">🇧🇷 ES · Brasil</span>
+          <span class="home-footer-badge">🇧🇷 Brasil</span>
           <button onclick="toggleTema()" id="temaBtn" class="home-footer-tema" title="Alternar tema" aria-label="Alternar tema claro/escuro">
             <span id="temaBtnIcon">🌙</span> Tema
           </button>
@@ -2797,19 +2887,19 @@ button,a,[role=button]{min-height:44px;}
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="fCidadeF">Cidade *</label>
-        <select class="form-input" id="fCidadeF" onchange="fornUpdateBairros()">
-          <option value="">Selecione</option>
-          <option value="Vitória">Vitória</option>
-          <option value="Vila Velha">Vila Velha</option>
-          <option value="Cariacica">Cariacica</option>
-          <option value="Serra">Serra</option>
-          <option value="Viana">Viana</option>
-          <option value="Guarapari">Guarapari</option>
-          <option value="Linhares">Linhares</option>
-          <option value="Cachoeiro de Itapemirim">Cachoeiro</option>
-          <option value="Colatina">Colatina</option>
-          <option value="Outra">Outra cidade</option>
-        </select>
+        <div style="display:flex;gap:6px;">
+          <select id="fEstadoF" class="form-input" style="width:72px;flex-shrink:0;padding-left:8px;padding-right:4px;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+          <input id="fCidadeF" type="text" placeholder="Nome da cidade" class="form-input" style="flex:1;" oninput="fornUpdateBairros()" autocomplete="address-level2" aria-label="Cidade">
+        </div>
         <span class="field-error" id="fCidadeFErr">Cidade obrigatória</span>
       </div>
       <div class="form-group">
@@ -2842,23 +2932,30 @@ button,a,[role=button]{min-height:44px;}
         <select class="form-input" id="fEntregaF">
           <option value="nao">Somente retirada</option>
           <option value="local">Entrega local</option>
-          <option value="es">Todo ES</option>
+          <option value="es">Todo Brasil</option>
           <option value="nacional">Nacional</option>
         </select>
       </div>
     </div>
     <div class="form-group">
       <label class="form-label">Especialidades (selecione as categorias)</label>
-      <div id="fornEspecChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-        <label class="forn-espec-chip"><input type="checkbox" value="Freios" onchange="fornEspecChange()"><span>🔴 Freios</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Suspensão" onchange="fornEspecChange()"><span>🔧 Suspensão</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Motor" onchange="fornEspecChange()"><span>⚙️ Motor</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Elétrica" onchange="fornEspecChange()"><span>⚡ Elétrica</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Filtros" onchange="fornEspecChange()"><span>🛢️ Filtros</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Pneus" onchange="fornEspecChange()"><span>🔵 Pneus</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Ar-condicionado" onchange="fornEspecChange()"><span>❄️ Ar-condicionado</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Funilaria" onchange="fornEspecChange()"><span>🎨 Funilaria</span></label>
-        <label class="forn-espec-chip"><input type="checkbox" value="Acessórios" onchange="fornEspecChange()"><span>🔩 Acessórios</span></label>
+      <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">🚗 Carro</div>
+      <div id="fornEspecChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <label class="forn-espec-chip"><input type="checkbox" value="Freios" onchange="fornEspecChange()"><span>🔴 Freios</span></label><label class="forn-espec-chip"><input type="checkbox" value="Suspensão" onchange="fornEspecChange()"><span>🔧 Suspensão</span></label><label class="forn-espec-chip"><input type="checkbox" value="Motor" onchange="fornEspecChange()"><span>⚙️ Motor e Câmbio</span></label><label class="forn-espec-chip"><input type="checkbox" value="Elétrica" onchange="fornEspecChange()"><span>⚡ Elétrica</span></label><label class="forn-espec-chip"><input type="checkbox" value="Filtros" onchange="fornEspecChange()"><span>🛢️ Filtros</span></label><label class="forn-espec-chip"><input type="checkbox" value="Pneus" onchange="fornEspecChange()"><span>🔵 Pneus</span></label><label class="forn-espec-chip"><input type="checkbox" value="Ar-condicionado" onchange="fornEspecChange()"><span>❄️ Ar-condicionado</span></label><label class="forn-espec-chip"><input type="checkbox" value="Injeção eletrônica" onchange="fornEspecChange()"><span>🔌 Injeção eletrônica</span></label><label class="forn-espec-chip"><input type="checkbox" value="Correia dentada" onchange="fornEspecChange()"><span>🔗 Correia dentada</span></label><label class="forn-espec-chip"><input type="checkbox" value="Bateria" onchange="fornEspecChange()"><span>🔋 Bateria</span></label><label class="forn-espec-chip"><input type="checkbox" value="Funilaria" onchange="fornEspecChange()"><span>🎨 Funilaria / Pintura</span></label><label class="forn-espec-chip"><input type="checkbox" value="Vidros" onchange="fornEspecChange()"><span>🪟 Vidros e para-brisa</span></label><label class="forn-espec-chip"><input type="checkbox" value="Faróis" onchange="fornEspecChange()"><span>💡 Faróis</span></label><label class="forn-espec-chip"><input type="checkbox" value="GNV" onchange="fornEspecChange()"><span>⛽ GNV</span></label><label class="forn-espec-chip"><input type="checkbox" value="Som e multimídia" onchange="fornEspecChange()"><span>🔊 Som e multimídia</span></label><label class="forn-espec-chip"><input type="checkbox" value="Acessórios" onchange="fornEspecChange()"><span>🔩 Acessórios</span></label>
+      </div>
+      <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">🏍️ Moto</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <label class="forn-espec-chip"><input type="checkbox" value="Peças de moto" onchange="fornEspecChange()"><span>⚙️ Peças de moto</span></label><label class="forn-espec-chip"><input type="checkbox" value="Filtros de moto" onchange="fornEspecChange()"><span>🛢️ Filtros de moto</span></label><label class="forn-espec-chip"><input type="checkbox" value="Pneus de moto" onchange="fornEspecChange()"><span>🔵 Pneus de moto</span></label><label class="forn-espec-chip"><input type="checkbox" value="Corrente e relação" onchange="fornEspecChange()"><span>⛓️ Corrente e relação</span></label><label class="forn-espec-chip"><input type="checkbox" value="Elétrica de moto" onchange="fornEspecChange()"><span>⚡ Elétrica de moto</span></label><label class="forn-espec-chip"><input type="checkbox" value="Carburador / Injeção moto" onchange="fornEspecChange()"><span>⛽ Carburador / Injeção</span></label>
+      </div>
+      <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">🚲 Bicicleta</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <label class="forn-espec-chip"><input type="checkbox" value="Peças de bike" onchange="fornEspecChange()"><span>🚲 Peças de bike</span></label><label class="forn-espec-chip"><input type="checkbox" value="Câmbio de bike" onchange="fornEspecChange()"><span>⚙️ Câmbio de bike</span></label><label class="forn-espec-chip"><input type="checkbox" value="Freios de bike" onchange="fornEspecChange()"><span>🛑 Freios de bike</span></label><label class="forn-espec-chip"><input type="checkbox" value="Pneus de bike" onchange="fornEspecChange()"><span>🔵 Pneus de bike</span></label><label class="forn-espec-chip"><input type="checkbox" value="Componentes E-bike" onchange="fornEspecChange()"><span>⚡ Componentes E-bike</span></label>
+      </div>
+      <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">🚛 Caminhão</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+        <label class="forn-espec-chip"><input type="checkbox" value="Peças de caminhão" onchange="fornEspecChange()"><span>🚛 Peças de caminhão</span></label><label class="forn-espec-chip"><input type="checkbox" value="Freios de caminhão" onchange="fornEspecChange()"><span>🔴 Freios de caminhão</span></label><label class="forn-espec-chip"><input type="checkbox" value="Pneus de caminhão" onchange="fornEspecChange()"><span>🔵 Pneus de caminhão</span></label><label class="forn-espec-chip"><input type="checkbox" value="Injeção diesel" onchange="fornEspecChange()"><span>⛽ Injeção diesel</span></label><label class="forn-espec-chip"><input type="checkbox" value="Diferencial / câmbio caminhão" onchange="fornEspecChange()"><span>⚙️ Diferencial / câmbio</span></label>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
         <label class="forn-espec-chip"><input type="checkbox" value="__outro__" onchange="fornEspecChange()"><span>✏️ Outro</span></label>
       </div>
       <input class="form-input" id="fEspecF" placeholder="Digite outras especialidades..." style="display:none;margin-top:4px;" aria-label="Outras especialidades">
@@ -3022,15 +3119,19 @@ button,a,[role=button]{min-height:44px;}
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="onbCidade">Cidade <span style="color:var(--g)">*</span></label>
-            <select class="form-input" id="onbCidade" onchange="onbUpdateBairros()" aria-required="true">
-              <option value="">Selecione</option>
-              <option>Vitória</option><option>Vila Velha</option><option>Cariacica</option>
-              <option>Serra</option><option>Viana</option><option>Guarapari</option>
-              <option>Fundão</option><option>Linhares</option>
-              <option>Cachoeiro de Itapemirim</option><option>Colatina</option>
-              <option>São Mateus</option><option>Aracruz</option>
-              <option value="Outra">Outra cidade do ES</option>
-            </select>
+            <div style="display:flex;gap:6px;">
+              <select id="onbEstado" class="form-input" style="width:72px;flex-shrink:0;padding-left:8px;padding-right:4px;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+              <input id="onbCidade" type="text" placeholder="Nome da cidade" class="form-input" style="flex:1;" oninput="onbUpdateBairros()" autocomplete="address-level2" aria-required="true" aria-label="Cidade">
+            </div>
             <span class="field-error" id="onbCidadeErr">Cidade obrigatória</span>
           </div>
           <div class="form-group">
@@ -3074,37 +3175,7 @@ button,a,[role=button]{min-height:44px;}
         <div class="svc-add-panel">
           <div class="svc-add-label">Adicionar serviço</div>
           <select class="form-input" id="nsvcSelect" onchange="onbSvcSelectChange()" aria-label="Selecione o serviço" style="margin-bottom:0;">
-            <option value="">— Selecione o serviço —</option>
-            <optgroup label="Manutenção">
-              <option>Troca de óleo</option><option>Revisão completa</option>
-              <option>Filtros</option><option>Velas de ignição</option><option>Correia dentada</option>
-            </optgroup>
-            <optgroup label="Freios e Suspensão">
-              <option>Freios dianteiros</option><option>Freios traseiros</option>
-              <option>Alinhamento</option><option>Balanceamento</option>
-              <option>Suspensão</option><option>Amortecedor</option>
-            </optgroup>
-            <optgroup label="Motor e Câmbio">
-              <option>Embreagem</option><option>Câmbio</option><option>Injeção eletrônica</option>
-            </optgroup>
-            <optgroup label="Funilaria & Lanternagem">
-              <option>Funilaria e pintura</option><option>Lanternagem completa</option>
-              <option>Amassado simples</option><option>Pintura localizada</option>
-              <option>Pintura completa</option><option>Polimento e cristalização</option>
-              <option>Troca de para-choque</option><option>Troca de para-lama</option>
-              <option>Reparo de riscos</option><option>Destombamento</option>
-            </optgroup>
-            <optgroup label="Elétrica, Faróis & Acessórios">
-              <option>Elétrica automotiva</option><option>Ar-condicionado</option>
-              <option>Bateria</option><option>Troca de farol dianteiro</option>
-              <option>Troca de farol traseiro</option><option>Polimento de farol</option>
-              <option>Instalação de acessórios</option><option>Som e multimídia</option>
-              <option>Película automotiva</option>
-            </optgroup>
-            <optgroup label="Outros">
-              <option>Pneus</option><option>Escapamento</option>
-              <option value="__outro__">✏️ Outro (escrever manualmente)</option>
-            </optgroup>
+            <option value="">— Selecione o serviço —</option><optgroup label="─── 🚗 CARRO ───" disabled></optgroup><optgroup label="Manutenção"><option>Troca de óleo</option><option>Revisão completa</option><option>Filtros</option><option>Velas de ignição</option><option>Correia dentada</option><option>Correia acessórios</option><option>Troca de fluído de freio</option><option>Troca de fluído de câmbio</option><option>Troca de fluído de direção</option></optgroup><optgroup label="Freios e Suspensão"><option>Freios dianteiros</option><option>Freios traseiros</option><option>Alinhamento</option><option>Balanceamento</option><option>Suspensão</option><option>Amortecedor</option><option>Mola</option><option>Barra estabilizadora</option><option>Cubo de roda</option><option>Rolamento de roda</option></optgroup><optgroup label="Motor e Câmbio"><option>Embreagem</option><option>Câmbio</option><option>Injeção eletrônica</option><option>Retífica de motor</option><option>Troca de bomba d'água</option><option>Troca de radiador</option><option>GNV</option></optgroup><optgroup label="Elétrica, Faróis & Acessórios"><option>Elétrica automotiva</option><option>Ar-condicionado automotivo</option><option>Bateria</option><option>Diagnóstico computadorizado</option><option>Troca de farol dianteiro</option><option>Troca de farol traseiro</option><option>Troca de farol de milha</option><option>Polimento de farol</option><option>Som e multimídia</option><option>Película automotiva</option><option>Instalação de acessórios</option><option>Rastreador veicular</option></optgroup><optgroup label="Funilaria & Lanternagem"><option>Funilaria e pintura</option><option>Lanternagem completa</option><option>Amassado simples</option><option>Pintura localizada</option><option>Pintura completa</option><option>Polimento e cristalização</option><option>Troca de para-choque</option><option>Troca de para-lama</option><option>Troca de capô</option><option>Troca de porta</option><option>Reparo de riscos</option><option>Destombamento</option></optgroup><optgroup label="Outros — Carro"><option>Pneus</option><option>Vidros e para-brisa</option><option>Escapamento</option><option>Direção hidráulica</option></optgroup><optgroup label="─── 🏍️ MOTO ───" disabled></optgroup><optgroup label="Manutenção — Moto"><option>Revisão de moto</option><option>Troca de óleo (moto)</option><option>Corrente e relação</option><option>Carburador / Injeção eletrônica (moto)</option></optgroup><optgroup label="Freios e Suspensão — Moto"><option>Freios de moto</option><option>Suspensão (moto)</option><option>Amortecedor (moto)</option><option>Pneu de moto</option></optgroup><optgroup label="Elétrica — Moto"><option>Elétrica de moto</option><option>Bateria (moto)</option></optgroup><optgroup label="Funilaria — Moto"><option>Embreagem (moto)</option><option>Funilaria / Pintura (moto)</option></optgroup><optgroup label="─── 🚲 BICICLETA ───" disabled></optgroup><optgroup label="Manutenção — Bicicleta"><option>Revisão de bicicleta</option><option>Troca de câmbio (bike)</option><option>Regulagem de marcha</option><option>Lubrificação de corrente</option><option>Troca de corrente</option></optgroup><optgroup label="Freios e Rodas — Bicicleta"><option>Freios de bicicleta</option><option>Troca de pneu (bike)</option><option>Rodas e aros (bike)</option><option>Suspensão (bike)</option></optgroup><optgroup label="E-bike"><option>Bateria / carregador (E-bike)</option><option>Motor elétrico (E-bike)</option><option>Controlador / display (E-bike)</option></optgroup><optgroup label="─── 🚛 CAMINHÃO ───" disabled></optgroup><optgroup label="Manutenção — Caminhão"><option>Revisão completa (caminhão)</option><option>Troca de óleo (caminhão)</option><option>Injeção diesel / bicos (caminhão)</option></optgroup><optgroup label="Freios e Suspensão — Caminhão"><option>Freios e tambores (caminhão)</option><option>Pneu / recapagem (caminhão)</option><option>Suspensão (caminhão)</option></optgroup><optgroup label="Motor e Câmbio — Caminhão"><option>Embreagem (caminhão)</option><option>Diferencial / câmbio (caminhão)</option></optgroup><optgroup label="Elétrica e Outros — Caminhão"><option>Elétrica / painel (caminhão)</option><option>Ar condicionado (caminhão)</option><option>Funilaria / pintura (caminhão)</option><option>Rastreamento / telemetria (caminhão)</option></optgroup><optgroup label="Outro"><option value="__outro__">✏️ Outro (escrever manualmente)</option></optgroup>
           </select>
           <div id="nsvcOutroWrap" style="display:none;margin-top:10px;">
             <input class="form-input" id="nsvcNome" placeholder="Ex: Higienização de ar-condicionado" aria-label="Nome do serviço personalizado">
@@ -3203,6 +3274,13 @@ button,a,[role=button]{min-height:44px;}
     <div class="search-bar" role="search">
       <svg class="ico" style="width:15px;height:15px;color:var(--t3)" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input type="search" id="cliSearch" placeholder="Ex: freio, óleo, pneu de moto, revisão de bike..." onfocus="if(!this.value)renderHistorico()" oninput="onSearch()" aria-label="Buscar oficinas, serviços ou peças" autocomplete="off">
+      <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;" id="symptomChips">
+        <span style="font-size:11px;color:var(--t3);align-self:center;">ou descreva o problema →</span>
+        <button class="chip" onclick="anaAiToggle(true);document.getElementById('ana-input').focus();setTimeout(()=>document.getElementById('ana-input').placeholder='Descreva o problema do seu carro, moto ou bicicleta…',50)" style="font-size:11px;padding:3px 10px;">🔧 Barulho estranho</button>
+        <button class="chip" onclick="anaAiToggle(true);document.getElementById('ana-input').value='Meu carro está esquentando muito';anaAiSend()" style="font-size:11px;padding:3px 10px;">🌡️ Esquentando</button>
+        <button class="chip" onclick="anaAiToggle(true);document.getElementById('ana-input').value='Meu carro está com problema no freio';anaAiSend()" style="font-size:11px;padding:3px 10px;">🔴 Freio falhando</button>
+        <button class="chip" onclick="anaAiToggle(true);document.getElementById('ana-input').value='Meu carro está vibrando muito';anaAiSend()" style="font-size:11px;padding:3px 10px;">📳 Vibrando</button>
+      </div>
       <span id="searchClear" style="font-size:16px;color:var(--t3);cursor:pointer;display:none;" onclick="clearSearch()" aria-label="Limpar busca" role="button" tabindex="0">×</span>
       <button class="filter-toggle-btn" id="filterToggleBtn" onclick="toggleFilters()" aria-expanded="false" aria-controls="filtersPanel" style="min-height:auto;">
         ⚙ Filtros
@@ -3225,19 +3303,19 @@ button,a,[role=button]{min-height:44px;}
     <div class="filters-grid">
       <div class="filter-group">
         <label class="filter-label" for="fCidade">Cidade</label>
-        <select class="filter-select" id="fCidade" onchange="filterUpdateBairros();applyAdvFilters()" aria-label="Filtrar por cidade">
-          <option value="">Todas</option>
-          <option value="Vitória">Vitória</option>
-          <option value="Vila Velha">Vila Velha</option>
-          <option value="Cariacica">Cariacica</option>
-          <option value="Serra">Serra</option>
-          <option value="Viana">Viana</option>
-          <option value="Guarapari">Guarapari</option>
-          <option value="Linhares">Linhares</option>
-          <option value="Cachoeiro de Itapemirim">Cachoeiro</option>
-          <option value="Colatina">Colatina</option>
-          <option value="São Mateus">São Mateus</option>
-        </select>
+        <div style="display:flex;gap:6px;">
+          <select id="fEstado" style="width:64px;flex-shrink:0;" class="filter-select" onchange="applyAdvFilters()" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+          <input id="fCidade" type="text" placeholder="Cidade" class="filter-select" style="flex:1;" oninput="filterUpdateBairros();applyAdvFilters()" autocomplete="address-level2" aria-label="Cidade">
+        </div>
       </div>
       <div class="filter-group">
         <label class="filter-label" for="fBairro">Bairro</label>
@@ -3470,6 +3548,14 @@ button,a,[role=button]{min-height:44px;}
       <div class="topbar-title" id="painelTitle">Dashboard</div>
       <button class="btn btn-primary btn-sm" style="width:auto;" onclick="openAddSvcModal()" aria-label="Adicionar serviço">+ Serviço</button>
     </div>
+    <!-- Push notification permission banner -->
+    <div id="pushBanner" style="display:none;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--gg2);border:1px solid var(--b2);border-radius:var(--r);padding:10px 14px;margin:0 0 0 0;font-size:13px;">
+      <span>🔔 Receba alertas de novos leads direto no navegador</span>
+      <div style="display:flex;gap:8px;flex-shrink:0;">
+        <button class="btn btn-primary btn-sm" style="width:auto;" onclick="ativarNotificacoes()">Ativar</button>
+        <button class="btn btn-ghost btn-sm" style="width:auto;" onclick="document.getElementById('pushBanner').style.display='none'">Agora não</button>
+      </div>
+    </div>
     <div class="page-content" id="painelContent"></div>
   </div>
 </div>
@@ -3481,6 +3567,10 @@ button,a,[role=button]{min-height:44px;}
     <div class="modal-title" id="addSvcTitle">Novo Serviço</div>
     <div class="modal-sub">Será exibido para clientes com orçamento automático</div>
     <div class="form-group">
+      <label class="form-label" for="asvCatalogo">Escolher do catálogo</label>
+      <select class="form-input" id="asvCatalogo" onchange="asvCatalogoChange()" style="margin-bottom:0;"><option value="">— Selecione o serviço —</option><optgroup label="─── 🚗 CARRO ───" disabled></optgroup><optgroup label="Manutenção"><option>Troca de óleo</option><option>Revisão completa</option><option>Filtros</option><option>Velas de ignição</option><option>Correia dentada</option><option>Correia acessórios</option><option>Troca de fluído de freio</option><option>Troca de fluído de câmbio</option><option>Troca de fluído de direção</option></optgroup><optgroup label="Freios e Suspensão"><option>Freios dianteiros</option><option>Freios traseiros</option><option>Alinhamento</option><option>Balanceamento</option><option>Suspensão</option><option>Amortecedor</option><option>Mola</option><option>Barra estabilizadora</option><option>Cubo de roda</option><option>Rolamento de roda</option></optgroup><optgroup label="Motor e Câmbio"><option>Embreagem</option><option>Câmbio</option><option>Injeção eletrônica</option><option>Retífica de motor</option><option>Troca de bomba d'água</option><option>Troca de radiador</option><option>GNV</option></optgroup><optgroup label="Elétrica, Faróis & Acessórios"><option>Elétrica automotiva</option><option>Ar-condicionado automotivo</option><option>Bateria</option><option>Diagnóstico computadorizado</option><option>Troca de farol dianteiro</option><option>Troca de farol traseiro</option><option>Troca de farol de milha</option><option>Polimento de farol</option><option>Som e multimídia</option><option>Película automotiva</option><option>Instalação de acessórios</option><option>Rastreador veicular</option></optgroup><optgroup label="Funilaria & Lanternagem"><option>Funilaria e pintura</option><option>Lanternagem completa</option><option>Amassado simples</option><option>Pintura localizada</option><option>Pintura completa</option><option>Polimento e cristalização</option><option>Troca de para-choque</option><option>Troca de para-lama</option><option>Troca de capô</option><option>Troca de porta</option><option>Reparo de riscos</option><option>Destombamento</option></optgroup><optgroup label="Outros — Carro"><option>Pneus</option><option>Vidros e para-brisa</option><option>Escapamento</option><option>Direção hidráulica</option></optgroup><optgroup label="─── 🏍️ MOTO ───" disabled></optgroup><optgroup label="Manutenção — Moto"><option>Revisão de moto</option><option>Troca de óleo (moto)</option><option>Corrente e relação</option><option>Carburador / Injeção eletrônica (moto)</option></optgroup><optgroup label="Freios e Suspensão — Moto"><option>Freios de moto</option><option>Suspensão (moto)</option><option>Amortecedor (moto)</option><option>Pneu de moto</option></optgroup><optgroup label="Elétrica — Moto"><option>Elétrica de moto</option><option>Bateria (moto)</option></optgroup><optgroup label="Funilaria — Moto"><option>Embreagem (moto)</option><option>Funilaria / Pintura (moto)</option></optgroup><optgroup label="─── 🚲 BICICLETA ───" disabled></optgroup><optgroup label="Manutenção — Bicicleta"><option>Revisão de bicicleta</option><option>Troca de câmbio (bike)</option><option>Regulagem de marcha</option><option>Lubrificação de corrente</option><option>Troca de corrente</option></optgroup><optgroup label="Freios e Rodas — Bicicleta"><option>Freios de bicicleta</option><option>Troca de pneu (bike)</option><option>Rodas e aros (bike)</option><option>Suspensão (bike)</option></optgroup><optgroup label="E-bike"><option>Bateria / carregador (E-bike)</option><option>Motor elétrico (E-bike)</option><option>Controlador / display (E-bike)</option></optgroup><optgroup label="─── 🚛 CAMINHÃO ───" disabled></optgroup><optgroup label="Manutenção — Caminhão"><option>Revisão completa (caminhão)</option><option>Troca de óleo (caminhão)</option><option>Injeção diesel / bicos (caminhão)</option></optgroup><optgroup label="Freios e Suspensão — Caminhão"><option>Freios e tambores (caminhão)</option><option>Pneu / recapagem (caminhão)</option><option>Suspensão (caminhão)</option></optgroup><optgroup label="Motor e Câmbio — Caminhão"><option>Embreagem (caminhão)</option><option>Diferencial / câmbio (caminhão)</option></optgroup><optgroup label="Elétrica e Outros — Caminhão"><option>Elétrica / painel (caminhão)</option><option>Ar condicionado (caminhão)</option><option>Funilaria / pintura (caminhão)</option><option>Rastreamento / telemetria (caminhão)</option></optgroup><optgroup label="Outro"><option value="__outro__">✏️ Digitar manualmente</option></optgroup></select>
+    </div>
+    <div class="form-group" id="asvNomeWrap">
       <label class="form-label" for="asvNome">Nome do serviço *</label>
       <input class="form-input" id="asvNome" placeholder="Ex: Troca de óleo" aria-required="true">
       <span class="field-error" id="asvNomeErr">Nome é obrigatório</span>
@@ -3978,6 +4068,8 @@ window.FB = {
     }
     if (filtros.cidade) oficinas = oficinas.filter(o =>
       (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
+    if (filtros.estado) oficinas = oficinas.filter(o =>
+      !o.estado || (o.estado||'').toUpperCase() === filtros.estado.toUpperCase());
     if (filtros.bairro) oficinas = oficinas.filter(o =>
       (o.bairro||'').toLowerCase().includes(filtros.bairro.toLowerCase()));
     if (filtros.avaliacaoMin > 0) oficinas = oficinas.filter(o => (o.avaliacao||0) >= filtros.avaliacaoMin);
@@ -4039,16 +4131,26 @@ window.FB = {
 
   // ── LEADS ────────────────────────────────────────────────────
   async enviarLead(data) {
-    if (!rateLimit('lead:'+data.whatsapp, 3, 300000))
-      throw new Error("Muitas solicitações. Aguarde alguns minutos.");
+    // FIX SEC: lead creation centralizado na Cloud Function (não mais direto no Firestore).
+    // Isso garante validação server-side, rate limiting por IP e sanitização centralizada.
     if (!isFirebaseReady) return demoSave("lead", data);
-    const clean = sanitizeData(data);
-    if (!clean.nomeCliente || !validarNome(clean.nomeCliente)) throw new Error("Nome do cliente inválido.");
-    if (!clean.whatsapp || !validarWpp(clean.whatsapp)) throw new Error("WhatsApp inválido. Use o formato: 27999990000");
-    const ref = await addDoc(collection(db, "leads"), {
-      ...clean, status: "novo", criadoEm: serverTimestamp()
-    });
-    return ref.id;
+
+    // Client-side rate limit como primeira barreira (UX rápida)
+    const rlKey = 'lead:' + (data.whatsapp||'').replace(/\D/g,'') + ':' + (data.oficinaId||'');
+    if (!rateLimit(rlKey, 3, 60000))
+      throw new Error("Muitas solicitações. Aguarde um momento.");
+
+    try {
+      const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+      const fns = getFunctions(app, 'southamerica-east1');
+      const criarLead = httpsCallable(fns, 'criarLead');
+      const result = await criarLead(data);
+      return result.data?.leadId;
+    } catch(err) {
+      // Extrair mensagem amigável de HttpsError
+      const msg = err?.details?.message || err?.message || 'Erro ao enviar solicitação.';
+      throw new Error(msg);
+    }
   },
 
   async listarLeadsDaOficina(oficinaId) {
@@ -4398,6 +4500,19 @@ const SINONIMOS = {
   'embreagem': ['embreagem'],
   'cambio': ['câmbio'],
   'câmbio': ['câmbio'],
+  // Caminhão extras
+  'rastreador': ['rastreamento / telemetria (caminhão)','rastreamento','telemetria'],
+  'rastreamento': ['rastreador caminhão','telemetria'],
+  'telemetria': ['rastreador caminhão','rastreamento'],
+  // Moto extras
+  'corrente': ['corrente e relação','corrente bike','lubrificação de corrente'],
+  'relacao': ['corrente e relação'],
+  'relação': ['corrente e relação'],
+  'carburador': ['carburador / injeção eletrônica (moto)'],
+  // Bike extras  
+  'bicicleta': ['revisão de bicicleta','freios de bicicleta','troca de pneu (bike)'],
+  'ebike': ['bateria / carregador (e-bike)','motor elétrico (e-bike)','controlador / display (e-bike)'],
+  'e-bike': ['bateria / carregador (e-bike)','motor elétrico (e-bike)','controlador / display (e-bike)'],
 };
 
 // Normaliza e expande query com sinônimos
@@ -4517,8 +4632,35 @@ const LeadService = {
 // Reduz chamadas desnecessárias ao Firestore quando o usuário
 // filtra rapidamente (ex: ajustando sliders de filtro).
 //
-// TODO (Cloud Function): busca full-text server-side
-//   via Algolia ou Typesense para escalar além do filtro client-side.
+// ── Search provider abstraction ─────────────────────────────────────────────
+// Atualmente: filtro client-side (bom até ~500 oficinas).
+// Para escalar: implementar SearchProvider abaixo e trocar USE_CLOUD_SEARCH para true.
+//
+// Como ativar Algolia (recomendado):
+//   1. npm install algoliasearch na Cloud Function
+//   2. Criar índice 'oficinas' no Algolia
+//   3. Adicionar trigger onOficinaSaved no functions_index.js para sincronizar
+//   4. Definir window.__ALGOLIA_APP_ID__ e window.__ALGOLIA_SEARCH_KEY__ no HTML
+//   5. Trocar USE_CLOUD_SEARCH = true abaixo
+//
+const USE_CLOUD_SEARCH = false; // trocar para true quando tiver Algolia/Typesense
+
+async function cloudSearch(filtros) {
+  // Algolia implementation stub — substituir quando escalar
+  if (window.__ALGOLIA_APP_ID__) {
+    // const client = algoliasearch(window.__ALGOLIA_APP_ID__, window.__ALGOLIA_SEARCH_KEY__);
+    // const index = client.initIndex('oficinas');
+    // const { hits } = await index.search(filtros.servico || '', {
+    //   filters: filtros.cidade ? `cidade:${filtros.cidade}` : '',
+    //   aroundLatLng: filtros.lat ? `${filtros.lat},${filtros.lng}` : undefined,
+    //   aroundRadius: 50000, hitsPerPage: 20,
+    // });
+    // return hits;
+    console.warn('[Search] Algolia stub — não implementado ainda.');
+  }
+  // Fallback para busca local
+  return null;
+}
 //   Prioridade: quando base de oficinas > 500 documentos.
 const SearchController = (() => {
   const _cache = new Map();
@@ -4870,7 +5012,8 @@ function fornPecasOutroChange() {
 
 async function cadastrarFornecedor() {
   const nome   = document.getElementById('fNome').value.trim();
-  const cidade = document.getElementById('fCidadeF').value;
+  const cidade = document.getElementById('fCidadeF').value?.trim();
+  const estado = document.getElementById('fEstadoF')?.value || 'ES';
   const wpp    = document.getElementById('fWppF').value.replace(/\D/g,'');
   let ok = true;
   if (!nome)   { document.getElementById('fNome').classList.add('has-error');    document.getElementById('fNomeErr').style.display='block';    ok=false; }
@@ -4982,7 +5125,8 @@ function openOverlay(id) {
   if (id === 'scOnboarding') {
     // Sincroniza bairros com a cidade já selecionada (ex: drawer fechado e reaberto).
     // Sem isso o select de bairro fica vazio mesmo com cidade preenchida.
-    const cidadeVal = document.getElementById('onbCidade')?.value || '';
+    const cidadeVal = document.getElementById('onbCidade')?.value?.trim() || '';
+    const estadoVal = document.getElementById('onbEstado')?.value || 'ES';
     if (cidadeVal) onbUpdateBairros();
   }
 
@@ -5520,6 +5664,7 @@ function homeBuscarMoto() {
   goTo('scCliente');
   // FIX-10: setMode() apaga cliSearch.value — salvar em STATE.filtroChip ANTES
   // e restaurar DEPOIS para que renderMotoShops() leia o valor correto.
+  STATE.advFilters = { ...(STATE.advFilters||{}), tipoVeiculo: 'moto' };
   STATE.filtroChip = q;
   setMode('motos');
   document.getElementById('cliSearch').value = q;
@@ -5542,6 +5687,7 @@ function homeBuscarBike() {
   if (cidade) { STATE.advFilters = STATE.advFilters || {}; STATE.advFilters.cidade = cidade; }
   if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'oficina', veiculo:'bike', servico:svc, eletrica, tipo, modelo });
   goTo('scCliente');
+  STATE.advFilters = { ...(STATE.advFilters||{}), tipoVeiculo: 'bicicleta' };
   STATE.filtroChip = q;
   setMode('bikes');
   document.getElementById('cliSearch').value = q;
@@ -5654,9 +5800,13 @@ function _bikeFilterOpcoes(selectId, mostrarEletrica) {
 function homeBuscarCaminhao() {
   const svc    = document.getElementById('hServicoCaminhao')?.value || '';
   const cidade = document.getElementById('hCidadeCaminhao')?.value || '';
+  const estado = document.getElementById('hEstadoCaminhao')?.value || '';
   const tipo   = document.getElementById('hTipoCaminhao')?.value || '';
   const q = [svc, tipo].filter(Boolean).join(' ').trim() || 'caminhão';
+  // FIX BUG-2: set tipoVeiculo filter so loadOficinas filters correctly
+  STATE.advFilters = { ...(STATE.advFilters||{}), tipoVeiculo: 'caminhao' };
   if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
+  if (estado) { const e = document.getElementById('fEstado'); if (e) e.value = estado; }
   if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = q;
   STATE._buscarVeiculo = 'caminhao';
   if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'oficina', veiculo:'caminhao', servico: svc, cidade });
@@ -5958,7 +6108,42 @@ function renderFpCatalogo() {
 }
 
 // Inicializa o form do fornecedor ao abrir o modal
+
+// ── Wire Analytics to Firebase ready event ───────────────────────────────────
+// When firebase-layer.js dispatches 'mecbusca:firebase-ready', flush the queue
+// and start sending events to GA4 + Firestore.
+window.addEventListener('mecbusca:firebase-ready', () => {
+  Analytics.init();
+  // Fire initial page_view for the landing screen
+  Analytics.track('page_view', {
+    page_path: location.hash || '/',
+    page_title: document.title,
+  });
+}, { once: true });
+
+// Fallback: if firebase-ready fires before this listener registered (rare),
+// check on DOMContentLoaded whether FB is already ready.
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.FB?.ready() && !Analytics._ready) Analytics.init();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  // FEAT-9: Deep link support — ?oficina=ID opens profile, ?busca=term runs search
+  try {
+    const _up = new URLSearchParams(location.search);
+    const _dlOf = _up.get('oficina');
+    const _dlBusca = _up.get('busca');
+    if (_dlOf) {
+      setTimeout(() => { if (typeof openBudget === 'function') openBudget(_dlOf); }, 1400);
+    }
+    if (_dlBusca) {
+      setTimeout(() => {
+        const _el = document.getElementById('cliSearch');
+        if (_el) { _el.value = _dlBusca; STATE.filtroChip = _dlBusca; if (typeof runSearch === 'function') runSearch(); }
+      }, 900);
+    }
+  } catch(_e) {}
+
   const ovForn = document.getElementById('scFornecedor');
   if (ovForn) {
     const observer = new MutationObserver(() => {
@@ -6015,6 +6200,43 @@ const SERVICOS_PADRAO = [
   { nome:'Pneus',                     cat:'Outros' },
   { nome:'Vidros',                    cat:'Outros' },
   { nome:'Escapamento',               cat:'Outros' },
+  // Moto
+  { nome:'Revisão de moto', cat:'Serviços de Moto' },
+  { nome:'Troca de óleo (moto)', cat:'Serviços de Moto' },
+  { nome:'Corrente e relação', cat:'Serviços de Moto' },
+  { nome:'Carburador / Injeção eletrônica (moto)', cat:'Serviços de Moto' },
+  { nome:'Freios de moto', cat:'Serviços de Moto' },
+  { nome:'Suspensão (moto)', cat:'Serviços de Moto' },
+  { nome:'Amortecedor (moto)', cat:'Serviços de Moto' },
+  { nome:'Pneu de moto', cat:'Serviços de Moto' },
+  { nome:'Elétrica de moto', cat:'Serviços de Moto' },
+  { nome:'Bateria (moto)', cat:'Serviços de Moto' },
+  { nome:'Embreagem (moto)', cat:'Serviços de Moto' },
+  { nome:'Funilaria / Pintura (moto)', cat:'Serviços de Moto' },
+  { nome:'Revisão de bicicleta', cat:'Serviços de Bicicleta' },
+  { nome:'Troca de câmbio (bike)', cat:'Serviços de Bicicleta' },
+  { nome:'Regulagem de marcha', cat:'Serviços de Bicicleta' },
+  { nome:'Lubrificação de corrente', cat:'Serviços de Bicicleta' },
+  { nome:'Troca de corrente', cat:'Serviços de Bicicleta' },
+  { nome:'Freios de bicicleta', cat:'Serviços de Bicicleta' },
+  { nome:'Troca de pneu (bike)', cat:'Serviços de Bicicleta' },
+  { nome:'Rodas e aros (bike)', cat:'Serviços de Bicicleta' },
+  { nome:'Suspensão (bike)', cat:'Serviços de Bicicleta' },
+  { nome:'Bateria / carregador (E-bike)', cat:'Serviços de Bicicleta' },
+  { nome:'Motor elétrico (E-bike)', cat:'Serviços de Bicicleta' },
+  { nome:'Controlador / display (E-bike)', cat:'Serviços de Bicicleta' },
+  { nome:'Revisão completa (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Troca de óleo (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Injeção diesel / bicos (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Freios e tambores (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Pneu / recapagem (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Suspensão (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Embreagem (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Diferencial / câmbio (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Elétrica / painel (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Ar condicionado (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Funilaria / pintura (caminhão)', cat:'Serviços de Caminhão' },
+  { nome:'Rastreamento / telemetria (caminhão)', cat:'Serviços de Caminhão' },
 ];
 
 const LS_KEY_SVCS = 'mecbusca_servicos_extra';
@@ -6324,6 +6546,7 @@ const ES_BAIRROS = {
 function _populateBairros(selectId, cidadeVal, outroId) {
   const sel = document.getElementById(selectId);
   if (!sel) return;
+  // For cities not in ES_BAIRROS, show free-text input
   const bairros = ES_BAIRROS[cidadeVal] || [];
   if (!bairros.length) {
     sel.innerHTML = '<option value="">Todos os bairros</option>';
@@ -6379,6 +6602,7 @@ function homeBuscar() {
 
   const servico   = document.getElementById('hServico').value;
   const cidade    = document.getElementById('hCidade').value;
+  const estado    = document.getElementById('hEstado')?.value || '';
   const bairro    = document.getElementById('hBairro').value;
   const oficinaSel = document.getElementById('hOficina');
   const oficinaId  = oficinaSel?.value || '';
@@ -6477,6 +6701,11 @@ function pedirGeolocalizacao(callback) {
 }
 
 function goTo(id) {
+  // GA4 virtual pageview for SPA navigation
+  try {
+    const _titles = { scHome:'Home', scCliente:'Busca', scAuth:'Login', scPainel:'Painel', scFornecedor:'Fornecedor' };
+    Analytics.track('page_view', { page_path: '#' + id, page_title: _titles[id] || id });
+  } catch(_) {}
   // Overlays (modais/drawer) não são screens — abrir com openOverlay
   if (['scAuth','scOnboarding','scFornecedor'].includes(id)) {
     openOverlay(id);
@@ -6969,7 +7198,7 @@ async function nextStep(to) {
     let valid = true;
     if (!nome)               { showFieldError('onbNome',   'onbNomeErr');   valid = false; }
     if (!validatePhone(wpp)) { showFieldError('onbWpp',    'onbWppErr');    valid = false; }
-    if (!cidade)             { showFieldError('onbCidade', 'onbCidadeErr'); valid = false; }
+    if (!cidade || cidade.trim().length < 2) { showFieldError('onbCidade', 'onbCidadeErr'); valid = false; }
     if (!email || !validateEmail(email)) {
       showFieldError('onbEmail', 'onbEmailErr');
       document.getElementById('onbEmailErr').textContent = email
@@ -6980,6 +7209,7 @@ async function nextStep(to) {
     if (!valid) return;
     STATE.onbData.nome   = nome;
     STATE.onbData.cidade = cidade;
+    STATE.onbData.estado = document.getElementById('onbEstado')?.value || 'ES';
     const bairroSel = document.getElementById('onbBairro');
     const bairroOutro = document.getElementById('onbBairroOutro');
     const bairroOutroVis = bairroOutro && bairroOutro.style.display !== 'none';
@@ -8013,6 +8243,7 @@ function applyAdvFilters() {
 
   STATE.advFilters = {
     cidade:       document.getElementById('fCidade')?.value || '',
+    estado:       document.getElementById('fEstado')?.value || '',
     bairro:       document.getElementById('fBairro')?.value || '',
     tipoVeiculo:  document.getElementById('fVeiculo')?.value || '',
     urgencia:     document.getElementById('fUrgencia')?.value || '',
@@ -8217,7 +8448,7 @@ function renderLavaJatos() {
     });
 
     if (!ljs.length) {
-      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🚿</div><div class="empty-title">Nenhum lava-jato encontrado</div><div class="empty-sub">Tente outra cidade, outro serviço ou remova os filtros.</div><div style="margin-top:14px;"><button class="chip active" onclick="setMode('oficinas')">Ver todas as oficinas</button></div></div>';
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🚿</div><div class="empty-title">Nenhum lava-jato encontrado</div><div class="empty-sub">Tente outra cidade, outro serviço ou remova os filtros.</div><div style="margin-top:14px;"><button class="chip active" onclick="setMode(\'oficinas\')">Ver todas as oficinas</button></div></div>';
       document.getElementById('resultsCount').innerHTML = '';
       return;
     }
@@ -8382,9 +8613,15 @@ async function loadOficinas() {
     ...(STATE.userLat ? { lat: STATE.userLat, lng: STATE.userLng } : {})
   };
   try {
-    STATE.oficinas = window.Services?.Search
-      ? await window.Services.Search.buscar(filtros)
-      : await window.FB.listarOficinas(filtros);
+    // Use cloud search provider if configured, else fall back to Firestore client-side filter
+    if (USE_CLOUD_SEARCH) {
+      const cloudResults = await cloudSearch(filtros);
+      STATE.oficinas = cloudResults || await window.FB.listarOficinas(filtros);
+    } else {
+      STATE.oficinas = window.Services?.Search
+        ? await window.Services.Search.buscar(filtros)
+        : await window.FB.listarOficinas(filtros);
+    }
 
     // Filtro por oficina específica (selecionada na home)
     if (STATE.filtroOficinaId) {
@@ -8420,7 +8657,8 @@ function renderOficinas() {
 
   document.getElementById('resultsCount').innerHTML =
     '<strong>'+ofs.length+'</strong> oficina'+(ofs.length!==1?'s':'')+' encontrada'+(ofs.length!==1?'s':'')+
-    ' <span style="font-size:11px;color:var(--t3);">· '+_sortLabel+'</span>'+oficinaBadge;
+    ' <span style="font-size:11px;color:var(--t3);">· '+_sortLabel+'</span>'+oficinaBadge+
+    (ofs.length >= 20 ? ' <button class="chip" style="font-size:11px;padding:2px 9px;margin-left:4px;" onclick="loadMaisOficinas()">Ver mais</button>' : '');
   if (!ofs.length) {
     list.innerHTML = '<div class="empty-state">'
     +'<div class="empty-icon">🔍</div>'
@@ -8475,6 +8713,7 @@ function renderOficinas() {
             <span class="of-dist">📍 ${of._dist&&of._dist<900?(of._dist<1?"< 1 km":of._dist.toFixed(1)+" km"):esc(of.distancia||of.bairro||of.cidade)}</span>
             <span class="of-stars" aria-label="${esc(String(of.avaliacao))} estrelas">${of.totalAvaliacoes ? ('★ ' + esc(String(of.avaliacao||'—')) + ' <span>(' + esc(String(of.avaliacoes||of.totalAvaliacoes||0)) + ')</span>') : '<span style="font-size:11px;color:var(--t3);font-style:italic;">Esta oficina ainda não tem avaliações</span>'}</span>
             <span class="${statusClass}" aria-live="polite">${statusTxt}</span>
+            ${of.tempoResposta ? `<span style="font-size:10.5px;color:var(--t3);opacity:0.8;">⚡ ~${esc(of.tempoResposta)}</span>` : ''}
           </div>
         </div>
         <div class="of-price-badge">${preco}</div>
@@ -8487,6 +8726,32 @@ function renderOficinas() {
       </div>
     </article>`;
   }).join('');
+}
+
+// ── Load more oficinas ──────────────────────────────────────────
+async function loadMaisOficinas() {
+  try {
+    const btn = document.querySelector('#resultsCount button');
+    if (btn) { btn.disabled = true; btn.textContent = 'Carregando...'; }
+    const filtros = {
+      servico: STATE.filtroChip, ...STATE.advFilters,
+      ...(STATE.userLat ? { lat: STATE.userLat, lng: STATE.userLng } : {}),
+      pagina: Math.floor((STATE.oficinas?.length || 0) / 20),
+    };
+    const mais = window.Services?.Search
+      ? await window.Services.Search.buscar(filtros)
+      : await window.FB.listarOficinas(filtros);
+    if (mais?.length) {
+      STATE.oficinas = [...(STATE.oficinas || []), ...mais];
+      // Re-render preservando os já exibidos
+      if (typeof renderOficinas === 'function') renderOficinas(STATE.oficinas);
+      toast(`+${mais.length} oficinas carregadas`, 'success');
+    } else {
+      toast('Sem mais resultados', 'info');
+    }
+  } catch(e) {
+    toast('Erro ao carregar mais resultados', 'error');
+  }
 }
 
 // ── MOTO-SHOPS ──────────────────────────────────────────────────
@@ -8509,11 +8774,18 @@ function renderMotoShops() {
     </div>`).join('');
   document.getElementById('resultsCount').innerHTML = '';
   const q = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
-  let shops = demoOficinas({}).filter(o => (o.tipoVeiculo||[]).includes('moto') || o.tipo === 'motoshop');
+  // Usa STATE.oficinas se já carregadas pelo Firebase, senão fallback demo
+  const base = STATE.oficinas?.length
+    ? STATE.oficinas
+    : demoOficinas({});
+  let shops = base.filter(o => (o.tipoVeiculo||[]).includes('moto') || o.tipo === 'motoshop');
   if (q && q !== 'moto') {
+    const terms = expandirQuery(q);
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
-      (o.servicos||[]).some(s => s.nome.toLowerCase().includes(q))
+      (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
+        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
+      ))
     );
   }
   document.getElementById('resultsCount').innerHTML =
@@ -8531,7 +8803,7 @@ function renderMotoShops() {
       <div class="of-top">
         <div class="of-avatar" aria-hidden="true" style="font-size:20px;display:flex;align-items:center;justify-content:center;">🏍️</div>
         <div class="of-info">
-          <div class="of-name">${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${esc(of.nome)}</div>
+          <div class="of-name">${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${of.verificada?'<span style="font-size:10px;background:#1a7f4b;color:#fff;border-radius:4px;padding:1px 5px;margin-right:4px;font-weight:600;">✓ Verificada</span>':''}${esc(of.nome)}</div>
           <div class="of-meta">
             <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade||'')}</span>
             <span class="of-stars">${of.totalAvaliacoes?'★ '+esc(String(of.avaliacao||''))+' <span>('+of.totalAvaliacoes+')</span>':'<span style="font-size:11px;color:var(--t3);font-style:italic;">Sem avaliações ainda</span>'}</span>
@@ -8544,6 +8816,7 @@ function renderMotoShops() {
       <div class="of-actions">
         <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
         <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" style="width:38px;padding:0;flex-shrink:0;" onclick="event.stopPropagation();shareOficina('${esc(of.id)}','${esc(of.nome)}')" aria-label="Compartilhar ${esc(of.nome)}" title="Compartilhar">🔗</button>
       </div>
     </article>`;
   }).join('');
@@ -8569,11 +8842,17 @@ function renderBikeShops() {
     </div>`).join('');
   document.getElementById('resultsCount').innerHTML = '';
   const q = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
-  let shops = demoOficinas({}).filter(o => (o.tipoVeiculo||[]).includes('bicicleta') || o.tipo === 'bikeshop');
+  const base = STATE.oficinas?.length
+    ? STATE.oficinas
+    : demoOficinas({});
+  let shops = base.filter(o => (o.tipoVeiculo||[]).includes('bicicleta') || o.tipo === 'bikeshop');
   if (q && q !== 'bicicleta') {
+    const terms = expandirQuery(q);
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
-      (o.servicos||[]).some(s => s.nome.toLowerCase().includes(q))
+      (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
+        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
+      ))
     );
   }
   document.getElementById('resultsCount').innerHTML =
@@ -8591,7 +8870,7 @@ function renderBikeShops() {
       <div class="of-top">
         <div class="of-avatar" aria-hidden="true" style="font-size:20px;display:flex;align-items:center;justify-content:center;">🚲</div>
         <div class="of-info">
-          <div class="of-name">${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${esc(of.nome)}</div>
+          <div class="of-name">${of.plano==='pro'?'<span class="badge-pro">⭐ PRO</span>':''}${of.verificada?'<span style="font-size:10px;background:#1a7f4b;color:#fff;border-radius:4px;padding:1px 5px;margin-right:4px;font-weight:600;">✓ Verificada</span>':''}${esc(of.nome)}</div>
           <div class="of-meta">
             <span class="of-dist">📍 ${esc(of.distancia||of.bairro||of.cidade||'')}</span>
             <span class="of-stars">${of.totalAvaliacoes?'★ '+esc(String(of.avaliacao||''))+' <span>('+of.totalAvaliacoes+')</span>':'<span style="font-size:11px;color:var(--t3);font-style:italic;">Sem avaliações ainda</span>'}</span>
@@ -8604,6 +8883,7 @@ function renderBikeShops() {
       <div class="of-actions">
         <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
         <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" style="width:38px;padding:0;flex-shrink:0;" onclick="event.stopPropagation();shareOficina('${esc(of.id)}','${esc(of.nome)}')" aria-label="Compartilhar ${esc(of.nome)}" title="Compartilhar">🔗</button>
       </div>
     </article>`;
   }).join('');
@@ -8788,6 +9068,50 @@ function openBudgetFromSvc(ofId, svcNome, min, max) {
   const of = getOficina(ofId);
   if (!of) { toast('Oficina não encontrada', 'warning'); return; }
   openBudget(ofId);
+}
+
+function shareOficina(id, nome) {
+  const url = `${location.origin}${location.pathname}?oficina=${encodeURIComponent(id)}`;
+  if (navigator.share) {
+    navigator.share({ title: nome + ' — MecBusca', text: `Veja ${nome} no MecBusca`, url })
+      .catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(url).then(() => toast('Link copiado! 🔗', 'success')).catch(() => {
+      toast('Link: ' + url, 'info');
+    });
+  }
+}
+
+async function ativarNotificacoes() {
+  const ofId = STATE.oficinaAtual?.id;
+  if (!ofId) { toast('Abra o painel da sua oficina primeiro', 'warning'); return; }
+  try {
+    const token = await window.MecBusca?.push?.requestAndSaveToken(ofId);
+    const bn = document.getElementById('pushBanner');
+    if (bn) bn.style.display = 'none';
+    if (token) toast('✅ Notificações ativadas! Você receberá alertas de novos leads.', 'success');
+    else toast('Permissão negada. Habilite nas configurações do navegador.', 'warning');
+  } catch(e) {
+    toast('Erro ao ativar notificações', 'error');
+  }
+}
+
+function abrirResponderAvaliacao(avalId, ofId) {
+  const txt = prompt('Resposta da oficina (máx. 500 caracteres):');
+  if (!txt || txt.trim().length < 5) return;
+  const resolvedOfId = ofId || STATE.oficinaAtual?.id;
+  if (!resolvedOfId) return;
+  (async () => {
+    try {
+      const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+      const fns = getFunctions(undefined, 'southamerica-east1');
+      const fn = httpsCallable(fns, 'responderAvaliacao');
+      await fn({ oficinaId: resolvedOfId, avaliacaoId: avalId, resposta: txt.trim() });
+      toast('Resposta publicada! ✅', 'success');
+    } catch(e) {
+      toast('Erro ao publicar: ' + (e.message||'tente novamente'), 'error');
+    }
+  })();
 }
 
 function wppOficinaDirecto(ofId, svcNome) {
@@ -8990,6 +9314,7 @@ async function openBudget(id) {
     <div style="border-top:1px solid var(--b);padding-top:14px;margin-top:14px;" id="reviews-${id}">
       <div style="font-size:12px;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.07em;">Avaliações recentes</div>
       <div id="reviews-list-${id}" style="font-size:13px;color:var(--t3);font-style:italic;">Carregando avaliações...</div>
+      <div id="reviews-reply-note-${id}" style="display:none;font-size:11px;color:var(--t3);margin-top:4px;font-style:italic;">A oficina pode responder avaliações no painel da conta.</div>
     </div>
     <div style="border-top:1px solid var(--b);padding-top:14px;margin-top:14px;" id="avalia-section-${id}">
       <div style="font-size:12px;color:var(--t3);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.07em;">Avalie esta oficina</div>
@@ -9071,8 +9396,13 @@ function wppOficina(id) {
   const of = getOficina(id);
   Analytics.wppClick(id, of?.nome || '');
   if (!of?.whatsapp) { toast('WhatsApp não cadastrado', 'warning'); return; }
-  const svc = STATE.filtroServico || 'serviço';
-  const msg = encodeURIComponent(`Olá! Vi o perfil da ${of.nome} no MecBusca e tenho interesse em orçamento para: ${svc}.`);
+  const svc = STATE.filtroChip || STATE.filtroServico || '';
+  const veiculo = STATE._buscarVeiculo || '';
+  const linhas = [`Olá! Vi o perfil da *${of.nome}* no MecBusca e gostaria de um orçamento.`];
+  if (svc && !['moto','bicicleta','caminhão','carro'].includes(svc.toLowerCase())) linhas.push(`\n🔧 Serviço: ${svc}`);
+  if (veiculo && veiculo !== 'carro') linhas.push(`\n🚗 Veículo: ${veiculo}`);
+  linhas.push('\n\nPode me passar o preço e disponibilidade? Obrigado!');
+  const msg = encodeURIComponent(linhas.join(''));
   // FIX-6: adicionado 'noreferrer' — evita window.opener attack (mesma proteção das outras chamadas).
   window.open(`https://wa.me/55${of.whatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank', 'noopener,noreferrer');
 }
@@ -9807,6 +10137,17 @@ function painelPage(name, navEl) {
   else if (name === 'horarios') renderHorariosPainel(c);
   else if (name === 'metricas') renderMetricas(c);
   else if (name === 'promocoes') renderPromocoesPainel(c);
+  // Ask for push permission after painel loads (once per session)
+  if (!sessionStorage.getItem('_pushAsked') && STATE.oficinaAtual?.id) {
+    sessionStorage.setItem('_pushAsked','1');
+    setTimeout(() => {
+      if (Notification.permission === 'default') {
+        toast('🔔 Ativar notificações para receber novos leads?', 'info');
+        const bn = document.getElementById('pushBanner');
+        if (bn) bn.style.display = 'flex';
+      }
+    }, 2000);
+  }
   // Close mobile sidebar after navigation
   document.getElementById('painelSidebar')?.classList.remove('open');
 }
@@ -10060,6 +10401,11 @@ let _editingSvcIdx = -1;
 function editSvc(i) {
   _editingSvcIdx = i;
   const s = STATE.painelSvcs[i];
+  // Ao editar, reseta o select do catálogo e mostra o campo de nome preenchido
+  const cat = document.getElementById('asvCatalogo');
+  if (cat) cat.value = '';
+  const nomeWrap = document.getElementById('asvNomeWrap');
+  if (nomeWrap) nomeWrap.style.display = 'block';
   document.getElementById('asvNome').value = s.nome;
   document.getElementById('asvMin').value = s.min;
   document.getElementById('asvMax').value = s.max;
@@ -10138,13 +10484,40 @@ function asvSetFotoUI(dataUrl) {
   }
 }
 
+function asvCatalogoChange() {
+  const sel = document.getElementById('asvCatalogo');
+  const nomeWrap = document.getElementById('asvNomeWrap');
+  const nomeInput = document.getElementById('asvNome');
+  const val = sel?.value || '';
+  if (!val) {
+    // Nenhum selecionado — mostra campo manual vazio
+    nomeInput.value = '';
+    nomeInput.placeholder = 'Ex: Troca de óleo';
+    if (nomeWrap) nomeWrap.style.display = 'block';
+  } else if (val === '__outro__') {
+    // Digitar manualmente
+    nomeInput.value = '';
+    nomeInput.placeholder = 'Digite o nome do serviço';
+    if (nomeWrap) nomeWrap.style.display = 'block';
+    nomeInput.focus();
+  } else {
+    // Serviço do catálogo — preenche o nome e oculta o campo manual
+    nomeInput.value = val;
+    if (nomeWrap) nomeWrap.style.display = 'none';
+  }
+}
+
 function openAddSvcModal() {
   _editingSvcIdx = -1;
   _asvFotoData = null; // novo serviço começa sem foto
+  const cat = document.getElementById('asvCatalogo');
+  if (cat) cat.value = '';
   document.getElementById('asvNome').value = '';
   document.getElementById('asvMin').value = '';
   document.getElementById('asvMax').value = '';
   document.getElementById('addSvcTitle').textContent = 'Novo Serviço';
+  const nomeWrap = document.getElementById('asvNomeWrap');
+  if (nomeWrap) nomeWrap.style.display = 'block';
   asvSetFotoUI(null);
   clearAllErrors();
   openModal('addSvcModal');
@@ -11125,7 +11498,7 @@ const Analytics = {
 
   init() {
     this._ready = true;
-    // Flush queued events
+    // Flush queued events accumulated before Firebase was ready
     this._queue.forEach(([e, d]) => this._send(e, d));
     this._queue = [];
   },
@@ -11141,7 +11514,6 @@ const Analytics = {
 
   async _send(event, data) {
     try {
-      // Store event in Firestore analytics collection
       const payload = {
         event,
         ...data,
@@ -11150,22 +11522,29 @@ const Analytics = {
         ref: document.referrer.slice(0, 100) || 'direct',
         path: location.hash || '/',
       };
-      // Fire-and-forget — don't await so it never blocks UI
+      // 1. Firestore analytics (histórico interno)
       window.FB?._trackAnalytics?.(payload);
+      // 2. GA4 via Firebase Analytics SDK (relatórios reais no Google Analytics)
+      window.MecBusca?.analytics?.track(event, {
+        ...data,
+        page_path:  location.hash || '/',
+        app_version: window.__APP_VERSION__ || '0',
+      });
     } catch(e) { /* analytics must never break the app */ }
   },
 
-  // Convenience wrappers for key funnel events
-  search:      (q, results) => Analytics.track('search',        { query: q, results }),
-  perfilView:  (ofId, nome) => Analytics.track('perfil_view',   { ofId, nome }),
-  wppClick:    (ofId, nome) => Analytics.track('wpp_click',      { ofId, nome }),
-  budgetOpen:  (ofId)       => Analytics.track('budget_open',    { ofId }),
-  leadSent:    (ofId, svc)  => Analytics.track('lead_sent',      { ofId, servico: svc }),
-  scheduleOpen:(ofId)       => Analytics.track('schedule_open',  { ofId }),
-  onbStart:    ()           => Analytics.track('onb_start',      {}),
-  onbAbort:    (step)       => Analytics.track('onb_abort',      { step }),
-  onbComplete: ()           => Analytics.track('onb_complete',   {}),
-  compareOpen: (ids)        => Analytics.track('compare_open',   { ids }),
+  // Convenience wrappers — event names aligned to GA4 recommended events
+  // GA4 recommended: search, view_item, generate_lead, begin_checkout, purchase
+  search:       (q, results)    => Analytics.track('search',         { search_term: q, results_count: results }),
+  perfil_view:  (id, nome)      => Analytics.track('view_item',      { item_id: id, item_name: nome, item_category: 'oficina' }),
+  wppClick:     (id, nome)      => Analytics.track('select_content', { content_type: 'whatsapp', item_id: id, item_name: nome }),
+  budgetOpen:   (id, nome)      => Analytics.track('begin_checkout', { item_id: id, item_name: nome }),
+  leadSent:     (id, svc)       => Analytics.track('generate_lead',  { item_id: id, service: svc, currency: 'BRL' }),
+  scheduleOpen: (id)            => Analytics.track('schedule_open',  { item_id: id }),
+  onbStart:     ()              => Analytics.track('sign_up_start',  {}),
+  onbAbort:     (step)          => Analytics.track('sign_up_abort',  { step }),
+  onbComplete:  (id)            => Analytics.track('sign_up',        { oficina_id: id, method: 'email' }),
+  compareOpen:  (ids)           => Analytics.track('compare_open',   { items: ids?.join(',') }),
 };
 window.Analytics = Analytics;
 </script>
@@ -13766,17 +14145,17 @@ document.addEventListener('DOMContentLoaded', () => {
   right: 0;
   width: 100%;
   max-width: 100%;
-  background: rgba(10,16,11,0.96);
-  border-top: 1px solid rgba(0,208,132,0.15);
+  background: rgba(10,16,11,0.97);
+  border-top: 2px solid rgba(0,208,132,0.35);
   border-radius: 0;
-  box-shadow: 0 -4px 24px rgba(0,0,0,0.45);
+  box-shadow: 0 -4px 28px rgba(0,208,132,0.12), 0 -2px 8px rgba(0,0,0,0.5);
   backdrop-filter: blur(16px);
   z-index: 9000;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   /* collapsed: só mostra a barra de input */
-  max-height: 52px;
+  max-height: 54px;
   transition: max-height 0.35s cubic-bezier(.25,.8,.25,1);
 }
 #ana-ai-chat.open {
@@ -13785,6 +14164,10 @@ document.addEventListener('DOMContentLoaded', () => {
 @keyframes chatSlideIn {
   from { opacity:0; transform:translateY(8px); }
   to   { opacity:1; transform:translateY(0); }
+}
+@keyframes labelPulse {
+  0%,100% { opacity:1; }
+  50%      { opacity:0.65; }
 }
 
 #ana-chat-header {
@@ -13892,32 +14275,40 @@ document.addEventListener('DOMContentLoaded', () => {
   border-top: none;
   background: transparent;
   order: -1; /* input sempre fica na base da barra */
+  cursor: text;
 }
 /* Ícone e label da Ana antes do input (só no estado fechado) */
 #ana-input-row::before {
-  content: 'Fale com a Ana';
-  font-size: 12px;
-  font-weight: 600;
+  content: '✦ Fale com a Ana →';
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--g);
-  opacity: 0.75;
+  opacity: 1;
   white-space: nowrap;
   flex-shrink: 0;
   font-family: 'DM Sans', sans-serif;
+  letter-spacing: 0.01em;
+  animation: labelPulse 2.8s ease-in-out infinite;
 }
 #ana-input {
   flex: 1;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 4px 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(0,208,132,0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
   color: var(--t2);
   font-size: 13px;
   font-family: 'DM Sans', sans-serif;
   outline: none;
-  transition: color 0.2s;
+  transition: all 0.2s;
   resize: none;
 }
-#ana-input:focus { color: var(--t); }
+#ana-input:focus {
+  color: var(--t);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(0,208,132,0.45);
+  box-shadow: 0 0 0 3px rgba(0,208,132,0.08);
+}
 #ana-input::placeholder { color: var(--t3); font-size: 12.5px; }
 #ana-send-btn {
   width: 30px; height: 30px; flex-shrink: 0;
@@ -13974,23 +14365,11 @@ document.addEventListener('DOMContentLoaded', () => {
            aria-label="Digite sua mensagem para a Ana, assistente MecBusca">
     <button id="ana-send-btn" onclick="anaAiSend()" aria-label="Enviar">➤</button>
   </div>
-  <div id="ana-human-row">
-    <button id="ana-human-btn" onclick="anaEscalarHumano()">💬 Dúvidas sobre o MecBusca? Fale com um humano.</button>
-  </div>
+
 </div>
 
 <style>
-#ana-human-row{padding:0 12px 10px;display:none;}
-#ana-ai-chat.open #ana-human-row{display:block;}
-#ana-human-btn{
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  width:100%;background:transparent;
-  border:1px solid rgba(37,211,102,0.18);border-radius:20px;
-  color:rgba(37,211,102,0.6);font-size:11.5px;
-  font-family:'DM Sans',sans-serif;padding:5px 14px;
-  cursor:pointer;transition:all 0.15s;
-}
-#ana-human-btn:hover{background:rgba(37,211,102,0.08);border-color:rgba(37,211,102,0.4);color:#25D366;}
+
 </style>
 
 <script>
@@ -14032,13 +14411,18 @@ SERVIÇOS DISPONÍVEIS NO MECBUSCA:
 🏍️ MOTOS: Revisão de moto, Troca de óleo (moto), Freios de moto, Pneu de moto, Corrente e relação, Carburador, Injeção eletrônica (moto), Elétrica de moto
 🚲 BICICLETAS: Revisão de bicicleta, Troca de câmbio (bike), Freios de bicicleta, Troca de pneu (bike), Regulagem de marcha, Lubrificação de corrente, Troca de corrente
 
-QUANDO ESCALAR PARA HUMANO:
+QUANDO ESCALAR PARA HUMANO (direcionar automaticamente para WhatsApp):
 - Usuário pede orçamento específico
 - Usuário quer agendar serviço
 - Usuário reclama de experiência com oficina
 - Problema muito específico que exige análise presencial
 - Usuário pede explicitamente para falar com humano/pessoa
 - Após 3 tentativas de diagnóstico sem sucesso
+- Dúvidas técnicas sobre o site MecBusca (funcionamento, bugs, erros de acesso)
+- Relato de erros ou falhas no site (página não carrega, botão não funciona, erro de login)
+- Dúvidas específicas sobre o serviço do MecBusca (planos, preços da plataforma, contratos)
+- Dúvidas sobre como se cadastrar como oficina, fornecedor ou vendedor de peças
+- Dúvidas sobre edição ou atualização de cadastro já existente
 
 FORMATO:
 Quando identificar o serviço → [SERVIÇO: nome]
@@ -14618,39 +15002,42 @@ const LJ_SERVICOS_POR_VEICULO = {
   carro: {
     label: '🚗 Carros',
     servicos: [
-      { nome: 'Lavagem simples',        icone: '🚿' },
-      { nome: 'Lavagem completa',        icone: '✨' },
-      { nome: 'Lavagem detalhada',       icone: '🔍' },
-      { nome: 'Higienização interna',    icone: '🧹' },
-      { nome: 'Polimento de carroceria', icone: '💎' },
-      { nome: 'Cristalização de vidros', icone: '🔮' },
-      { nome: 'Vitrificação de carroceria', icone: '🛡️' },
-      { nome: 'Cera e proteção',         icone: '🪣' },
-      { nome: 'Limpeza de motor',        icone: '⚙️' },
-      { nome: 'Limpeza de estofados',    icone: '🪑' },
-      { nome: 'Limpeza de teto',         icone: '☁️' },
-      { nome: 'Sanitização (ozônio)',    icone: '🧪' },
+      { nome: 'Lavagem simples',           icone: '🚿' },
+      { nome: 'Lavagem completa',          icone: '✨' },
+      { nome: 'Lavagem detalhada',         icone: '🔍' },
+      { nome: 'Higienização interna',      icone: '🧹' },
+      { nome: 'Polimento',                 icone: '💎' },
+      { nome: 'Cristalização',             icone: '🔮' },
+      { nome: 'Vitrificação (coating)',     icone: '🛡️' },
+      { nome: 'Lavagem de motor',          icone: '⚙️' },
+      { nome: 'Cera hidrofugante',         icone: '💧' },
+      { nome: 'Limpeza de couro',          icone: '🪑' },
+      { nome: 'Limpeza de teto',           icone: '☁️' },
+      { nome: 'Sanitização (ozônio)',      icone: '🧪' },
     ]
   },
   moto: {
     label: '🏍️ Motos',
     servicos: [
-      { nome: 'Lavagem simples moto',    icone: '🚿' },
-      { nome: 'Lavagem completa moto',   icone: '✨' },
-      { nome: 'Polimento de moto',       icone: '💎' },
-      { nome: 'Limpeza de motor moto',   icone: '⚙️' },
-      { nome: 'Lubrificação de corrente',icone: '⛓️' },
-      { nome: 'Limpeza de corrente',     icone: '🔗' },
+      { nome: 'Lavagem simples moto',     icone: '🚿' },
+      { nome: 'Lavagem completa moto',    icone: '✨' },
+      { nome: 'Polimento de moto',        icone: '💎' },
+      { nome: 'Limpeza de motor moto',    icone: '⚙️' },
+      { nome: 'Vitrificação moto',        icone: '🛡️' },
+      { nome: 'Higienização moto',        icone: '🧹' },
+      { nome: 'Lubrificação de corrente', icone: '⛓️' },
+      { nome: 'Limpeza de corrente',      icone: '🔗' },
     ]
   },
   caminhao: {
     label: '🚛 Caminhões / Vans',
     servicos: [
-      { nome: 'Lavagem externa caminhão', icone: '🚿' },
-      { nome: 'Lavagem completa caminhão',icone: '✨' },
-      { nome: 'Higienização cabine',      icone: '🧹' },
-      { nome: 'Limpeza de baú / carroceria',icone: '📦' },
-      { nome: 'Polimento caminhão',       icone: '💎' },
+      { nome: 'Lavagem externa caminhão',    icone: '🚿' },
+      { nome: 'Lavagem completa caminhão',   icone: '✨' },
+      { nome: 'Higienização cabine',         icone: '🧹' },
+      { nome: 'Limpeza de baú / carroceria', icone: '📦' },
+      { nome: 'Polimento caminhão',          icone: '💎' },
+      { nome: 'Sanitização caminhão',        icone: '🧪' },
     ]
   },
   onibus: {
@@ -14665,11 +15052,11 @@ const LJ_SERVICOS_POR_VEICULO = {
   bicicleta: {
     label: '🚲 Bicicletas',
     servicos: [
-      { nome: 'Lavagem bicicleta',       icone: '🚿' },
-      { nome: 'Limpeza + lubrificação',  icone: '🧴' },
-      { nome: 'Polimento de quadro',     icone: '💎' },
-      { nome: 'Higienização bike',       icone: '🧹' },
-      { nome: 'Limpeza motor e-bike',    icone: '⚡' },
+      { nome: 'Lavagem bicicleta',        icone: '🚿' },
+      { nome: 'Limpeza + lubrificação',   icone: '🧴' },
+      { nome: 'Polimento de quadro',      icone: '💎' },
+      { nome: 'Higienização bicicleta',   icone: '🧹' },
+      { nome: 'Limpeza motor e-bike',     icone: '⚡' },
     ]
   },
   eletrico: {
@@ -15051,15 +15438,19 @@ async function ljFinalizar() {
         <div class="form-row">
           <div class="form-group">
             <label class="form-label" for="ljCidade">Cidade <span style="color:var(--g)">*</span></label>
-            <select class="form-input" id="ljCidade" onchange="ljUpdateBairros()">
-              <option value="">Selecione</option>
-              <option>Vitória</option><option>Vila Velha</option><option selected>Cariacica</option>
-              <option>Serra</option><option>Viana</option><option>Guarapari</option>
-              <option>Fundão</option><option>Linhares</option>
-              <option>Cachoeiro de Itapemirim</option><option>Colatina</option>
-              <option>São Mateus</option><option>Aracruz</option>
-              <option value="Outra">Outra cidade do ES</option>
-            </select>
+            <div style="display:flex;gap:6px;">
+              <select id="ljEstado" class="form-input" style="width:72px;flex-shrink:0;padding-left:8px;padding-right:4px;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+              <input id="ljCidade" type="text" placeholder="Nome da cidade" class="form-input" style="flex:1;" oninput="ljUpdateBairros()" autocomplete="address-level2" aria-label="Cidade">
+            </div>
             <span class="field-error" id="ljCidadeErr">Cidade obrigatória</span>
           </div>
           <div class="form-group">
