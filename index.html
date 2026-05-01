@@ -67,10 +67,7 @@
   // 2. Google Analytics 4 — obter em analytics.google.com
   window.__GA4_ID__         = window.__GA4_ID__         || 'G-TXZG30WZ60'; // ← GA4 Measurement ID
 
-  // 3. Sentry DSN — obter em sentry.io após criar o projeto
-  window.__SENTRY_DSN__     = window.__SENTRY_DSN__     || '';  // ← ex: 'https://abc@o123.ingest.sentry.io/456'
-
-  // 4. Versão do app — atualizar a cada deploy para rastrear regressões
+  // 3. Versão do app — atualizar a cada deploy para rastrear regressões
   window.__APP_VERSION__    = '1.2.0'; // ← incrementar a cada release
 
   // 5. Firebase Web Push (FCM) — VAPID key
@@ -843,6 +840,7 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
 /* Progress bar */
 .onb-progress-wrap{padding:14px 20px 0;background:var(--bg2);border-bottom:1px solid var(--b);}
 .steps-bar{display:flex;gap:5px;margin-bottom:6px;}
+.onb-mode-active{background:var(--g)!important;color:#000!important;}
 .step-seg{flex:1;height:3px;border-radius:2px;background:var(--s2);transition:background 0.4s;}
 .step-seg.done{background:var(--g);}
 .step-seg.active{background:var(--gd);opacity:0.6;}
@@ -1946,8 +1944,8 @@ button,a,[role=button]{min-height:44px;}
         <div class="home-search-title">🔧 Oficinas para carros</div>
         <div class="home-fields">
           <div class="home-field home-field-full">
-            <label for="hServico">Serviço</label>
-            <select id="hServico" aria-label="Selecione o serviço"><!-- preenchido por buildServicoSelect() --></select>
+            <label for="hServico" style="font-weight:600;color:var(--t);">O que você precisa?</label>
+            <select id="hServico" aria-label="Selecione o serviço" onchange="if(this.value){homeBuscar()}"><!-- preenchido por buildServicoSelect() --></select>
           </div>
           <div class="home-field home-field-full">
             <label for="hOficina" style="display:flex;align-items:center;gap:6px;">Oficina <span style="font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
@@ -1957,7 +1955,9 @@ button,a,[role=button]{min-height:44px;}
           </div>
           <div class="home-field">
             <label for="hCidade">Cidade</label>
-            <div style="display:flex;gap:6px;"><select id="hEstado" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+            <div style="display:flex;gap:6px;align-items:center;">
+              <button type="button" title="Detectar cidade automaticamente" onclick="autoDetectCidade()" style="flex-shrink:0;padding:10px 10px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--g);cursor:pointer;font-size:14px;line-height:1;" aria-label="Detectar localização">📍</button>
+              <select id="hEstado" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
 <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
 <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
 <option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
@@ -2683,6 +2683,18 @@ button,a,[role=button]{min-height:44px;}
             </div>
 
             <!-- Card login painel -->
+            <!-- WhatsApp quick registration CTA -->
+            <a href="https://wa.me/5527999243874?text=Olá!%20Quero%20cadastrar%20minha%20oficina%20no%20MecBusca%20gratuitamente.%20Pode%20me%20ajudar%3F"
+               target="_blank" rel="noopener noreferrer"
+               style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:rgba(37,211,102,0.07);border:1.5px solid rgba(37,211,102,0.25);border-radius:var(--r);cursor:pointer;text-decoration:none;margin-bottom:8px;transition:all 0.15s;"
+               onmouseenter="this.style.background='rgba(37,211,102,0.13)'" onmouseleave="this.style.background='rgba(37,211,102,0.07)'">
+              <div style="width:40px;height:40px;border-radius:10px;background:rgba(37,211,102,0.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">💬</div>
+              <div style="flex:1;text-align:left;">
+                <div style="font-size:13.5px;font-weight:700;color:#25D366;">Cadastrar via WhatsApp</div>
+                <div style="font-size:11.5px;color:var(--t3);margin-top:1px;">Mais rápido · confirmação instantânea</div>
+              </div>
+              <div style="color:var(--t3);font-size:18px;flex-shrink:0;">›</div>
+            </a>
             <div id="home-login-row" onclick="homeLoginOficina()" role="button" tabindex="0" style="display:flex;align-items:center;gap:14px;padding:14px 16px;background:var(--bg3);border:1px solid var(--b2);border-radius:var(--r);cursor:pointer;transition:all 0.15s;" onmouseenter="this.style.borderColor='var(--b3)'" onmouseleave="this.style.borderColor='var(--b2)'" onkeydown="if(event.key==='Enter')homeLoginOficina()">
               <div class="login-card-ico" style="width:40px;height:40px;border-radius:10px;background:var(--bg4);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">🔑</div>
               <div style="flex:1;text-align:left;">
@@ -3092,6 +3104,17 @@ button,a,[role=button]{min-height:44px;}
       <div class="onb-logo" style="margin:0 auto 0 12px;">Mec<em>Busca</em></div>
     </div>
 
+    <!-- Modo toggle: rápido vs completo -->
+    <div style="display:flex;gap:0;border-radius:10px;overflow:hidden;border:1px solid var(--b);margin:0 16px 10px;flex-shrink:0;" id="onbModeToggle">
+      <button id="onbModeRapido" onclick="onbSetMode('rapido')"
+        style="flex:1;padding:8px;font-size:12.5px;font-weight:700;background:var(--g);color:#000;border:none;cursor:pointer;transition:all 0.2s;">
+        ⚡ Rápido (60s)
+      </button>
+      <button id="onbModeCompleto" onclick="onbSetMode('completo')"
+        style="flex:1;padding:8px;font-size:12.5px;font-weight:500;background:transparent;color:var(--t3);border:none;cursor:pointer;transition:all 0.2s;">
+        📋 Completo
+      </button>
+    </div>
     <!-- Barra de progresso fixa -->
     <div class="onb-progress-wrap" style="flex-shrink:0;">
       <div class="steps-bar" role="progressbar" aria-valuemin="0" aria-valuemax="4" aria-valuenow="1">
@@ -3100,52 +3123,21 @@ button,a,[role=button]{min-height:44px;}
         <div class="step-seg" id="seg2"></div>
         <div class="step-seg" id="seg3"></div>
       </div>
-      <div class="onb-prog-label" id="onbProgLabel">Passo 1 de 4 — Dados da oficina</div>
+      <div class="onb-prog-label" id="onbProgLabel">Passo 1 de 4 — Contato</div>
     </div>
 
     <!-- Corpo scrollável -->
     <div class="drawer-body" style="flex:1;overflow-y:auto;">
 
-      <!-- ══ STEP 0: Dados básicos ══ -->
+      <!-- ══ STEP 0: Contato ══ -->
       <div class="onb-step active" id="step0" role="form" aria-label="Passo 1 de 4">
-        <div class="onb-step-icon" aria-hidden="true">🏢</div>
-        <div class="step-title">Dados da oficina</div>
-        <div class="step-sub">Essas informações aparecem para os clientes na busca.</div>
+        <div class="onb-step-icon" aria-hidden="true">👋</div>
+        <div class="step-title">Bem-vindo ao MecBusca!</div>
+        <div class="step-sub">Em 2 minutos seu perfil estará visível para clientes da sua região.</div>
         <div class="form-group">
           <label class="form-label" for="onbNome">Nome da oficina <span style="color:var(--g)">*</span></label>
-          <input class="form-input" id="onbNome" placeholder="Ex: Auto Center Vitória" autocomplete="organization" aria-required="true">
+          <input class="form-input" id="onbNome" placeholder="Ex: Auto Center Vitória" autocomplete="organization" aria-required="true" autofocus>
           <span class="field-error" id="onbNomeErr">Nome é obrigatório</span>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label" for="onbCidade">Cidade <span style="color:var(--g)">*</span></label>
-            <div style="display:flex;gap:6px;">
-              <select id="onbEstado" class="form-input" style="width:72px;flex-shrink:0;padding-left:8px;padding-right:4px;" aria-label="Estado"><option value="">UF</option>
-<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
-<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
-<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
-<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
-<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
-<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
-<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
-<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
-              <input id="onbCidade" type="text" placeholder="Nome da cidade" class="form-input" style="flex:1;" oninput="onbUpdateBairros()" autocomplete="address-level2" aria-required="true" aria-label="Cidade">
-            </div>
-            <span class="field-error" id="onbCidadeErr">Cidade obrigatória</span>
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="onbBairro">Bairro <span style="font-size:11px;color:var(--t3);font-weight:400;">(melhora seu ranking)</span></label>
-            <select class="form-input" id="onbBairro" aria-label="Selecione o bairro">
-              <option value="">Selecione a cidade</option>
-            </select>
-            <input class="form-input" id="onbBairroOutro" placeholder="Nome do bairro" style="display:none;margin-top:6px;">
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="onbEndereco">Endereço completo</label>
-          <input class="form-input" id="onbEndereco" placeholder="Rua das Flores, 142">
-          <div id="geoStatus" style="font-size:11.5px;color:var(--t3);margin-top:5px;display:none;"></div>
         </div>
         <div class="form-group">
           <label class="form-label" for="onbWpp">WhatsApp (com DDD) <span style="color:var(--g)">*</span></label>
@@ -3173,7 +3165,21 @@ button,a,[role=button]{min-height:44px;}
 
         <!-- Painel de adição -->
         <div class="svc-add-panel">
-          <div class="svc-add-label">Adicionar serviço</div>
+          <!-- Quick chips — serviços mais buscados -->
+        <div style="margin-bottom:12px;">
+          <div style="font-size:11.5px;color:var(--t3);margin-bottom:8px;font-weight:500;">⚡ Mais buscados — toque para adicionar:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;" id="onbQuickSvcs">
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Troca de óleo',89,150)">🛢️ Troca de óleo</button>
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Freios dianteiros',120,200)">🔴 Freios</button>
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Alinhamento',60,90)">⚙️ Alinhamento</button>
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Balanceamento',60,90)">🔄 Balanceamento</button>
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Revisão completa',250,400)">🔧 Revisão</button>
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Suspensão',180,350)">🏎️ Suspensão</button>
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Ar-condicionado automotivo',150,280)">❄️ Ar-cond.</button>
+            <button class="chip" style="font-size:12px;" onclick="onbQuickAdd('Injeção eletrônica',180,320)">💻 Injeção</button>
+          </div>
+        </div>
+        <div class="svc-add-label">Ou escolha do catálogo completo:</div>
           <select class="form-input" id="nsvcSelect" onchange="onbSvcSelectChange()" aria-label="Selecione o serviço" style="margin-bottom:0;">
             <option value="">— Selecione o serviço —</option><optgroup label="─── 🚗 CARRO ───" disabled></optgroup><optgroup label="Manutenção"><option>Troca de óleo</option><option>Revisão completa</option><option>Filtros</option><option>Velas de ignição</option><option>Correia dentada</option><option>Correia acessórios</option><option>Troca de fluído de freio</option><option>Troca de fluído de câmbio</option><option>Troca de fluído de direção</option></optgroup><optgroup label="Freios e Suspensão"><option>Freios dianteiros</option><option>Freios traseiros</option><option>Alinhamento</option><option>Balanceamento</option><option>Suspensão</option><option>Amortecedor</option><option>Mola</option><option>Barra estabilizadora</option><option>Cubo de roda</option><option>Rolamento de roda</option></optgroup><optgroup label="Motor e Câmbio"><option>Embreagem</option><option>Câmbio</option><option>Injeção eletrônica</option><option>Retífica de motor</option><option>Troca de bomba d'água</option><option>Troca de radiador</option><option>GNV</option></optgroup><optgroup label="Elétrica, Faróis & Acessórios"><option>Elétrica automotiva</option><option>Ar-condicionado automotivo</option><option>Bateria</option><option>Diagnóstico computadorizado</option><option>Troca de farol dianteiro</option><option>Troca de farol traseiro</option><option>Troca de farol de milha</option><option>Polimento de farol</option><option>Som e multimídia</option><option>Película automotiva</option><option>Instalação de acessórios</option><option>Rastreador veicular</option></optgroup><optgroup label="Funilaria & Lanternagem"><option>Funilaria e pintura</option><option>Lanternagem completa</option><option>Amassado simples</option><option>Pintura localizada</option><option>Pintura completa</option><option>Polimento e cristalização</option><option>Troca de para-choque</option><option>Troca de para-lama</option><option>Troca de capô</option><option>Troca de porta</option><option>Reparo de riscos</option><option>Destombamento</option></optgroup><optgroup label="Outros — Carro"><option>Pneus</option><option>Vidros e para-brisa</option><option>Escapamento</option><option>Direção hidráulica</option></optgroup><optgroup label="─── 🏍️ MOTO ───" disabled></optgroup><optgroup label="Manutenção — Moto"><option>Revisão de moto</option><option>Troca de óleo (moto)</option><option>Corrente e relação</option><option>Carburador / Injeção eletrônica (moto)</option></optgroup><optgroup label="Freios e Suspensão — Moto"><option>Freios de moto</option><option>Suspensão (moto)</option><option>Amortecedor (moto)</option><option>Pneu de moto</option></optgroup><optgroup label="Elétrica — Moto"><option>Elétrica de moto</option><option>Bateria (moto)</option></optgroup><optgroup label="Funilaria — Moto"><option>Embreagem (moto)</option><option>Funilaria / Pintura (moto)</option></optgroup><optgroup label="─── 🚲 BICICLETA ───" disabled></optgroup><optgroup label="Manutenção — Bicicleta"><option>Revisão de bicicleta</option><option>Troca de câmbio (bike)</option><option>Regulagem de marcha</option><option>Lubrificação de corrente</option><option>Troca de corrente</option></optgroup><optgroup label="Freios e Rodas — Bicicleta"><option>Freios de bicicleta</option><option>Troca de pneu (bike)</option><option>Rodas e aros (bike)</option><option>Suspensão (bike)</option></optgroup><optgroup label="E-bike"><option>Bateria / carregador (E-bike)</option><option>Motor elétrico (E-bike)</option><option>Controlador / display (E-bike)</option></optgroup><optgroup label="─── 🚛 CAMINHÃO ───" disabled></optgroup><optgroup label="Manutenção — Caminhão"><option>Revisão completa (caminhão)</option><option>Troca de óleo (caminhão)</option><option>Injeção diesel / bicos (caminhão)</option></optgroup><optgroup label="Freios e Suspensão — Caminhão"><option>Freios e tambores (caminhão)</option><option>Pneu / recapagem (caminhão)</option><option>Suspensão (caminhão)</option></optgroup><optgroup label="Motor e Câmbio — Caminhão"><option>Embreagem (caminhão)</option><option>Diferencial / câmbio (caminhão)</option></optgroup><optgroup label="Elétrica e Outros — Caminhão"><option>Elétrica / painel (caminhão)</option><option>Ar condicionado (caminhão)</option><option>Funilaria / pintura (caminhão)</option><option>Rastreamento / telemetria (caminhão)</option></optgroup><optgroup label="Outro"><option value="__outro__">✏️ Outro (escrever manualmente)</option></optgroup>
           </select>
@@ -3194,19 +3200,53 @@ button,a,[role=button]{min-height:44px;}
         </div>
       </div>
 
-      <!-- ══ STEP 2: Horários ══ -->
+      <!-- ══ STEP 2: Localização + Horários ══ -->
       <div class="onb-step" id="step2" role="form" aria-label="Passo 3 de 4">
-        <div class="onb-step-icon" aria-hidden="true">🕐</div>
-        <div class="step-title">Horários de funcionamento</div>
-        <div class="step-sub">Clientes veem se você está aberto agora. Desative os dias que não atende.</div>
-        <div class="hora-grid-new" id="onbHorarios" aria-label="Horários por dia da semana"></div>
+        <div class="onb-step-icon" aria-hidden="true">📍</div>
+        <div class="step-title">Onde você atende?</div>
+        <div class="step-sub">Clientes perto de você vão te encontrar primeiro.</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="onbCidade">Cidade <span style="color:var(--g)">*</span></label>
+            <div style="display:flex;gap:6px;">
+              <select id="onbEstado" class="form-input" style="width:72px;flex-shrink:0;padding-left:8px;padding-right:4px;" aria-label="Estado"><option value="">UF</option>
+<option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
+<option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
+<option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
+<option value="MA">MA</option><option value="MT">MT</option><option value="MS">MS</option>
+<option value="MG">MG</option><option value="PA">PA</option><option value="PB">PB</option>
+<option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
+<option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
+<option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+              <input id="onbCidade" type="text" placeholder="Nome da cidade" class="form-input" style="flex:1;" oninput="onbUpdateBairros()" autocomplete="address-level2" aria-required="true" aria-label="Cidade">
+            </div>
+            <span class="field-error" id="onbCidadeErr">Cidade obrigatória</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="onbBairro">Bairro <span style="font-size:11px;color:var(--t3);font-weight:400;">(melhora ranking)</span></label>
+            <select class="form-input" id="onbBairro" aria-label="Selecione o bairro">
+              <option value="">Selecione a cidade</option>
+            </select>
+            <input class="form-input" id="onbBairroOutro" placeholder="Nome do bairro" style="display:none;margin-top:6px;">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="onbEndereco">Endereço <span style="font-size:11px;color:var(--t3);font-weight:400;">(opcional — ajuda clientes te encontrar)</span></label>
+          <input class="form-input" id="onbEndereco" placeholder="Rua das Flores, 142">
+          <div id="geoStatus" style="font-size:11.5px;color:var(--t3);margin-top:5px;display:none;"></div>
+        </div>
+        <div style="margin-top:18px;">
+          <div style="font-size:12px;font-weight:600;color:var(--t2);margin-bottom:10px;display:flex;align-items:center;gap:6px;">🕐 Horários de atendimento <span style="font-size:11px;color:var(--t3);font-weight:400;">(opcional)</span></div>
+          <div class="hora-grid-new" id="onbHorarios" aria-label="Horários por dia da semana"></div>
+        </div>
       </div>
 
       <!-- ══ STEP 3: Fotos + Revisão ══ -->
       <div class="onb-step" id="step3" role="form" aria-label="Passo 4 de 4">
         <div class="onb-step-icon" aria-hidden="true">📷</div>
-        <div class="step-title">Fotos da oficina</div>
-        <div class="step-sub">Oficinas com fotos recebem até 3× mais contatos. Opcional, mas recomendado.</div>
+        <div class="step-title">Quase lá! Adicione fotos</div>
+        <div class="step-sub">Opcional, mas oficinas com foto recebem 3× mais contatos.</div>
         <div class="foto-drop-zone" id="onbFotosDrop"
           onclick="document.getElementById('onbFotosInput').click()"
           ondragover="event.preventDefault();this.style.borderColor='var(--g)'"
@@ -3230,12 +3270,47 @@ button,a,[role=button]{min-height:44px;}
         </div>
       </div>
 
+      <!-- ══ STEP WPP VERIFY ══ -->
+      <div class="onb-step" id="stepVerify" role="form" aria-label="Verificação WhatsApp">
+        <div class="onb-step-icon" aria-hidden="true">📲</div>
+        <div class="step-title">Confirme pelo WhatsApp</div>
+        <div class="step-sub" id="verifySubtitle">Enviamos um código de 6 dígitos para o seu WhatsApp.</div>
+        <div class="form-group" style="margin-top:16px;">
+          <label class="form-label" for="onbCodigo">Código de verificação</label>
+          <input class="form-input" id="onbCodigo" type="tel" maxlength="6"
+            placeholder="000000" autocomplete="one-time-code"
+            style="font-size:28px;letter-spacing:10px;text-align:center;font-weight:700;"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value.length===6)onbVerificarCodigo()">
+          <span class="field-error" id="onbCodigoErr">Código inválido</span>
+        </div>
+        <div style="margin-top:10px;text-align:center;">
+          <button class="btn btn-ghost" style="font-size:12px;width:auto;padding:6px 14px;" id="onbReenviarBtn"
+            onclick="onbReenviarCodigo()">Não recebi o código — reenviar</button>
+        </div>
+        <div id="onbVerifyLoader" style="display:none;text-align:center;margin-top:16px;">
+          <span class="spinner" style="width:28px;height:28px;"></span>
+          <div style="font-size:12px;color:var(--t3);margin-top:8px;">Verificando...</div>
+        </div>
+        <!-- Dev mode hint — remove before go-live -->
+        <div id="onbCodigoHint" style="display:none;margin-top:12px;padding:10px 12px;background:var(--s2);border-radius:var(--r);font-size:12px;color:var(--t3);">
+          🛠️ Modo dev: código = <strong id="onbCodigoHintVal">——</strong>
+        </div>
+      </div>
+
       <!-- ══ STEP SUCCESS ══ -->
       <div class="onb-step" id="stepSuccess">
         <div class="success-wrap">
-          <div class="success-icon" aria-hidden="true">✅</div>
+          <div class="success-icon" aria-hidden="true" id="successEmoji">🎉</div>
+          <style>
+            @keyframes celebrateIn {
+              0% { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+              60% { transform: scale(1.2) rotate(5deg); }
+              100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            }
+            #successEmoji { animation: celebrateIn 0.6s cubic-bezier(.175,.885,.32,1.275) forwards; }
+          </style>
           <div class="success-title">Oficina cadastrada!</div>
-          <div class="success-sub">Seu perfil já está visível no MecBusca.<br>Clientes podem te encontrar agora mesmo.</div>
+          <div class="success-sub">Seu perfil está <strong style="color:var(--g);">ao vivo</strong> agora!<br>Compartilhe com clientes e comece a receber contatos.</div>
           <div class="success-detail">
             <div class="success-detail-row"><span class="success-check">✓</span> Perfil publicado na busca</div>
             <div class="success-detail-row"><span class="success-check">✓</span> WhatsApp ativo para contato</div>
@@ -3243,7 +3318,8 @@ button,a,[role=button]{min-height:44px;}
             <div class="success-detail-row"><span class="success-check">✓</span> Plano gratuito ativo</div>
           </div>
           <button class="btn btn-primary" style="margin-bottom:12px;" onclick="closeOverlay('scOnboarding');loadPainel();">Acessar meu painel →</button>
-          <button class="btn btn-ghost" onclick="goTo('scCliente')">Ver como cliente vê</button>
+          <button class="btn btn-wpp" style="margin-bottom:10px;" onclick="shareOficinaNova()">📲 Compartilhar meu perfil</button>
+          <button class="btn btn-ghost" onclick="goTo('scCliente')">👁️ Ver como cliente vê</button>
         </div>
       </div>
 
@@ -3766,6 +3842,41 @@ const firebaseConfig = (() => {
   if (window.__FIREBASE_CFG__) return window.__FIREBASE_CFG__;
   return {};
 })();
+
+// ── Global error → Firebase Firestore logger ──────────────────────────────────
+// Captura erros JS não tratados e salva em Firestore/_errors para análise.
+// Ativado automaticamente após Firebase inicializar.
+window.addEventListener('mecbusca:firebase-ready', () => {
+  window.onerror = function(msg, src, line, col, err) {
+    try {
+      const payload = {
+        type: 'onerror',
+        message: String(msg).slice(0, 500),
+        source: String(src).slice(0, 200),
+        line, col,
+        stack: err?.stack?.slice(0, 1000) || '',
+        url: location.href.slice(0, 200),
+        ua: navigator.userAgent.slice(0, 120),
+        appVersion: window.__APP_VERSION__ || '0',
+        ts: new Date().toISOString(),
+      };
+      window.FB?._logError?.(payload);
+    } catch(_) {}
+    return false; // não suprimir o erro
+  };
+  window.addEventListener('unhandledrejection', e => {
+    try {
+      window.FB?._logError?.({
+        type: 'unhandledrejection',
+        message: String(e.reason?.message || e.reason || 'promise rejected').slice(0, 500),
+        stack: e.reason?.stack?.slice(0, 1000) || '',
+        url: location.href.slice(0, 200),
+        appVersion: window.__APP_VERSION__ || '0',
+        ts: new Date().toISOString(),
+      });
+    } catch(_) {}
+  });
+}, { once: true });
 
 // ── Logger condicional (ativo apenas com ?debug=1 na URL) ─────────
 const _DEV = new URLSearchParams(location.search).has('debug');
@@ -7163,6 +7274,7 @@ function onbNextHandler() {
   }
 }
 
+
 async function nextStep(to) {
   if (to < 0) return; // FIX: guard contra step negativo
   // On step 0 → 1: try to geocode address for preview
@@ -7191,14 +7303,14 @@ async function nextStep(to) {
 
   // Validações por passo
   if (to === 1) {
-    const nome   = document.getElementById('onbNome').value.trim();
-    const wpp    = document.getElementById('onbWpp').value.trim();
-    const cidade = document.getElementById('onbCidade').value.trim();
-    const email  = document.getElementById('onbEmail').value.trim();
+    // Step0 → Step1: only validate nome + WhatsApp + email
+    // cidade/bairro/endereço are now collected in step2
+    const nome  = document.getElementById('onbNome').value.trim();
+    const wpp   = document.getElementById('onbWpp').value.trim();
+    const email = document.getElementById('onbEmail').value.trim();
     let valid = true;
-    if (!nome)               { showFieldError('onbNome',   'onbNomeErr');   valid = false; }
-    if (!validatePhone(wpp)) { showFieldError('onbWpp',    'onbWppErr');    valid = false; }
-    if (!cidade || cidade.trim().length < 2) { showFieldError('onbCidade', 'onbCidadeErr'); valid = false; }
+    if (!nome || nome.length < 2) { showFieldError('onbNome', 'onbNomeErr'); valid = false; }
+    if (!validatePhone(wpp))      { showFieldError('onbWpp',  'onbWppErr');  valid = false; }
     if (!email || !validateEmail(email)) {
       showFieldError('onbEmail', 'onbEmailErr');
       document.getElementById('onbEmailErr').textContent = email
@@ -7207,26 +7319,37 @@ async function nextStep(to) {
       valid = false;
     }
     if (!valid) return;
-    STATE.onbData.nome   = nome;
-    STATE.onbData.cidade = cidade;
-    STATE.onbData.estado = document.getElementById('onbEstado')?.value || 'ES';
-    const bairroSel = document.getElementById('onbBairro');
-    const bairroOutro = document.getElementById('onbBairroOutro');
-    const bairroOutroVis = bairroOutro && bairroOutro.style.display !== 'none';
-    STATE.onbData.bairro = bairroOutroVis
-      ? (bairroOutro.value.trim())
-      : (bairroSel?.value?.trim() || '');
-    STATE.onbData.endereco = document.getElementById('onbEndereco').value.trim();
-    STATE.onbData.wpp = wpp.replace(/\D/g,'');
+    STATE.onbData.nome  = nome;
+    STATE.onbData.wpp   = wpp.replace(/\D/g,'');
     STATE.onbData.email = email;
   }
   if (to === 2) {
     if (STATE.onbData.servicos.length === 0) {
+      // Sugerir pelo menos um serviço padrão se vazio
       STATE.onbData.servicos = [{nome:'Troca de óleo',min:89,max:120,ativo:true}];
       renderOnbSvcList();
+      toast('Adicionamos "Troca de óleo" como exemplo. Edite os serviços e preços.', 'info');
     }
   }
   if (to === 3) {
+    // Validar cidade (obrigatória, agora no step2)
+    const cidade3 = document.getElementById('onbCidade')?.value?.trim() || '';
+    if (!cidade3 || cidade3.length < 2) {
+      showFieldError('onbCidade', 'onbCidadeErr');
+      return;
+    }
+    STATE.onbData.cidade = cidade3;
+    STATE.onbData.estado = document.getElementById('onbEstado')?.value || 'ES';
+    STATE.onbData.bairro = document.getElementById('onbBairro')?.value ||
+                           document.getElementById('onbBairroOutro')?.value || '';
+    STATE.onbData.endereco = document.getElementById('onbEndereco')?.value?.trim() || '';
+    // Geocodifica em background se tiver endereço
+    const _end = STATE.onbData.endereco;
+    if (_end && cidade3) {
+      geocodificarEndereco(_end, cidade3).then(geo => {
+        if (geo) { STATE.onbData.lat = geo.lat; STATE.onbData.lng = geo.lng; }
+      }).catch(() => {});
+    }
     // Coleta horários do step2
     const saved = STATE.onbData.horarios;
     const base  = (Array.isArray(saved) && saved.length === HORARIOS_PADRAO.length)
@@ -7264,16 +7387,24 @@ async function nextStep(to) {
     else if (i === to && to < 4) seg.classList.add('active');
   }
 
-  // Atualiza label de progresso
+  // Atualiza label de progresso e texto do botão
   const labels = [
-    'Passo 1 de 4 — Dados da oficina',
-    'Passo 2 de 4 — Serviços & preços',
-    'Passo 3 de 4 — Horários',
-    'Passo 4 de 4 — Fotos & revisão',
-    'Cadastro concluído!'
+    'Passo 1 de 4 — Contato',
+    'Passo 2 de 4 — Serviços',
+    'Passo 3 de 4 — Localização',
+    'Passo 4 de 4 — Fotos & Revisão',
+    'Cadastro concluído!',
+  ];
+  const nextBtnTexts = [
+    'Próximo: Serviços →',
+    'Próximo: Localização →',
+    'Próximo: Revisão →',
+    'Publicar perfil 🚀',
   ];
   const progLabel = document.getElementById('onbProgLabel');
   if (progLabel) progLabel.textContent = labels[Math.min(to, 4)];
+  const nextTxt = document.getElementById('onbBtnNextText');
+  if (nextTxt && nextBtnTexts[to]) nextTxt.textContent = nextBtnTexts[to];
 
   // Botão voltar: aparece do passo 1 em diante (exceto sucesso)
   const btnBack = document.getElementById('onbBtnBack');
@@ -7312,6 +7443,257 @@ function renderOnbSvcList() {
 }
 
 // ── Serviço: toggle "Outro" input ────────────────────────────────
+function onbQuickAdd(nome, minPrice, maxPrice) {
+  // Add service directly from quick chip — skip the select/price workflow
+  if (!STATE.onbData.servicos) STATE.onbData.servicos = [];
+  if (STATE.onbData.servicos.find(s => s.nome === nome)) {
+    toast(`${nome} já adicionado`, 'info');
+    return;
+  }
+  STATE.onbData.servicos.push({ nome, min: minPrice, max: maxPrice, ativo: true });
+  renderOnbSvcList();
+  // Mark the chip as added
+  const chips = document.querySelectorAll('#onbQuickSvcs .chip');
+  chips.forEach(c => {
+    if (c.textContent.includes(nome.split(' ')[0])) {
+      c.classList.add('active');
+      c.disabled = true;
+      c.style.opacity = '0.5';
+    }
+  });
+  toast(`✅ ${nome} adicionado`, 'success');
+}
+
+// ── Onboarding Mode: Rápido vs Completo ─────────────────────────────────────
+let _onbMode = 'rapido'; // 'rapido' | 'completo'
+let _onbPendingId = null; // ID do perfil pendente após cadastroRapido
+
+function onbSetMode(mode) {
+  _onbMode = mode;
+  const rapBtn = document.getElementById('onbModeRapido');
+  const cmpBtn = document.getElementById('onbModeCompleto');
+  if (!rapBtn || !cmpBtn) return;
+  if (mode === 'rapido') {
+    rapBtn.style.background = 'var(--g)'; rapBtn.style.color = '#000'; rapBtn.style.fontWeight = '700';
+    cmpBtn.style.background = 'transparent'; cmpBtn.style.color = 'var(--t3)'; cmpBtn.style.fontWeight = '500';
+    // Hide email field in rapid mode (not required)
+    const emailGroup = document.getElementById('onbEmail')?.closest('.form-group');
+    if (emailGroup) emailGroup.style.display = 'none';
+    document.getElementById('onbProgLabel').textContent = '⚡ Cadastro rápido — 60 segundos';
+  } else {
+    cmpBtn.style.background = 'var(--g)'; cmpBtn.style.color = '#000'; cmpBtn.style.fontWeight = '700';
+    rapBtn.style.background = 'transparent'; rapBtn.style.color = 'var(--t3)'; rapBtn.style.fontWeight = '500';
+    const emailGroup = document.getElementById('onbEmail')?.closest('.form-group');
+    if (emailGroup) emailGroup.style.display = '';
+    document.getElementById('onbProgLabel').textContent = 'Passo 1 de 4 — Contato';
+  }
+}
+
+// Initialize rapid mode on open
+document.addEventListener('mecbusca:firebase-ready', () => {
+  // Set rapid mode as default when onboarding opens
+  const observer = new MutationObserver(() => {
+    if (document.getElementById('scOnboarding')?.classList.contains('open')) {
+      onbSetMode('rapido');
+    }
+  });
+  const onbEl = document.getElementById('scOnboarding');
+  if (onbEl) observer.observe(onbEl, { attributes: true, attributeFilter: ['class'] });
+});
+
+// ── Cadastro Rápido (sem auth) ─────────────────────────────────────────────
+async function finalizarCadastroRapido() {
+  if (STATE._submitting) return;
+  STATE._submitting = true;
+  setBtnLoading('onbBtnNext', 'onbBtnNextText', 'onbBtnNextSpinner', true);
+
+  try {
+    const nome   = document.getElementById('onbNome')?.value?.trim() || '';
+    const wpp    = (document.getElementById('onbWpp')?.value || '').replace(/\D/g,'');
+    const cidade = document.getElementById('onbCidade')?.value?.trim() || '';
+    const estado = document.getElementById('onbEstado')?.value || 'ES';
+    const bairro = document.getElementById('onbBairroOutro')?.style?.display !== 'none'
+      ? document.getElementById('onbBairroOutro')?.value?.trim()
+      : document.getElementById('onbBairro')?.value?.trim();
+
+    // Validate
+    let valid = true;
+    if (!nome || nome.length < 2)   { showFieldError('onbNome', 'onbNomeErr'); valid = false; }
+    if (!validatePhone(wpp))        { showFieldError('onbWpp',  'onbWppErr');  valid = false; }
+    if (!cidade || cidade.length < 2) { showFieldError('onbCidade', 'onbCidadeErr'); valid = false; }
+    if (!valid) {
+      STATE._submitting = false;
+      setBtnLoading('onbBtnNext', 'onbBtnNextText', 'onbBtnNextSpinner', false);
+      return;
+    }
+
+    // Collect services
+    const servicos = (STATE.onbData?.servicos || []).map(s => ({
+      nome: s.nome, min: s.min || 0, max: s.max || 0,
+    }));
+
+    // Call Cloud Function
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+    const fns = getFunctions(undefined, 'southamerica-east1');
+    const cadastroRapido = httpsCallable(fns, 'cadastroRapido');
+    const result = await cadastroRapido({ nome, whatsapp: wpp, cidade, estado, bairro: bairro || '', servicos });
+
+    _onbPendingId = result.data?.oficinaId;
+
+    // Show dev code hint if returned
+    if (result.data?.codigoDebug) {
+      const hint = document.getElementById('onbCodigoHint');
+      const hintVal = document.getElementById('onbCodigoHintVal');
+      if (hint) hint.style.display = 'block';
+      if (hintVal) hintVal.textContent = result.data.codigoDebug;
+    }
+
+    // Update verify subtitle
+    const sub = document.getElementById('verifySubtitle');
+    if (sub) sub.textContent = `Enviamos um código para WhatsApp +55 ${wpp.slice(0,2)} *****${wpp.slice(-4)}`;
+
+    // Show verify step
+    showStep('stepVerify');
+    setTimeout(() => document.getElementById('onbCodigo')?.focus(), 300);
+    Analytics.track('onb_verify_step', { mode: 'rapido' });
+
+  } catch(err) {
+    const msg = err?.details?.message || err?.message || 'Erro ao cadastrar. Tente novamente.';
+    if (err?.code === 'already-exists') {
+      toast('Este WhatsApp já tem perfil cadastrado. Entre em contato pelo app.', 'warning');
+    } else {
+      toast(msg, 'error');
+    }
+  } finally {
+    STATE._submitting = false;
+    setBtnLoading('onbBtnNext', 'onbBtnNextText', 'onbBtnNextSpinner', false);
+  }
+}
+
+// ── Verificar código WPP ──────────────────────────────────────────────────
+async function onbVerificarCodigo() {
+  const codigo = document.getElementById('onbCodigo')?.value?.trim();
+  if (!codigo || codigo.length !== 6) return;
+  if (!_onbPendingId) { toast('Sessão expirada. Reinicie o cadastro.', 'warning'); return; }
+
+  const loader = document.getElementById('onbVerifyLoader');
+  const codigoEl = document.getElementById('onbCodigo');
+  if (loader) loader.style.display = 'block';
+  if (codigoEl) codigoEl.disabled = true;
+
+  try {
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+    const fns = getFunctions(undefined, 'southamerica-east1');
+    const verificar = httpsCallable(fns, 'verificarCodigoWPP');
+    const result = await verificar({ oficinaId: _onbPendingId, codigo });
+
+    // Salvar token mágico localmente (7 dias)
+    if (result.data?.magicToken) {
+      try {
+        localStorage.setItem('mecbusca_magic_token', result.data.magicToken);
+        localStorage.setItem('mecbusca_oficina_id', _onbPendingId);
+        localStorage.setItem('mecbusca_token_expiry', result.data.expiraEm);
+      } catch(_) {}
+    }
+
+    STATE.novaOficinaId = _onbPendingId;
+    STATE.onbData = STATE.onbData || {};
+    STATE.onbData._id = _onbPendingId;
+
+    Analytics.track('onb_complete', { mode: 'rapido', oficina_id: _onbPendingId });
+    showStep('stepSuccess');
+
+  } catch(err) {
+    const msg = err?.details?.message || err?.message || 'Código inválido. Tente novamente.';
+    showFieldError('onbCodigo', 'onbCodigoErr');
+    document.getElementById('onbCodigoErr').textContent = msg;
+    if (codigoEl) { codigoEl.disabled = false; codigoEl.value = ''; codigoEl.focus(); }
+  } finally {
+    if (loader) loader.style.display = 'none';
+    if (codigoEl) codigoEl.disabled = false;
+  }
+}
+
+async function onbReenviarCodigo() {
+  if (!_onbPendingId) return;
+  const btn = document.getElementById('onbReenviarBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
+  try {
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+    const fns = getFunctions(undefined, 'southamerica-east1');
+    const reenviar = httpsCallable(fns, 'reenviarCodigoWPP');
+    const result = await reenviar({ oficinaId: _onbPendingId });
+    toast('Novo código enviado! ✅', 'success');
+    if (result.data?.codigoDebug) {
+      const hintVal = document.getElementById('onbCodigoHintVal');
+      if (hintVal) hintVal.textContent = result.data.codigoDebug;
+    }
+    document.getElementById('onbCodigo').value = '';
+    document.getElementById('onbCodigo').focus();
+    // Cooldown 60s
+    if (btn) {
+      let secs = 60;
+      const iv = setInterval(() => {
+        btn.textContent = `Reenviar (${--secs}s)`;
+        if (secs <= 0) { clearInterval(iv); btn.disabled = false; btn.textContent = 'Não recebi o código — reenviar'; }
+      }, 1000);
+    }
+  } catch(err) {
+    toast(err?.details?.message || 'Erro ao reenviar.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Não recebi o código — reenviar'; }
+  }
+}
+
+// ── Magic Link: verificar token na URL ao carregar ────────────────────────
+async function verificarMagicLinkURL() {
+  const params = new URLSearchParams(location.search);
+  const token  = params.get('editar');
+  if (!token) return;
+
+  // Clean URL
+  history.replaceState({}, '', location.pathname);
+
+  try {
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+    const fns = getFunctions(undefined, 'southamerica-east1');
+    const resgatar = httpsCallable(fns, 'resgatarTokenMagico');
+    const result = await resgatar({ token });
+
+    if (result.data?.success) {
+      const of = result.data.oficina;
+      STATE.oficina = { id: result.data.oficinaId, ...of };
+      STATE.oficinaAtual = STATE.oficina;
+      STATE._magicTokenValid = true;
+      // Save to localStorage for session
+      try {
+        localStorage.setItem('mecbusca_magic_token', token);
+        localStorage.setItem('mecbusca_oficina_id', result.data.oficinaId);
+        localStorage.setItem('mecbusca_token_expiry', result.data.expiraEm);
+      } catch(_) {}
+      toast(`🔓 Bem-vindo de volta, ${of.nome}! Acesse seu painel abaixo.`, 'success');
+      setTimeout(() => loadPainel(), 800);
+    }
+  } catch(err) {
+    toast('Link expirado ou inválido. Solicite um novo pelo WhatsApp.', 'error');
+  }
+}
+
+// Check magic link on page load
+window.addEventListener('mecbusca:firebase-ready', () => {
+  verificarMagicLinkURL();
+  // Also check localStorage token
+  try {
+    const savedToken  = localStorage.getItem('mecbusca_magic_token');
+    const savedExpiry = localStorage.getItem('mecbusca_token_expiry');
+    const savedId     = localStorage.getItem('mecbusca_oficina_id');
+    if (savedToken && savedExpiry && new Date() < new Date(savedExpiry)) {
+      STATE._savedMagicToken = savedToken;
+      STATE._savedOficinaId  = savedId;
+      // Will be used when oficina tries to edit without auth
+    }
+  } catch(_) {}
+}, { once: true });
+
 function onbSvcSelectChange() {
   const sel = document.getElementById('nsvcSelect');
   const outroWrap = document.getElementById('nsvcOutroWrap');
@@ -7465,6 +7847,10 @@ function selectPlan(p) {
 }
 
 async function finalizarCadastro() {
+  // Route to quick (no-auth) flow if in rapid mode
+  if (_onbMode === 'rapido') {
+    return finalizarCadastroRapido();
+  }
   if (STATE._submitting) return;
   STATE._submitting = true;
 
@@ -8814,9 +9200,9 @@ function renderMotoShops() {
       </div>
       <div class="of-services">${svcs}</div>
       <div class="of-actions">
-        <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
-        <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
-        <button class="btn btn-ghost btn-sm" style="width:38px;padding:0;flex-shrink:0;" onclick="event.stopPropagation();shareOficina('${esc(of.id)}','${esc(of.nome)}')" aria-label="Compartilhar ${esc(of.nome)}" title="Compartilhar">🔗</button>
+        <button class="btn btn-wpp btn-sm" style="flex:2;font-weight:700;font-size:13.5px;" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 Chamar no WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Orçamento</button>
+        <button class="btn btn-ghost btn-sm" style="width:36px;padding:0;flex-shrink:0;" onclick="event.stopPropagation();shareOficina('${esc(of.id)}','${esc(of.nome)}')" aria-label="Compartilhar" title="Compartilhar">🔗</button>
       </div>
     </article>`;
   }).join('');
@@ -8881,9 +9267,9 @@ function renderBikeShops() {
       </div>
       <div class="of-services">${svcs}</div>
       <div class="of-actions">
-        <button class="btn btn-primary btn-sm" style="flex:1" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Ver orçamento</button>
-        <button class="btn btn-wpp btn-sm" style="flex:1" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 WhatsApp</button>
-        <button class="btn btn-ghost btn-sm" style="width:38px;padding:0;flex-shrink:0;" onclick="event.stopPropagation();shareOficina('${esc(of.id)}','${esc(of.nome)}')" aria-label="Compartilhar ${esc(of.nome)}" title="Compartilhar">🔗</button>
+        <button class="btn btn-wpp btn-sm" style="flex:2;font-weight:700;font-size:13.5px;" onclick="event.stopPropagation();wppOficina('${esc(of.id)}')">💬 Chamar no WhatsApp</button>
+        <button class="btn btn-ghost btn-sm" style="flex:1;" onclick="event.stopPropagation();openBudget('${esc(of.id)}')">💰 Orçamento</button>
+        <button class="btn btn-ghost btn-sm" style="width:36px;padding:0;flex-shrink:0;" onclick="event.stopPropagation();shareOficina('${esc(of.id)}','${esc(of.nome)}')" aria-label="Compartilhar" title="Compartilhar">🔗</button>
       </div>
     </article>`;
   }).join('');
@@ -9068,6 +9454,55 @@ function openBudgetFromSvc(ofId, svcNome, min, max) {
   const of = getOficina(ofId);
   if (!of) { toast('Oficina não encontrada', 'warning'); return; }
   openBudget(ofId);
+}
+
+function shareOficinaNova() {
+  const id = STATE.novaOficinaId || STATE.onbData?._id;
+  const nome = STATE.onbData?.nome || 'minha oficina';
+  if (!id) { toast('Perfil não encontrado', 'warning'); return; }
+  const url = `${location.origin}/?oficina=${encodeURIComponent(id)}`;
+  if (navigator.share) {
+    navigator.share({ title: `${nome} — MecBusca`, text: `Encontre ${nome} no MecBusca!`, url }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(url).then(() => toast('Link copiado! Compartilhe com seus clientes 🔗', 'success'));
+  }
+}
+
+function autoDetectCidade() {
+  if (!navigator.geolocation) { toast('Geolocalização não suportada', 'warning'); return; }
+  const btn = document.querySelector('[onclick="autoDetectCidade()"]');
+  if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const { latitude: lat, longitude: lng } = pos.coords;
+      // Reverse geocode via nominatim (free, no key needed)
+      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=pt-BR`)
+        .then(r => r.json())
+        .then(d => {
+          const city  = d.address?.city || d.address?.town || d.address?.village || '';
+          const state = d.address?.state_code?.toUpperCase() || d.address?.['ISO3166-2-lvl4']?.slice(-2) || '';
+          if (city) {
+            const cidEl = document.getElementById('hCidade');
+            const estEl = document.getElementById('hEstado');
+            if (cidEl) cidEl.value = city;
+            if (estEl && state) {
+              const opt = Array.from(estEl.options).find(o => o.value === state);
+              if (opt) estEl.value = state;
+            }
+            toast(`📍 ${city}${state ? ', '+state : ''} detectada!`, 'success');
+          } else {
+            toast('Cidade não encontrada. Digite manualmente.', 'info');
+          }
+        })
+        .catch(() => toast('Não foi possível detectar a cidade.', 'warning'))
+        .finally(() => { if (btn) { btn.textContent = '📍'; btn.disabled = false; } });
+    },
+    () => {
+      toast('Permissão de localização negada.', 'warning');
+      if (btn) { btn.textContent = '📍'; btn.disabled = false; }
+    },
+    { timeout: 6000, maximumAge: 300000 }
+  );
 }
 
 function shareOficina(id, nome) {
@@ -10009,8 +10444,9 @@ function promoPreviewUpdate() {
   // Mini render inline
   const urg = formatUrgencia(mockPromo.validade, mockPromo.vagasRestantes);
   const descPct = mockPromo.precoAntigo ? Math.round((1 - mockPromo.precoNovo/mockPromo.precoAntigo)*100) : 0;
-  el.innerHTML = `<div class="promo-feed-card ${tipo}" style="margin-bottom:0;cursor:default;">
-    <div class="promo-badge ${tipo}">${mockPromo.emoji} ${tipo === 'urgente' ? 'Urgente' : tipo === 'destaque' ? 'Destaque' : tipo === 'combo' ? 'Combo' : 'Oferta'}</div>
+  const _tipoSafe = esc(tipo).replace(/[^a-z]/gi,''); // strip to safe class name
+  el.innerHTML = `<div class="promo-feed-card ${_tipoSafe}" style="margin-bottom:0;cursor:default;">
+    <div class="promo-badge ${_tipoSafe}">${mockPromo.emoji} ${{urgente:'Urgente',destaque:'Destaque',combo:'Combo'}[_tipoSafe]||'Oferta'}</div>
     <div class="promo-title">${esc(titulo)}</div>
     <div class="promo-desc">${esc(desc)}</div>
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
@@ -14386,47 +14822,67 @@ document.addEventListener('DOMContentLoaded', () => {
   // Em produção, anaChatProxy retorna { escalate: true, wpp: '...' } criptografado
   const ANA_REAL_WPP = window.__ANA_WPP__ || '5527999243874'; // substituir por env var no deploy
 
-  const SYSTEM_PROMPT = `Você é Ana, assistente inteligente do MecBusca — marketplace de oficinas mecânicas do Espírito Santo (Brasil).
+  const SYSTEM_PROMPT = `Você é Ana, mecânica virtual e especialista em TODOS os tipos de veículos. Seu conhecimento é enciclopédico — não existe pergunta sobre veículo que você não saiba responder.
 
-MISSÃO: Ajudar motoristas, motociclistas e ciclistas a diagnosticar problemas no carro, moto ou bicicleta, tirar dúvidas mecânicas e indicar o serviço correto para buscar oficinas e especialistas próximos.
+MISSÃO: Diagnosticar qualquer problema, tirar qualquer dúvida sobre veículos. Você é A especialista. RESOLVA SEMPRE. Nunca transfira por causa do veículo.
 
-CAPACIDADES:
-- Diagnosticar problemas com base em sintomas (barulhos, cheiros, vibrações, luzes, falhas)
-- Explicar de forma simples o que pode estar acontecendo no carro, moto ou bicicleta
-- Sugerir qual serviço procurar (ex: "Freios", "Suspensão", "Revisão de moto", "Revisão de bicicleta")
-- Dar dicas de manutenção preventiva para carros, motos e bikes
-- Responder dúvidas sobre veículos em geral (consumo, troca de óleo, pneus, câmbio de bike, etc.)
+━━━ VOCÊ DOMINA TODOS OS VEÍCULOS ━━━
+🚗 CARROS (todos): populares, SUVs, picapes, esportivos, elétricos, híbridos, flex, GNV
+   Sistemas: motor (aspirado, turbo, TFSI, TSI, VVT, VTEC), câmbio (manual, automático, CVT, DCT, PDK), suspensão (independente, multi-link, torção), freios (ABS, EBD, disco, tambor), injeção (monoponto, multiponto, direta GDI, TGDI), ar-condicionado (simples, dual zone, climatronic), direção (hidráulica, elétrica, ativa), sistema elétrico (CAN bus, módulos BCM/ECM/TCM), funilaria, vidros, lataria
 
-REGRAS IMPORTANTES:
-1. Responda em português brasileiro, amigável e direto
-2. Faça no MÁXIMO 2 perguntas por vez para refinar o diagnóstico
-3. Respostas CURTAS: máximo 3 parágrafos. Use emojis com moderação
-4. NUNCA dê preços exatos — oriente a consultar oficinas
-5. Se o problema for GRAVE/SEGURANÇA (sem freio, fumaça, superaquecimento, pneu estourando), ADVERTA COM URGÊNCIA e oriente a parar o carro
-6. Quando identificar o serviço, inclua no final: [SERVIÇO: nome do serviço]
-7. Se o problema for complexo demais ou envolver orçamento/agendamento, sugira falar com suporte humano incluindo: [ESCALAR]
+🏍️ MOTOS (todas): street, esportiva, naked, trail, touring, custom/cruiser, scooter, elétrica
+   Sistemas: motor 2T e 4T, mono e bicilíndrico, carburador, injeção (PGM-FI, DOHC), câmbio sequencial, corrente/relação/cardã, freios CBS/ABS, suspensão convencional e invertida, freio a disco e tambor
 
-SERVIÇOS DISPONÍVEIS NO MECBUSCA:
-🚗 CARROS: Troca de óleo, Filtros, Freios, Alinhamento, Balanceamento, Suspensão, Amortecedor, Revisão completa, Ar-condicionado automotivo, Elétrica automotiva, Bateria, Correia dentada, Embreagem, Câmbio, Injeção eletrônica, Funilaria e pintura, Pneus, Escapamento, Radiador, Direção hidráulica, Vidros e para-brisa, Diagnóstico computadorizado, Retífica de motor, GNV
-🏍️ MOTOS: Revisão de moto, Troca de óleo (moto), Freios de moto, Pneu de moto, Corrente e relação, Carburador, Injeção eletrônica (moto), Elétrica de moto
-🚲 BICICLETAS: Revisão de bicicleta, Troca de câmbio (bike), Freios de bicicleta, Troca de pneu (bike), Regulagem de marcha, Lubrificação de corrente, Troca de corrente
+🚲 BICICLETAS (todas): speed, MTB, gravel, urbana, BMX, elétrica (e-bike), cargo bike
+   Sistemas: câmbio (Shimano, SRAM, Campagnolo), freios (V-brake, disco mecânico/hidráulico), suspensão (rígida, hardtail, full), pedivela/cassete/corrente/cubos, motor e bateria (e-bike), quadro carbono/alumínio/aço
 
-QUANDO ESCALAR PARA HUMANO (direcionar automaticamente para WhatsApp):
-- Usuário pede orçamento específico
-- Usuário quer agendar serviço
-- Usuário reclama de experiência com oficina
-- Problema muito específico que exige análise presencial
-- Usuário pede explicitamente para falar com humano/pessoa
-- Após 3 tentativas de diagnóstico sem sucesso
-- Dúvidas técnicas sobre o site MecBusca (funcionamento, bugs, erros de acesso)
-- Relato de erros ou falhas no site (página não carrega, botão não funciona, erro de login)
-- Dúvidas específicas sobre o serviço do MecBusca (planos, preços da plataforma, contratos)
-- Dúvidas sobre como se cadastrar como oficina, fornecedor ou vendedor de peças
-- Dúvidas sobre edição ou atualização de cadastro já existente
+🚛 CAMINHÕES e UTILITÁRIOS: leves, médios, pesados, bi-trem, rodotrem, basculante, baú, refrigerado
+   Sistemas: motores diesel (ciclo otto modificado, turboalimentação, intercooler), câmbio manual e automatizado (Allison, I-Shift, PowerShift), eixos, diferenciais com bloqueio, freios a ar (ABS, EBS), tacógrafo, rastreamento, sistema de escapamento (DPF, SCR, AdBlue/Arla 32)
 
-FORMATO:
-Quando identificar o serviço → [SERVIÇO: nome]
-Quando precisar escalar → [ESCALAR]`;
+🚌 ÔNIBUS e MICRO-ÔNIBUS: urbano, rodoviário, escolar, elétrico, articulado
+   Sistemas: chassis (Marcopolo, Busscar), ar condicionado traseiro/dianteiro, suspensão pneumática
+
+🚜 TRATORES e MÁQUINAS AGRÍCOLAS: trator de pneu e esteira, colheitadeira, pulverizador, retroescavadeira
+   Sistemas: PTO (tomada de força), hidráulicos, TDF, transmissão powershift
+
+🛵 SCOOTERS e CICLOMOTORES: 50cc a 150cc, elétricos, entrega
+🛺 TRICICLOS e QUADRICICLOS: elétricos, a gasolina
+🚐 VANS e KOMBIS: Sprinter, Master, Transit, Ducato, HR, Besta
+
+━━━ CONHECIMENTO TÉCNICO COMPLETO ━━━
+✅ Diagnóstico por SINTOMA: barulhos (range, estalo, ronco, chiado, batida), cheiros (borracha, queimado, combustível, azedo), vibrações (velocidade, RPM, frenagem), fumaças (azul=óleo, branca=água, preta=combustível), luzes no painel (todas — ABS, airbag, check engine, bateria, temperatura, pressão)
+✅ CÓDIGOS DE FALHA (OBD-II/OBD-I): P0xxx, P1xxx, C0xxx, B0xxx, U0xxx — interprete e explique
+✅ MANUTENÇÃO PREVENTIVA: intervalos de troca (óleo, filtros, correia dentada/serpentina, velas, fluido de freio/câmbio/direção/arrefecimento, pneus, amortecedores)
+✅ PEÇAS e COMPONENTES: diferença entre marcas, originais vs paralelas, remanufaturadas, preço relativo
+✅ PROCEDIMENTOS: como verificar nível de óleo, calibrar pneu, identificar folga na embreagem, checar pastilha de freio
+✅ ELÉTRICA AVANÇADA: alternador, partida, módulos eletrônicos, sensores (lambda, MAP, TPS, ABS), chicote elétrico, fusíveis, relés
+✅ VEÍCULOS ELÉTRICOS e HÍBRIDOS: bateria de tração, BMS, motor elétrico, regeneração, recarga, autonomia, degradação de bateria
+✅ ADAPTAÇÕES e ACESSÓRIOS: rebaixamento, som automotivo, GNV, película, blindagem, rastreador
+
+━━━ REGRAS DE ATENDIMENTO ━━━
+1. Português brasileiro, tom de especialista amigável — como um mecânico de confiança
+2. Máximo 1 pergunta por vez (só quando indispensável para o diagnóstico)
+3. Resposta objetiva: diagnóstico direto, causa provável, o que fazer
+4. Nunca dê preços específicos — oriente a consultar as oficinas no app
+5. URGÊNCIA DE SEGURANÇA (sem freio, superaquecimento, fumaça súbita, pneu estourando, cheiro forte de gás) → alerte com urgência máxima, mande parar imediatamente
+6. Ao identificar o serviço → inclua [SERVIÇO: nome do serviço]
+
+━━━ ESCALONA APENAS NESTAS 3 SITUAÇÕES (use [ESCALAR]) ━━━
+🔴 1. Problema com o SITE MecBusca: bug, erro de login, página não carrega, erro ao cadastrar
+🔴 2. Dúvida sobre o SERVIÇO MecBusca: como cadastrar oficina, editar perfil, planos, cobrança
+🔴 3. Reclamação contra UMA OFICINA específica (cobrança, atendimento, serviço mal feito)
+
+━━━ NUNCA ESCALONA POR ━━━
+🚫 Problema técnico difícil ou raro → Diagnostique sempre, use todo o seu conhecimento
+🚫 Veículo incomum (trator, caminhão, elétrico, importado) → Você sabe, responda
+🚫 Não ter 100% de certeza → Dê o diagnóstico mais provável com as opções possíveis
+🚫 Orçamento → "Consulte as oficinas pelo app, cada uma tem preços diferentes"
+🚫 Agendamento → "Entre em contato direto com a oficina pelo WhatsApp no app"
+🚫 Usuário querer falar com humano por problema no VEÍCULO → Continue atendendo você mesma
+
+FORMATO DE RESPOSTA:
+Ao identificar o serviço → [SERVIÇO: nome]
+Ao precisar escalar → [ESCALAR]`;
 
   let anaHistory = [];
   let anaIsTyping = false;
@@ -14700,6 +15156,7 @@ Quando precisar escalar → [ESCALAR]`;
     addAnaMessage('user', text);
 
     anaHistory.push({ role: 'user', content: text });
+    const userLastMsg = text; // usado no safety net de escalation indevida
     anaIsTyping = true;
     if (sendBtn) sendBtn.disabled = true;
     addTypingIndicator();
@@ -14759,15 +15216,19 @@ Quando precisar escalar → [ESCALAR]`;
       if (servicoSugerido) {
         chips.push('🔍 Buscar no app: ' + servicoSugerido);
       }
-      if (deveEscalar || escalated) {
+      // Safety: se escalou mas a mensagem contém palavras de veículo, é erro do modelo
+      const vehicleWords = /carro|moto|bicicleta|bike|freio|óleo|motor|pneu|suspensão|barulho|vibra|esquenta|fumaça|bateria|correia|embreagem|câmbio|injeção|ar.condicionado|elétric|luz.*painel|check.engine/i;
+      if (deveEscalar && vehicleWords.test(userLastMsg || '') && !escalated) {
+        // Não escalona — o usuário está perguntando sobre veículo
+        console.log('[Ana] Escalation blocked: vehicle question detected');
+        // Treat as if no escalation
+      } else if (deveEscalar || escalated) {
         escalated = true;
         chips.push('💬 Falar com Ana (WhatsApp)');
       }
       if (!servicoSugerido && !deveEscalar) {
-        // Chip contextual
-        if (anaHistory.length > 4 && !escalated) {
-          chips.push('💬 Falar com Ana (WhatsApp)');
-        }
+        // Só sugere humano se usuário explicitamente perguntar — não automaticamente
+        // (removido: chip automático após 4 mensagens estava escalando dúvidas de veículo)
       }
 
       updateStatus('Assistente inteligente');
@@ -15576,7 +16037,7 @@ async function ljFinalizar() {
         <div class="success-wrap">
           <div class="success-icon">✅</div>
           <div class="success-title">Lava-jato cadastrado!</div>
-          <div class="success-sub">Seu perfil já está visível no MecBusca.<br>Clientes podem te encontrar agora mesmo.</div>
+          <div class="success-sub">Seu perfil está <strong style="color:var(--g);">ao vivo</strong> agora!<br>Compartilhe com clientes e comece a receber contatos.</div>
           <div class="success-detail">
             <div class="success-detail-row"><span class="success-check">✓</span> Perfil publicado na busca</div>
             <div class="success-detail-row"><span class="success-check">✓</span> Serviços indexados por veículo</div>
