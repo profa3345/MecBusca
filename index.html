@@ -1984,35 +1984,55 @@ button,a,[role=button]{min-height:44px;}
         <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
           <label for="hPeca">Peça ou componente</label>
           <div style="position:relative;">
-            <input id="hPeca" type="text" placeholder="Ex: Filtro de óleo, pastilha, amortecedor..." autocomplete="off" oninput="pecaAutocomplete(this.value)" onkeydown="pecaInputKey(event)" onfocus="pecaAutocomplete(this.value)" style="padding-right:36px;">
+            <input id="hPeca" type="text" placeholder="Ex: Filtro de óleo, pastilha, amortecedor..." autocomplete="off"
+              style="width:100%;padding:10px 36px 10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
             <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
           </div>
-          <div id="pecaSuggestions" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:200;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);box-shadow:var(--shadow-md);max-height:220px;overflow-y:auto;margin-top:4px;"></div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
           <div>
             <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca</label>
-            <select id="hMarca" onchange="pecaUpdateModelos()" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+            <select id="hMarca" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
               <option value="">Selecione a marca</option>
-              <option value="Chevrolet">Chevrolet</option><option value="Fiat">Fiat</option>
-              <option value="Ford">Ford</option><option value="Honda">Honda</option>
-              <option value="Hyundai">Hyundai</option><option value="Jeep">Jeep</option>
-              <option value="Kia">Kia</option><option value="Renault">Renault</option>
-              <option value="Toyota">Toyota</option><option value="Volkswagen">Volkswagen</option>
-              <option value="Audi">Audi</option><option value="BMW">BMW</option>
-              <option value="Mercedes-Benz">Mercedes-Benz</option><option value="Nissan">Nissan</option>
+              <option value="Chevrolet">Chevrolet</option>
+              <option value="Fiat">Fiat</option>
+              <option value="Ford">Ford</option>
+              <option value="Honda">Honda</option>
+              <option value="Hyundai">Hyundai</option>
+              <option value="Jeep">Jeep</option>
+              <option value="Kia">Kia</option>
+              <option value="Renault">Renault</option>
+              <option value="Toyota">Toyota</option>
+              <option value="Volkswagen">Volkswagen</option>
+              <option value="Audi">Audi</option>
+              <option value="BMW">BMW</option>
+              <option value="Mercedes-Benz">Mercedes-Benz</option>
+              <option value="Nissan">Nissan</option>
             </select>
           </div>
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Modelo</label>
-            <select id="hModelo" onchange="pecaUpdateAnos()" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">Selecione o modelo</option>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo</label>
+            <select id="hTipoPecaCarro" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todos</option>
+              <option value="Carro popular">Carro popular</option>
+              <option value="SUV / Crossover">SUV / Crossover</option>
+              <option value="Picape">Picape</option>
+              <option value="Van / Utilitário">Van / Utilitário</option>
+              <option value="Elétrico / Híbrido">Elétrico / Híbrido</option>
             </select>
           </div>
         </div>
+        
+        <div class="home-field home-field-full" style="margin-bottom:12px;">
+          <label for="hFornecedorCarro" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
+          <select id="hFornecedorCarro" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" onchange="STATE.pecaFornecedor=this.options[this.selectedIndex]?.dataset?.nome||this.value">
+            <option value="">— Todos os fornecedores —</option>
+          </select>
+        </div>
         <div class="home-field" style="margin-bottom:12px;">
-          <label for="hCidadePeca">Cidade</label>
-          <div style="display:flex;gap:6px;"><select id="hEstadoPeca" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+          <label>Cidade</label>
+          <div style="display:flex;gap:6px;">
+            <select id="hEstadoPecaSel" style="width:72px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado" onchange="loadCidadesPorEstado(this.value,'hCidadePecaSel')"><option value="">UF</option>
 <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
 <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
 <option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
@@ -2021,14 +2041,15 @@ button,a,[role=button]{min-height:44px;}
 <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
 <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
 <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePeca" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
-        </div>
-                <div class="home-field home-field-full" style="margin-bottom:12px;">
-          <label for="hFornecedorCarro" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
-          <input id="hFornecedorCarro" type="text" placeholder="Ex: AutoPeças Central, Pneus Vitória..." autocomplete="off" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+            <select id="hCidadePecaSel" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" disabled aria-label="Cidade">
+              <option value="">Selecione o estado primeiro</option>
+            </select>
+          </div>
+          <span id="hCidadePecaErr" style="display:none;font-size:11px;color:var(--re);margin-top:4px;">Selecione o estado antes de escolher a cidade.</span>
         </div>
         <button class="home-search-btn" onclick="STATE.pecaVeiculo='carro';homeBuscarPeca()">🔍 Encontrar peça agora</button>
-        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Fornecedores e lojas de autopeças · ES</div>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Fornecedores e lojas de autopeças · todo Brasil</div>
       </div>
 
       <!-- BUSCA: CARROS — LAVA-JATO -->
@@ -2103,6 +2124,12 @@ button,a,[role=button]{min-height:44px;}
               <option value="funilaria moto">🎨 Funilaria / Pintura</option>
             </select>
           </div>
+          <div class="home-field home-field-full">
+            <label for="hOficinaMoto" style="display:flex;align-items:center;gap:6px;">Oficina <span style="font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+            <select id="hOficinaMoto" onchange="onOficinaChange(this)" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">— Todas as oficinas —</option>
+            </select>
+          </div>
           <div class="home-field">
             <label for="hCidadeMoto">Cidade</label>
             <div style="display:flex;gap:6px;"><select id="hEstadoMoto" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
@@ -2136,26 +2163,53 @@ button,a,[role=button]{min-height:44px;}
       <div class="home-search-box" id="hbox-motos-pecas" style="display:none;">
         <div class="home-search-title">🔩 Peças — Motos & Scooters</div>
         <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
-          <label for="hPecaMoto">Peça para moto</label>
+          <label for="hPecaMoto">Peça ou componente</label>
           <div style="position:relative;">
-            <input id="hPecaMoto" type="text" placeholder="Ex: corrente, pneu traseiro, pastilha de freio..." autocomplete="off" style="padding-right:36px;">
+            <input id="hPecaMoto" type="text" placeholder="Ex: Corrente, pastilha, pneu, carburador..." autocomplete="off"
+              style="width:100%;padding:10px 36px 10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
             <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca da moto</label>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca</label>
             <select id="hMarcaPecaMoto" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">Todas as marcas</option>
-              <option value="Honda">Honda</option><option value="Yamaha">Yamaha</option>
-              <option value="Suzuki">Suzuki</option><option value="Kawasaki">Kawasaki</option>
-              <option value="Dafra">Dafra</option><option value="Shineray">Shineray</option>
-              <option value="BMW Motorrad">BMW Motorrad</option><option value="Ducati">Ducati</option>
+              <option value="">Selecione a marca</option>
+              <option value="Honda">Honda</option>
+              <option value="Yamaha">Yamaha</option>
+              <option value="Suzuki">Suzuki</option>
+              <option value="Kawasaki">Kawasaki</option>
+              <option value="Ducati">Ducati</option>
+              <option value="BMW Motorrad">BMW Motorrad</option>
+              <option value="Royal Enfield">Royal Enfield</option>
+              <option value="Haojue">Haojue</option>
+              <option value="Shineray">Shineray</option>
             </select>
           </div>
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
-            <div style="display:flex;gap:6px;"><select id="hEstadoPecaMoto" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo</label>
+            <select id="hTipoPecaMoto" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todos</option>
+              <option value="Street / Naked">Street / Naked</option>
+              <option value="Esportiva">Esportiva</option>
+              <option value="Trail / Enduro">Trail / Enduro</option>
+              <option value="Custom / Cruiser">Custom / Cruiser</option>
+              <option value="Scooter">Scooter</option>
+              <option value="Elétrica">Elétrica</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="home-field home-field-full" style="margin-bottom:12px;">
+          <label for="hFornecedorMoto" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
+          <select id="hFornecedorMoto" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" onchange="STATE.pecaFornecedor=this.options[this.selectedIndex]?.dataset?.nome||this.value">
+            <option value="">— Todos os fornecedores —</option>
+          </select>
+        </div>
+        <div class="home-field" style="margin-bottom:12px;">
+          <label>Cidade</label>
+          <div style="display:flex;gap:6px;">
+            <select id="hEstadoPecaMotoSel" style="width:72px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado" onchange="loadCidadesPorEstado(this.value,'hCidadePecaMotoSel')"><option value="">UF</option>
 <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
 <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
 <option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
@@ -2164,15 +2218,15 @@ button,a,[role=button]{min-height:44px;}
 <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
 <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
 <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePecaMoto" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+            <select id="hCidadePecaMotoSel" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" disabled aria-label="Cidade">
+              <option value="">Selecione o estado primeiro</option>
+            </select>
           </div>
+          <span id="hCidadePecaMotoErr" style="display:none;font-size:11px;color:var(--re);margin-top:4px;">Selecione o estado antes de escolher a cidade.</span>
         </div>
-                <div class="home-field home-field-full" style="margin-bottom:12px;">
-          <label for="hFornecedorMoto" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
-          <input id="hFornecedorMoto" type="text" placeholder="Ex: AutoPeças Central, Pneus Vitória..." autocomplete="off" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
-        </div>
-        <button class="home-search-btn" onclick="STATE.pecaVeiculo='moto';homeBuscarPecaMoto()">🔍 Encontrar peça para moto</button>
-        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Peças originais e paralelas · melhores preços · ES</div>
+        <button class="home-search-btn" onclick="STATE.pecaVeiculo='moto';homeBuscarPecaMoto()">🔍 Encontrar peça agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Peças para motos e scooters · todo Brasil</div>
       </div>
 
       <!-- BUSCA: MOTOS — LAVA-JATO -->
@@ -2225,6 +2279,12 @@ button,a,[role=button]{min-height:44px;}
            BUSCA: BIKES — OFICINAS
       ══════════════════════════════════════════════════════════ -->
       <div class="home-search-box" id="hbox-bikes-oficinas" style="display:none;">
+          <div class="home-field home-field-full">
+            <label for="hOficinaBike" style="display:flex;align-items:center;gap:6px;">Oficina <span style="font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+            <select id="hOficinaBike" onchange="onOficinaChange(this)" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">— Todas as oficinas —</option>
+            </select>
+          </div>
         <div class="home-search-title">🔧 Bike-shops e oficinas</div>
 
         <!-- Toggle elétrica / não-elétrica -->
@@ -2316,62 +2376,56 @@ button,a,[role=button]{min-height:44px;}
 
       <!-- BUSCA: BIKES — PEÇAS -->
       <div class="home-search-box" id="hbox-bikes-pecas" style="display:none;">
-        <div class="home-search-title">🔩 Peças para bicicletas</div>
-
-        <!-- Toggle elétrica / não-elétrica -->
-        <div style="display:flex;gap:8px;margin-bottom:14px;">
-          <button id="hBikePecaEletricaNao" onclick="bikeSetEletricaPeca(false)"
-            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b2);background:var(--gg2);color:var(--g);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
-            🚲 Não elétrica
-          </button>
-          <button id="hBikePecaEletricaSim" onclick="bikeSetEletricaPeca(true)"
-            style="flex:1;padding:9px 10px;border-radius:10px;border:1.5px solid var(--b);background:transparent;color:var(--t2);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;">
-            ⚡ Elétrica (E-bike)
-          </button>
-        </div>
-
+        <div class="home-search-title">🔩 Peças — Bicicletas</div>
         <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
           <label for="hPecaBike">Peça ou componente</label>
           <div style="position:relative;">
-            <input id="hPecaBike" type="text" placeholder="Ex: câmbio Shimano, freio hidráulico, pneu 29..." autocomplete="off" style="padding-right:36px;">
+            <input id="hPecaBike" type="text" placeholder="Ex: câmbio Shimano, pastilha disco, pneu MTB 29..." autocomplete="off"
+              style="width:100%;padding:10px 36px 10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
             <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo de bike</label>
-            <select id="hTipoPecaBike" onchange="bikeUpdateModelos('hModeloPecaBike','hTipoPecaBike');bikeCheckOutro('hTipoPecaBike','hTipoPecaBikeOutro')"
-              style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">Todos os tipos</option>
-              <option value="speed">Speed / Road</option>
-              <option value="mountain">Mountain (MTB)</option>
-              <option value="urbana">Urbana / City</option>
-              <option value="gravel">Gravel</option>
-              <option value="infantil">Infantil</option>
-              <option value="dobrável">Dobrável</option>
-              <option value="bmx">BMX / Dirt</option>
-              <option value="ebike-urbana" class="bike-peca-eletrica" style="display:none;">⚡ E-bike Urbana</option>
-              <option value="ebike-mountain" class="bike-peca-eletrica" style="display:none;">⚡ E-MTB</option>
-              <option value="ebike-speed" class="bike-peca-eletrica" style="display:none;">⚡ E-Road</option>
-              <option value="ebike-cargo" class="bike-peca-eletrica" style="display:none;">⚡ E-Cargo</option>
-              <option value="outro">✏️ Outro</option>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca</label>
+            <select id="hMarcaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Selecione a marca</option>
+              <option value="Shimano">Shimano</option>
+              <option value="SRAM">SRAM</option>
+              <option value="Campagnolo">Campagnolo</option>
+              <option value="Magura">Magura</option>
+              <option value="RockShox">RockShox</option>
+              <option value="Fox">Fox</option>
+              <option value="Bosch">Bosch</option>
+              <option value="Bafang">Bafang</option>
+              <option value="KMC">KMC</option>
+              <option value="Continental">Continental</option>
             </select>
-            <input id="hTipoPecaBikeOutro" type="text" placeholder="Descreva o tipo..."
-              style="display:none;margin-top:6px;width:100%;padding:9px 12px;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
           </div>
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Modelo / Marca</label>
-            <select id="hModeloPecaBike" onchange="bikeCheckOutro('hModeloPecaBike','hModeloPecaBikeOutro')"
-              style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">— Selecione o tipo —</option>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo</label>
+            <select id="hTipoPecaBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todos</option>
+              <option value="MTB">MTB</option>
+              <option value="Speed / Road">Speed / Road</option>
+              <option value="Gravel">Gravel</option>
+              <option value="Urbana">Urbana</option>
+              <option value="E-bike">E-bike</option>
+              <option value="BMX">BMX</option>
             </select>
-            <input id="hModeloPecaBikeOutro" type="text" placeholder="Modelo ou marca..."
-              style="display:none;margin-top:6px;width:100%;padding:9px 12px;background:var(--bg3);border:1.5px solid var(--b2);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
           </div>
         </div>
-        <div style="margin-bottom:12px;">
-          <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
-          <div style="display:flex;gap:6px;"><select id="hEstadoPecaBike" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+        
+        <div class="home-field home-field-full" style="margin-bottom:12px;">
+          <label for="hFornecedorBike" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
+          <select id="hFornecedorBike" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" onchange="STATE.pecaFornecedor=this.options[this.selectedIndex]?.dataset?.nome||this.value">
+            <option value="">— Todos os fornecedores —</option>
+          </select>
+        </div>
+        <div class="home-field" style="margin-bottom:12px;">
+          <label>Cidade</label>
+          <div style="display:flex;gap:6px;">
+            <select id="hEstadoPecaBikeSel" style="width:72px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado" onchange="loadCidadesPorEstado(this.value,'hCidadePecaBikeSel')"><option value="">UF</option>
 <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
 <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
 <option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
@@ -2380,14 +2434,15 @@ button,a,[role=button]{min-height:44px;}
 <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
 <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
 <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePecaBike" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+            <select id="hCidadePecaBikeSel" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" disabled aria-label="Cidade">
+              <option value="">Selecione o estado primeiro</option>
+            </select>
+          </div>
+          <span id="hCidadePecaBikeErr" style="display:none;font-size:11px;color:var(--re);margin-top:4px;">Selecione o estado antes de escolher a cidade.</span>
         </div>
-                <div class="home-field home-field-full" style="margin-bottom:12px;">
-          <label for="hFornecedorBike" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
-          <input id="hFornecedorBike" type="text" placeholder="Ex: AutoPeças Central, Pneus Vitória..." autocomplete="off" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
-        </div>
-        <button class="home-search-btn" onclick="STATE.pecaVeiculo='bicicleta';homeBuscarPecaBike()">🔍 Encontrar peça para bike</button>
-        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Componentes e acessórios para bicicletas · ES</div>
+        <button class="home-search-btn" onclick="STATE.pecaVeiculo='bicicleta';homeBuscarPecaBike()">🔍 Encontrar peça agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Componentes para todas as bikes · todo Brasil</div>
       </div>
 
       <!-- BUSCA: BIKES — LAVA-JATO -->
@@ -2474,6 +2529,12 @@ button,a,[role=button]{min-height:44px;}
               <option value="rastreador caminhão">📡 Rastreamento / telemetria</option>
             </select>
           </div>
+          <div class="home-field home-field-full">
+            <label for="hOficinaCaminhao" style="display:flex;align-items:center;gap:6px;">Oficina <span style="font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+            <select id="hOficinaCaminhao" onchange="onOficinaChange(this)" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">— Todas as oficinas —</option>
+            </select>
+          </div>
           <div class="home-field">
             <label for="hCidadeCaminhao">Cidade</label>
             <div style="display:flex;gap:6px;"><select id="hEstadoCaminhao" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
@@ -2510,25 +2571,49 @@ button,a,[role=button]{min-height:44px;}
         <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
           <label for="hPecaCaminhao">Peça ou componente</label>
           <div style="position:relative;">
-            <input id="hPecaCaminhao" type="text" placeholder="Ex: filtro de combustível, tambor de freio, bico injetor..." autocomplete="off" style="padding-right:36px;">
+            <input id="hPecaCaminhao" type="text" placeholder="Ex: filtro diesel, pastilha freio a ar, pneu 295..." autocomplete="off"
+              style="width:100%;padding:10px 36px 10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
             <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca do caminhão</label>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca</label>
             <select id="hMarcaCaminhao" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
-              <option value="">Todas as marcas</option>
-              <option value="Volkswagen">Volkswagen</option><option value="Mercedes-Benz">Mercedes-Benz</option>
-              <option value="Volvo">Volvo</option><option value="Scania">Scania</option>
-              <option value="DAF">DAF</option><option value="Iveco">Iveco</option>
-              <option value="MAN">MAN</option><option value="Ford">Ford</option>
-              <option value="Agrale">Agrale</option>
+              <option value="">Selecione a marca</option>
+              <option value="Volvo">Volvo</option>
+              <option value="Scania">Scania</option>
+              <option value="Mercedes-Benz">Mercedes-Benz</option>
+              <option value="Volkswagen">Volkswagen</option>
+              <option value="Ford">Ford</option>
+              <option value="Iveco">Iveco</option>
+              <option value="DAF">DAF</option>
+              <option value="MAN">MAN</option>
             </select>
           </div>
           <div>
-            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Cidade</label>
-            <div style="display:flex;gap:6px;"><select id="hEstadoPecaCaminhao" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo</label>
+            <select id="hTipoPecaCaminhao" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todos</option>
+              <option value="Caminhão leve">Caminhão leve</option>
+              <option value="Caminhão médio">Caminhão médio</option>
+              <option value="Caminhão pesado">Caminhão pesado</option>
+              <option value="Ônibus">Ônibus</option>
+              <option value="Micro-ônibus">Micro-ônibus</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="home-field home-field-full" style="margin-bottom:12px;">
+          <label for="hFornecedorCaminhao" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
+          <select id="hFornecedorCaminhao" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" onchange="STATE.pecaFornecedor=this.options[this.selectedIndex]?.dataset?.nome||this.value">
+            <option value="">— Todos os fornecedores —</option>
+          </select>
+        </div>
+        <div class="home-field" style="margin-bottom:12px;">
+          <label>Cidade</label>
+          <div style="display:flex;gap:6px;">
+            <select id="hEstadoPecaCaminhaoSel" style="width:72px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado" onchange="loadCidadesPorEstado(this.value,'hCidadePecaCaminhaoSel')"><option value="">UF</option>
 <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
 <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
 <option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
@@ -2537,15 +2622,15 @@ button,a,[role=button]{min-height:44px;}
 <option value="PR">PR</option><option value="PE">PE</option><option value="PI">PI</option>
 <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
 <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
-<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select><input id="hCidadePecaCaminhao" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade"></div>
+<option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
+            <select id="hCidadePecaCaminhaoSel" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" disabled aria-label="Cidade">
+              <option value="">Selecione o estado primeiro</option>
+            </select>
           </div>
+          <span id="hCidadePecaCaminhaoErr" style="display:none;font-size:11px;color:var(--re);margin-top:4px;">Selecione o estado antes de escolher a cidade.</span>
         </div>
-                <div class="home-field home-field-full" style="margin-bottom:12px;">
-          <label for="hFornecedorCaminhao" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
-          <input id="hFornecedorCaminhao" type="text" placeholder="Ex: AutoPeças Central, Pneus Vitória..." autocomplete="off" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
-        </div>
-        <button class="home-search-btn" onclick="STATE.pecaVeiculo='caminhao';homeBuscarPecaCaminhao()">🔍 Encontrar peça para caminhão</button>
-        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Peças originais e paralelas para caminhões · ES</div>
+        <button class="home-search-btn" onclick="STATE.pecaVeiculo='caminhao';homeBuscarPecaCaminhao()">🔍 Encontrar peça agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Peças para linha pesada · todo Brasil</div>
       </div>
 
       <!-- BUSCA: CAMINHÃO — LAVA-JATO -->
@@ -2715,6 +2800,12 @@ button,a,[role=button]{min-height:44px;}
               </optgroup>
             </select>
           </div>
+          <div class="home-field home-field-full">
+            <label for="hOficinaTrator" style="display:flex;align-items:center;gap:6px;">Oficina <span style="font-size:10px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;">(opcional)</span></label>
+            <select id="hOficinaTrator" onchange="onOficinaChange(this)" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">— Todas as oficinas —</option>
+            </select>
+          </div>
           <div class="home-field">
             <label for="hCidadeTrator">Cidade</label>
             <div style="display:flex;gap:6px;align-items:center;">
@@ -2740,16 +2831,52 @@ button,a,[role=button]{min-height:44px;}
            BUSCA: TRATORES — PEÇAS
       ══════════════════════════════════════════════════════════ -->
       <div class="home-search-box" id="hbox-tratores-pecas" style="display:none;">
-        <div class="home-search-section">
-          <div class="home-field">
-            <label for="hPecaTrator">Peça ou componente</label>
-            <input id="hPecaTrator" type="search" placeholder="Ex: filtro trator, correia, pneu agrícola" autocomplete="off">
+        <div class="home-search-title">🔩 Peças — Tratores & Máquinas</div>
+        <div class="home-field home-field-full" style="margin-bottom:12px;position:relative;">
+          <label for="hPecaTrator">Peça ou componente</label>
+          <div style="position:relative;">
+            <input id="hPecaTrator" type="text" placeholder="Ex: filtro hidráulico, correia trator, pneu agrícola..." autocomplete="off"
+              style="width:100%;padding:10px 36px 10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none;">🔍</span>
           </div>
-          <div class="home-field">
-            <label for="hCidadePecaTrator">Cidade</label>
-            <div style="display:flex;gap:6px;align-items:center;">
-              <button type="button" onclick="autoDetectCidade()" style="flex-shrink:0;padding:10px 10px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--g);cursor:pointer;font-size:14px;line-height:1;" aria-label="Detectar">📍</button>
-              <select id="hEstadoPecaTrator" style="width:68px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado"><option value="">UF</option><option value="">UF</option>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Marca</label>
+            <select id="hMarcaTrator" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Selecione a marca</option>
+              <option value="John Deere">John Deere</option>
+              <option value="New Holland">New Holland</option>
+              <option value="Massey Ferguson">Massey Ferguson</option>
+              <option value="Valtra">Valtra</option>
+              <option value="Case IH">Case IH</option>
+              <option value="Agrale">Agrale</option>
+              <option value="Jacto">Jacto</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Tipo</label>
+            <select id="hTipoPecaTrator" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;">
+              <option value="">Todos</option>
+              <option value="Trator">Trator</option>
+              <option value="Colheitadeira">Colheitadeira</option>
+              <option value="Retroescavadeira">Retroescavadeira</option>
+              <option value="Pulverizador">Pulverizador</option>
+              <option value="Pá-carregadeira">Pá-carregadeira</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="home-field home-field-full" style="margin-bottom:12px;">
+          <label for="hFornecedorTrator" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="font-weight:400;">(opcional)</span></label>
+          <select id="hFornecedorTrator" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" onchange="STATE.pecaFornecedor=this.options[this.selectedIndex]?.dataset?.nome||this.value">
+            <option value="">— Todos os fornecedores —</option>
+          </select>
+        </div>
+        <div class="home-field" style="margin-bottom:12px;">
+          <label>Cidade</label>
+          <div style="display:flex;gap:6px;">
+            <select id="hEstadoPecaTratorSel" style="width:72px;flex-shrink:0;padding:10px 6px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" aria-label="Estado" onchange="loadCidadesPorEstado(this.value,'hCidadePecaTratorSel')"><option value="">UF</option>
 <option value="AC">AC</option><option value="AL">AL</option><option value="AP">AP</option>
 <option value="AM">AM</option><option value="BA">BA</option><option value="CE">CE</option>
 <option value="DF">DF</option><option value="ES" selected>ES</option><option value="GO">GO</option>
@@ -2759,15 +2886,14 @@ button,a,[role=button]{min-height:44px;}
 <option value="RJ">RJ</option><option value="RN">RN</option><option value="RS">RS</option>
 <option value="RO">RO</option><option value="RR">RR</option><option value="SC">SC</option>
 <option value="SP">SP</option><option value="SE">SE</option><option value="TO">TO</option></select>
-              <input id="hCidadePecaTrator" type="text" placeholder="Cidade" autocomplete="address-level2" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;" aria-label="Cidade" oninput="homeUpdateBairros()">
-            </div>
+            <select id="hCidadePecaTratorSel" style="flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer;" disabled aria-label="Cidade">
+              <option value="">Selecione o estado primeiro</option>
+            </select>
           </div>
+          <span id="hCidadePecaTratorErr" style="display:none;font-size:11px;color:var(--re);margin-top:4px;">Selecione o estado antes de escolher a cidade.</span>
         </div>
-                <div class="home-field home-field-full" style="margin-bottom:12px;">
-          <label for="hFornecedorTrator" style="font-size:11px;color:var(--t3);display:block;margin-bottom:5px;">Fornecedor / loja <span style="color:var(--t3);font-weight:400;">(opcional)</span></label>
-          <input id="hFornecedorTrator" type="text" placeholder="Ex: AutoPeças Central, Pneus Vitória..." autocomplete="off" style="width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;">
-        </div>
-        <button class="home-search-btn" onclick="STATE.pecaVeiculo='trator';homeBuscarPecaTrator()">🔍 Buscar peças</button>
+        <button class="home-search-btn" onclick="STATE.pecaVeiculo='trator';homeBuscarPecaTrator()">🔍 Encontrar peça agora</button>
+        <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🔩 Peças para linha agrícola · todo Brasil</div>
       </div>
 
       <!-- ══════════════════════════════════════════════════════════
@@ -4514,7 +4640,24 @@ window.FB = {
     if (!isFirebaseReady) return [];
     const snap = await getDocs(query(collection(db, "fornecedores"), where("ativo","==",true)));
     let lista = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    if (filtros.cidade) lista = lista.filter(f => (f.cidade||'').includes(filtros.cidade));
+    if (filtros.cidade)  lista = lista.filter(f => (f.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
+    if (filtros.estado)  lista = lista.filter(f => !f.estado || f.estado === filtros.estado);
+    // Filter by vehicle type via especialidades field
+    if (filtros.tipoVeiculo) {
+      const tv = filtros.tipoVeiculo.toLowerCase();
+      const keywords = {
+        carro:     ['carro','van','freios','suspensão','motor','elétrica','filtros','pneus','injeção','bateria','funilaria','vidros','faróis','gnv','acessórios','universal'],
+        moto:      ['moto','scooter','corrente','carburador'],
+        bicicleta: ['bicicleta','bike','câmbio de bike','e-bike'],
+        caminhao:  ['caminhão','ônibus','diesel','diferencial'],
+        trator:    ['trator','agrícola','agrícola'],
+      };
+      const kws = keywords[tv] || [tv];
+      lista = lista.filter(f => {
+        const esp = (f.especialidades || []).join(' ').toLowerCase();
+        return kws.some(k => esp.includes(k));
+      });
+    }
     return lista;
   },
 
@@ -5860,6 +6003,101 @@ function initTema() {
 
 // ── HOME TABS ─────────────────────────────────────────────────────
 // ── Navegação categoria + sub-abas (home) ───────────────────────
+
+// ── Fornecedores select population ───────────────────────────────────────────
+async function loadFornecedoresParaSelect(selectId, tipoVeiculo) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Carregando...</option>';
+  try {
+    const lista = window.FB?.ready()
+      ? await window.FB.listarFornecedores({ tipoVeiculo })
+      : [];
+    // Also include localStorage fornecedores
+    const local = (() => { try { return JSON.parse(localStorage.getItem('mecbusca_fornecedores')||'[]'); } catch { return []; } })();
+    const todos = [...local.filter(f => f.ativo !== false), ...lista.filter(f => !local.find(l => l.id === f.id))];
+    sel.innerHTML = '<option value="">— Todos os fornecedores —</option>';
+    if (!todos.length) {
+      sel.innerHTML += '<option value="" disabled>Nenhum fornecedor cadastrado para este veículo</option>';
+      return;
+    }
+    todos.forEach(f => {
+      const opt = document.createElement('option');
+      opt.value = f.id || f.nome;
+      opt.textContent = f.nome + (f.cidade ? ' · ' + f.cidade : '');
+      opt.dataset.nome = f.nome;
+      sel.appendChild(opt);
+    });
+  } catch(e) {
+    sel.innerHTML = '<option value="">— Todos os fornecedores —</option>';
+  }
+}
+
+// Called when vehicle category changes — reload fornecedores selects
+function refreshFornecedoresSelects(tipoVeiculo) {
+  const map = {
+    carros:'hFornecedorCarro', motos:'hFornecedorMoto', bikes:'hFornecedorBike',
+    caminhao:'hFornecedorCaminhao', tratores:'hFornecedorTrator',
+  };
+  // Also map internal tipoVeiculo values
+  const tvMap = { carros:'carro', motos:'moto', bikes:'bicicleta', caminhao:'caminhao', tratores:'trator' };
+  const tv = tvMap[tipoVeiculo] || tipoVeiculo;
+  const selId = map[tipoVeiculo] || map[Object.keys(tvMap).find(k => tvMap[k] === tipoVeiculo)];
+  if (selId) loadFornecedoresParaSelect(selId, tv);
+}
+
+// ── City loading via IBGE API ─────────────────────────────────────────────────
+const _cidadesCache = {}; // cache by UF
+
+async function loadCidadesPorEstado(uf, selectId) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  if (!uf) {
+    sel.innerHTML = '<option value="">Selecione o estado primeiro</option>';
+    sel.disabled = true;
+    return;
+  }
+  if (_cidadesCache[uf]) {
+    _populateCidadeSelect(sel, _cidadesCache[uf]);
+    return;
+  }
+  sel.innerHTML = '<option value="">Carregando cidades...</option>';
+  sel.disabled = true;
+  try {
+    const r = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+    const data = await r.json();
+    _cidadesCache[uf] = data.map(c => c.nome);
+    _populateCidadeSelect(sel, _cidadesCache[uf]);
+  } catch(e) {
+    sel.innerHTML = '<option value="">Erro ao carregar cidades</option>';
+    sel.disabled = false;
+  }
+}
+
+function _populateCidadeSelect(sel, cidades) {
+  sel.innerHTML = '<option value="">Selecione a cidade</option>';
+  cidades.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c;
+    opt.textContent = c;
+    sel.appendChild(opt);
+  });
+  sel.disabled = false;
+}
+
+// Validate: if user somehow submits without selecting estado, show message
+function validarEstadoCidade(estadoId, cidadeId, errMsgId) {
+  const estado = document.getElementById(estadoId)?.value || '';
+  const cidade = document.getElementById(cidadeId)?.value || '';
+  if (cidade && !estado) {
+    const err = document.getElementById(errMsgId);
+    if (err) { err.textContent = 'Selecione o estado antes de escolher a cidade.'; err.style.display = 'block'; }
+    document.getElementById(estadoId)?.focus();
+    return false;
+  }
+  return true;
+}
+
 let _homeCategoria = 'carros';
 let _homeSubtab    = 'oficinas';
 
@@ -5872,6 +6110,14 @@ function homeSetCategoria(cat) {
     if (btn) { btn.classList.toggle('active', c === cat); btn.setAttribute('aria-selected', c === cat); }
   });
   _applyHomeBoxes();
+  // If on peças subtab, reload fornecedores for new category
+  if (_homeSubtab === 'pecas') {
+    const veiculoMap = { carros:'carro', motos:'moto', bikes:'bicicleta', caminhao:'caminhao', tratores:'trator' };
+    const selMap = { carros:'hFornecedorCarro', motos:'hFornecedorMoto', bikes:'hFornecedorBike', caminhao:'hFornecedorCaminhao', tratores:'hFornecedorTrator' };
+    const tv = veiculoMap[cat] || 'carro';
+    const selId = selMap[cat];
+    if (selId) setTimeout(() => loadFornecedoresParaSelect(selId, tv), 100);
+  }
   // Resetar sub-tab UI
   ['oficinas','pecas','lavajato'].forEach(s => {
     const b = document.getElementById('hstab-' + s);
@@ -5886,7 +6132,15 @@ function homeSetSubtab(sub) {
     if (btn) { btn.classList.toggle('active', s === sub); btn.setAttribute('aria-selected', s === sub); }
   });
   _applyHomeBoxes();
-  if (sub === 'pecas') pecaInitSelects?.();
+  if (sub === 'pecas') {
+    pecaInitSelects?.();
+    // Load fornecedores for current vehicle category
+    const veiculoMap = { carros:'carro', motos:'moto', bikes:'bicicleta', caminhao:'caminhao', tratores:'trator' };
+    const tv = veiculoMap[_homeCategoria] || 'carro';
+    const selMap = { carros:'hFornecedorCarro', motos:'hFornecedorMoto', bikes:'hFornecedorBike', caminhao:'hFornecedorCaminhao', tratores:'hFornecedorTrator' };
+    const selId = selMap[_homeCategoria];
+    if (selId) loadFornecedoresParaSelect(selId, tv);
+  }
 }
 
 function _applyHomeBoxes() {
@@ -5934,11 +6188,12 @@ function homeBuscarLavaJato(tipo) {
 
 // ── Peças moto / bike handlers ───────────────────────────────────
 function homeBuscarPecaMoto() {
-  STATE.pecaVeiculo = 'moto'; // ← filtro por tipo de veículo
-  STATE.pecaFornecedor = document.getElementById('hFornecedorMoto')?.value?.trim() || '';
+  STATE.pecaVeiculo = 'moto';
+  STATE.pecaFornecedor = document.getElementById('hFornecedorMoto')?.options[document.getElementById('hFornecedorMoto')?.selectedIndex]?.dataset?.nome || document.getElementById('hFornecedorMoto')?.value || '';
+  if (!validarEstadoCidade('hEstadoPecaMotoSel','hCidadePecaMotoSel','hCidadePecaMotoErr')) return;
   const peca  = document.getElementById('hPecaMoto')?.value  || '';
   const marca = document.getElementById('hMarcaPecaMoto')?.value || '';
-  const cidade= document.getElementById('hCidadePecaMoto')?.value|| '';
+  const cidade= document.getElementById('hCidadePecaMotoSel')?.value || '';
   if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = [peca, marca].filter(Boolean).join(' ') || 'peças moto';
   if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
   if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'pecas', veiculo:'moto', peca, marca });
@@ -5952,7 +6207,7 @@ function homeBuscarPecaBike() {
   const peca  = document.getElementById('hPecaBike')?.value  || '';
   const marca = document.getElementById('hMarcaBike')?.value || '';
   const tipo  = document.getElementById('hTipoPecaBike')?.value || '';
-  const cidade= document.getElementById('hCidadePecaBike')?.value || '';
+  const cidade= document.getElementById('hCidadePecaBikeSel')?.value || '';
   const q = [peca, marca, tipo].filter(Boolean).join(' ') || 'peças bicicleta';
   if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = q;
   if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
@@ -6125,7 +6380,7 @@ function homeBuscarPecaTrator() {
   const peca  = document.getElementById('hPecaTrator')?.value   || '';
   const marca = document.getElementById('hMarcaTrator')?.value  || '';
   const tipo  = document.getElementById('hTipoPecaTrator')?.value || '';
-  const cidade= document.getElementById('hCidadePecaTrator')?.value || '';
+  const cidade= document.getElementById('hCidadePecaTratorSel')?.value || '';
   const q = [peca, marca, tipo].filter(Boolean).join(' ') || 'peças trator';
   if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = q;
   if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
@@ -6195,7 +6450,7 @@ function homeBuscarPecaCaminhao() {
   STATE.pecaFornecedor = document.getElementById('hFornecedorCaminhao')?.value?.trim() || '';
   const peca  = document.getElementById('hPecaCaminhao')?.value || '';
   const marca = document.getElementById('hMarcaCaminhao')?.value || '';
-  const cidade= document.getElementById('hCidadePecaCaminhao')?.value || '';
+  const cidade= document.getElementById('hCidadePecaCaminhaoSel')?.value || '';
   if (document.getElementById('cliSearch')) document.getElementById('cliSearch').value = [peca, marca].filter(Boolean).join(' ') || 'peças caminhão';
   if (cidade) { const f = document.getElementById('fCidade'); if (f) { f.value = cidade; filterUpdateBairros?.(); } }
   if (window.MbAnalytics) window.MbAnalytics.track('busca_iniciada', { tipo:'pecas', veiculo:'caminhao', peca, marca });
@@ -6219,7 +6474,10 @@ function homeBuscarPecaCarro() {
   homeBuscarPeca();
 }
 function homeBuscarPeca() {
-  STATE.pecaFornecedor = document.getElementById('hFornecedorCarro')?.value?.trim() || '';
+  STATE.pecaFornecedor = document.getElementById('hFornecedorCarro')?.options[document.getElementById('hFornecedorCarro')?.selectedIndex]?.dataset?.nome || document.getElementById('hFornecedorCarro')?.value || '';
+  const _cidCarroSel = document.getElementById('hCidadePecaSel')?.value || '';
+  const _estCarroSel = document.getElementById('hEstadoPecaSel')?.value || '';
+  if (!validarEstadoCidade('hEstadoPecaSel','hCidadePecaSel','hCidadePecaErr')) return;
   const peca    = document.getElementById('hPeca').value.trim();
   const marca   = document.getElementById('hMarca')?.value || '';
   const modelo  = document.getElementById('hModelo')?.value || '';

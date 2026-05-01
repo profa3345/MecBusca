@@ -11,9 +11,18 @@
       "*.md"
     ],
     "rewrites": [
-      { "source": "/sitemap.xml", "function": "sitemapXml" },
-      { "source": "/api/leads",   "function": "criarLead" },
-      { "source": "**",           "destination": "/index.html" }
+      {
+        "source": "/sitemap.xml",
+        "function": "sitemapXml"
+      },
+      {
+        "source": "/api/leads",
+        "function": "criarLead"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ],
     "redirects": [
       {
@@ -28,7 +37,7 @@
         "headers": [
           {
             "key": "Content-Security-Policy",
-            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.anthropic.com https://www.google-analytics.com https://analytics.google.com wss://*.firebaseio.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+            "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://fonts.googleapis.com https://unpkg.com https://cdn.jsdelivr.net https://www.googletagmanager.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://api.anthropic.com https://www.google-analytics.com https://analytics.google.com https://nominatim.openstreetmap.org https://servicodados.ibge.gov.br wss://*.firebaseio.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
           },
           {
             "key": "X-Frame-Options",
@@ -67,41 +76,71 @@
       {
         "source": "**/*.@(js|css|woff2|woff|ttf)",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
         ]
       },
       {
         "source": "**/*.@(png|jpg|jpeg|gif|webp|svg|ico)",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=86400"
+          }
         ]
       },
       {
         "source": "index.html",
         "headers": [
-          { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
-          { "key": "Pragma",        "value": "no-cache" }
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          }
         ]
       },
       {
         "source": "manifest.json",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400" },
-          { "key": "Content-Type",  "value": "application/manifest+json" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/manifest+json"
+          }
         ]
       },
       {
         "source": "service-worker.js",
         "headers": [
-          { "key": "Cache-Control",        "value": "no-cache, no-store, must-revalidate" },
-          { "key": "Service-Worker-Allowed","value": "/" },
-          { "key": "Content-Type",         "value": "application/javascript" }
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Service-Worker-Allowed",
+            "value": "/"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          }
         ]
       },
       {
         "source": "offline.html",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400"
+          }
         ]
       }
     ]
@@ -126,10 +165,21 @@
     }
   ],
   "emulators": {
-    "auth":      { "port": 9099 },
-    "functions": { "port": 5001 },
-    "firestore": { "port": 8080 },
-    "hosting":   { "port": 5000 },
-    "ui":        { "enabled": true, "port": 4000 }
+    "auth": {
+      "port": 9099
+    },
+    "functions": {
+      "port": 5001
+    },
+    "firestore": {
+      "port": 8080
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000
+    }
   }
 }
