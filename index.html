@@ -342,6 +342,10 @@ body::before{ display:none; }
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 select.form-input option{background:#121812;}
 
+.home-search-box { display: none !important; }
+/* JS overrides display via _showHomeBox() → box.style.display = '' */
+/* This ensures no card leaks during initial render */
+
 /* ── PEÇA SEARCH SELECTS ── */
 select,input[type="text"]{-webkit-appearance:none;appearance:auto;touch-action:manipulation;}
 #hbox-pecas select{width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border var(--transition);cursor:pointer;appearance:auto;}
@@ -7118,6 +7122,8 @@ window.addEventListener('mecbusca:firebase-ready', () => {
 // Fallback: if firebase-ready fires before this listener registered (rare),
 // check on DOMContentLoaded whether FB is already ready.
 document.addEventListener('DOMContentLoaded', () => {
+  // Initialize home: show only the correct search box
+  if (typeof _showHomeBox === 'function') _showHomeBox('carros', 'oficinas');
   // Pre-load cities for pre-selected states (e.g. ES already selected on load)
   document.querySelectorAll('select[onchange*="loadCidadesPorEstado"]').forEach(sel => {
     if (!sel.value) return;
