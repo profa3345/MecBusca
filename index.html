@@ -2119,9 +2119,9 @@ button,a,[role=button]{min-height:44px;}
               <option value="200">Até R$ 200</option>
             </select>
           </div>
-        </div>
         <button class="home-search-btn" onclick="homeBuscarLavaJato('carro')">🔍 Encontrar lava-jato agora</button>
         <div style="text-align:center;margin-top:10px;font-size:11.5px;color:var(--t3);">🚿 Compare preços · agende pelo WhatsApp</div>
+        </div>
       </div>
 
       <!-- ══════════════════════════════════════════════════════════
@@ -6503,7 +6503,7 @@ function _applyHomeBoxes() {
   document.querySelectorAll('.home-search-box').forEach(b => b.style.display = 'none');
   const boxId = 'hbox-' + _homeCategoria + '-' + _homeSubtab;
   const box   = document.getElementById(boxId);
-  if (box) box.style.display = '';
+  if (box) box.style.display = 'block';
 }
 
 // Compatibilidade legada
@@ -7124,7 +7124,11 @@ window.addEventListener('mecbusca:firebase-ready', () => {
 // check on DOMContentLoaded whether FB is already ready.
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize home: show only the correct search box
-  if (typeof _applyHomeBoxes === 'function') _applyHomeBoxes();
+  // Use rAF to ensure all scripts have run first
+  requestAnimationFrame(() => {
+    if (typeof _applyHomeBoxes === 'function') _applyHomeBoxes();
+    else setTimeout(() => { if (typeof _applyHomeBoxes === 'function') _applyHomeBoxes(); }, 100);
+  });
   // Pre-load cities for pre-selected states (e.g. ES already selected on load)
   document.querySelectorAll('select[onchange*="loadCidadesPorEstado"]').forEach(sel => {
     if (!sel.value) return;
