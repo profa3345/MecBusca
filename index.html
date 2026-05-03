@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>MecBusca — Encontre oficinas perto de você</title>
 <meta name="description" content="Marketplace de oficinas mecânicas. Orçamento instantâneo, WhatsApp direto, avaliações reais.">
 <meta name="theme-color" content="#00D084">
@@ -183,7 +183,7 @@
   --shadow-lg:0 20px 60px rgba(0,0,0,0.6);
   --shadow-glow:0 0 24px rgba(0,208,132,0.15);
 }
-html,body{height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);}
+html,body{overflow-x:hidden;height:100%;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--t);}
 body{padding-bottom:0;} /* Ana é FAB flutuante, não barra no rodapé */
 
 /* ══════════════════════════════════════════════
@@ -343,6 +343,7 @@ body::before{ display:none; }
 select.form-input option{background:#121812;}
 
 /* ── PEÇA SEARCH SELECTS ── */
+select,input[type="text"]{-webkit-appearance:none;appearance:auto;touch-action:manipulation;}
 #hbox-pecas select{width:100%;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--b);border-radius:var(--r);color:var(--t);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border var(--transition);cursor:pointer;appearance:auto;}
 #hbox-pecas select:focus{border-color:var(--g);}
 #hbox-pecas select:disabled{opacity:0.45;cursor:not-allowed;}
@@ -1348,7 +1349,13 @@ svg.ico{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.7;st
   /* Mobile: espaçamento melhorado */
   .cli-body{padding:12px 14px;}
   .of-card{padding:14px;}
-  .home-search-box{padding:16px;}
+  .home-search-box{padding:14px;}
+  .home-field { min-width: 0; }
+  .home-field select, .home-field input { min-width: 0; width: 100%; box-sizing: border-box; }
+  #ana-input { font-size: 16px !important; } /* prevent iOS zoom */
+  .home-tabs { flex-wrap: nowrap; overflow-x: auto; gap: 4px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .home-tabs::-webkit-scrollbar { display: none; }
+  .home-tab { flex-shrink: 0; font-size: 11px; padding: 7px 10px; }
   .home-fields{grid-template-columns:1fr;}
 }
 /* ── CATÁLOGO DE PEÇAS DO FORNECEDOR ──────────────────────────── */
@@ -15218,6 +15225,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   window.anaToggle = anaToggle;
+  // Mobile: prevent body scroll when Ana chat is open
+  const _anaObserver = new MutationObserver(() => {
+    const widget = document.getElementById('ana-ai-chat');
+    if (widget && widget.classList.contains('open')) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+  });
+  const anaWidget = document.getElementById('ana-ai-chat');
+  if (anaWidget) _anaObserver.observe(anaWidget, { attributes: true, attributeFilter: ['class'] });
 
   // Auto-open desativado — Ana fica sutil no rodapé
   // if (!sessionStorage.getItem(_anaKey)) {
@@ -15589,12 +15607,30 @@ document.addEventListener('DOMContentLoaded', () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  /* collapsed: só mostra a barra de input */
   max-height: 54px;
   transition: max-height 0.35s cubic-bezier(.25,.8,.25,1);
+  /* iOS safe area + keyboard */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 #ana-ai-chat.open {
-  max-height: 480px;
+  max-height: min(480px, 55dvh);
+}
+/* When virtual keyboard is open on mobile, shrink chat */
+@media (max-height: 500px) {
+  #ana-ai-chat.open {
+    max-height: 200px;
+  }
+  #ana-messages {
+    padding: 6px 10px;
+  }
+}
+@media (max-width: 480px) {
+  #ana-ai-chat.open {
+    max-height: min(400px, 50dvh);
+  }
+  .ana-msg { font-size: 12.5px; }
+  #ana-input-row { padding: 8px 10px 8px; }
+  #ana-input { font-size: 14px; } /* prevent iOS zoom on focus */
 }
 @keyframes chatSlideIn {
   from { opacity:0; transform:translateY(8px); }
@@ -15794,11 +15830,11 @@ document.addEventListener('DOMContentLoaded', () => {
   </div>
   <div id="ana-messages"></div>
   <div id="ana-input-row">
-    <input id="ana-input" placeholder="Descreva o problema do seu carro, moto ou bicicleta…" 
-           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();anaAiSend();}"
-           onfocus="anaAiToggle(true)"
+    <input id="ana-input" placeholder="Descreva o problema do seu carro, moto ou bicicleta…" autocomplete="off" autocorrect="off" autocapitalize="sentences" inputmode="text" enterkeyhint="send" 
+           onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(window.anaEnviar)window.anaEnviar();}"
+           onfocus="if(window.anaToggle)window.anaToggle('open')"
            aria-label="Digite sua mensagem para a Ana, assistente MecBusca">
-    <button id="ana-send-btn" onclick="anaAiSend()" aria-label="Enviar">➤</button>
+    <button id="ana-send-btn" onclick="anaEnviar?anaEnviar():window.anaEnviar&&window.anaEnviar()" aria-label="Enviar">➤</button>
   </div>
 
 </div>
@@ -16235,7 +16271,7 @@ Ao precisar escalar → [ESCALAR]`;
   }
 
   // ── Envia mensagem para Claude API ──
-  window.anaAiSend = async function() {
+  window.anaEnviar = window.anaAiSend = async function() {
     if (anaIsTyping) return;
     const input = document.getElementById('ana-input');
     const sendBtn = document.getElementById('ana-send-btn');
