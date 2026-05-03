@@ -458,6 +458,328 @@ exports.atualizarTempoResposta = onDocumentCreated(
   }
 );
 
+
+// ════════════════════════════════════════════════════════════════
+// ACQUISITION FLOW: Magic Link + WhatsApp Verification
+// ════════════════════════════════════════════════════════════════
+
+/** FN-ACQ-1: Cadastro rápido — cria perfil pendente sem auth.
+ *  Retorna token de verificação + código WPP de 6 dígitos.
+ *  A oficina só fica publicada após confirmar pelo WhatsApp.
+ */
+exports.cadastroRapido = onCall(
+  { region: REGION, memory: '256MiB' },
+  async ({ data }) => {
+    const nome    = sanitizeStr(data?.nome   || '', 120);
+    const wpp     = sanitizeStr((data?.whatsapp || '').replace(/\D/g,''), 15);
+    const cidade  = sanitizeStr(data?.cidade  || '', 80);
+    const estado  = sanitizeStr(data?.estado  || 'ES', 2).toUpperCase();
+    const bairro  = sanitizeStr(data?.bairro  || '', 80);
+    const servicos = (data?.servicos || []).slice(0, 30).map(s => ({
+      nome: sanitizeStr(s.nome||'', 80),
+      min:  Math.max(0, Math.min(99999, Number(s.min)||0)),
+      max:  Math.max(0, Math.min(99999, Number(s.max)||0)),
+      ativo: true,
+    })).filter(s => s.nome);
+
+    if (!nome || nome.length < 2) throw new HttpsError('invalid-argument', 'Nome obrigatório.');
+    if (!wpp  || !/^\d{10,11}$/.test(wpp)) throw new HttpsError('invalid-argument', 'WhatsApp inválido (DDD + número, 10-11 dígitos).');
+    if (!cidade) throw new HttpsError('invalid-argument', 'Cidade obrigatória.');
+
+    // Rate limit: 3 cadastros por wpp por hora
+    const rlKey = `ratelimit_cadastro_${wpp}`;
+    const rlRef = db.collection('_ratelimits').doc(rlKey);
+    const now   = Date.now();
+    const rlOk  = await db.runTransaction(async tx => {
+      const d = await tx.get(rlRef);
+      const v = d.exists ? d.data() : { count: 0, windowStart: now };
+      if (now - v.windowStart > 3600000) { tx.set(rlRef, { count: 1, windowStart: now }); return true; }
+      if (v.count >= 3) return false;
+      tx.update(rlRef, { count: admin.firestore.FieldValue.increment(1) }); return true;
+    });
+    if (!rlOk) throw new HttpsError('resource-exhausted', 'Muitas tentativas. Aguarde 1 hora.');
+
+    // Verificar se já existe perfil com este WhatsApp
+    const existente = await db.collection('oficinas')
+      .where('whatsapp', '==', wpp).where('ativo', '==', true).limit(1).get();
+    if (!existente.empty) {
+      const ofId = existente.docs[0].id;
+      throw new HttpsError('already-exists', `Já existe um perfil com este WhatsApp. ID: ${ofId}`);
+    }
+
+    // Gerar código WPP de 6 dígitos
+    const codigo = String(Math.floor(100000 + Math.random() * 900000));
+    const codigoHash = require('crypto').createHash('sha256').update(codigo + wpp).digest('hex');
+
+    // Salvar perfil como "pendente" (ativo=false)
+    const ofRef = await db.collection('oficinas').add({
+      nome, whatsapp: wpp, cidade, estado, bairro,
+      servicos, plano: 'basico',
+      ativo:     false, // ← NÃO publicado até verificar WPP
+      status:    'pendente_verificacao',
+      stats:     { impressoes:0, cliques:0, whatsapp:0, orcamentos:0 },
+      criadoEm:  admin.firestore.FieldValue.serverTimestamp(),
+      origem:    'cadastro_rapido',
+    });
+
+    // Salvar token de verificação com TTL de 24h
+    const expiresAt = new Date(now + 24 * 3600 * 1000);
+    await db.collection('_verificacoes').doc(ofRef.id).set({
+      oficinaId:  ofRef.id,
+      wpp,
+      codigoHash,
+      tentativas: 0,
+      expiresAt:  expiresAt.toISOString(),
+      criadoEm:   admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Enviar código via WhatsApp (Z-API / Evolution API)
+    // Configurar: firebase functions:secrets:set ZAPI_INSTANCE_ID ZAPI_TOKEN
+    const zapiId    = process.env.ZAPI_INSTANCE_ID;
+    const zapiToken = process.env.ZAPI_TOKEN;
+    if (zapiId && zapiToken) {
+      try {
+        await fetch(`https://api.z-api.io/instances/${zapiId}/token/${zapiToken}/send-text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: '55' + wpp,
+            message: `🔧 *MecBusca* — Confirme seu cadastro!\n\nSeu código de verificação: *${codigo}*\n\nVálido por 10 minutos. Não compartilhe com ninguém.`,
+          }),
+        });
+      } catch (wpErr) {
+        console.warn('[cadastroRapido] WPP send falhou:', wpErr.message);
+        // Não bloqueia — código retornado para o front em dev mode
+      }
+    }
+
+    // Em produção, NÃO retornar o código — apenas o ID da oficina
+    // Em dev (sem ZAPI configurado), retornar para facilitar testes
+    return {
+      success:   true,
+      oficinaId: ofRef.id,
+      // Em prod sem ZAPI, retornar código para debug (remover em go-live)
+      codigoDebug: (!zapiId || !zapiToken) ? codigo : undefined,
+    };
+  }
+);
+
+/** FN-ACQ-2: Verificar código WPP e publicar perfil.
+ *  Retorna token mágico de 7 dias para edição futura.
+ */
+exports.verificarCodigoWPP = onCall(
+  { region: REGION, memory: '256MiB' },
+  async ({ data }) => {
+    const { oficinaId, codigo } = data || {};
+    if (!oficinaId || !codigo) throw new HttpsError('invalid-argument', 'Dados incompletos.');
+
+    const vRef = db.collection('_verificacoes').doc(oficinaId);
+    const vDoc = await vRef.get();
+    if (!vDoc.exists) throw new HttpsError('not-found', 'Verificação não encontrada ou expirada.');
+
+    const v = vDoc.data();
+
+    // Expiração
+    if (new Date() > new Date(v.expiresAt))
+      throw new HttpsError('deadline-exceeded', 'Código expirado. Solicite um novo.');
+
+    // Máximo de 5 tentativas
+    if ((v.tentativas || 0) >= 5)
+      throw new HttpsError('resource-exhausted', 'Muitas tentativas. Solicite um novo código.');
+
+    // Verificar código
+    const hash = require('crypto').createHash('sha256').update(codigo + v.wpp).digest('hex');
+    if (hash !== v.codigoHash) {
+      await vRef.update({ tentativas: admin.firestore.FieldValue.increment(1) });
+      const restantes = 4 - (v.tentativas || 0);
+      throw new HttpsError('unauthenticated', `Código incorreto. ${restantes} tentativa(s) restante(s).`);
+    }
+
+    // ✅ Código correto — publicar perfil + gerar token mágico
+    const crypto = require('crypto');
+    const magicToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash  = crypto.createHash('sha256').update(magicToken).digest('hex');
+    const tokenExpiry = new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7 dias
+
+    await db.runTransaction(async tx => {
+      // Publicar oficina
+      tx.update(db.collection('oficinas').doc(oficinaId), {
+        ativo:        true,
+        status:       'ativo',
+        verificadaEm: admin.firestore.FieldValue.serverTimestamp(),
+        wppVerificado: true,
+      });
+      // Salvar token mágico (hash — nunca o token raw)
+      tx.set(db.collection('_magic_tokens').doc(magicToken.slice(0,16)), {
+        tokenHash,
+        oficinaId,
+        wpp:       v.wpp,
+        expiresAt: tokenExpiry.toISOString(),
+        usos:      0,
+        criadoEm:  admin.firestore.FieldValue.serverTimestamp(),
+      });
+      // Invalidar código de verificação
+      tx.delete(vRef);
+    });
+
+    // Enviar link mágico via WPP
+    const zapiId    = process.env.ZAPI_INSTANCE_ID;
+    const zapiToken = process.env.ZAPI_TOKEN;
+    const editUrl   = `https://mecbusca.com.br/?editar=${magicToken}`;
+    if (zapiId && zapiToken) {
+      fetch(`https://api.z-api.io/instances/${zapiId}/token/${zapiToken}/send-text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: '55' + v.wpp,
+          message: `✅ *Parabéns! Seu perfil no MecBusca está ao vivo!*\n\nClientes já podem te encontrar. 🔧\n\nPara editar seus dados:\n${editUrl}\n\n_Este link expira em 7 dias._`,
+        }),
+      }).catch(e => console.warn('[verificarCodigoWPP] WPP send:', e.message));
+    }
+
+    return {
+      success:    true,
+      magicToken, // retornar para o front armazenar localmente
+      editUrl,
+      expiraEm:   tokenExpiry.toISOString(),
+    };
+  }
+);
+
+/** FN-ACQ-3: Resgatar token mágico para editar perfil.
+ *  Valida o token e retorna os dados da oficina.
+ *  Token expira em 7 dias, com renovação automática.
+ */
+exports.resgatarTokenMagico = onCall(
+  { region: REGION, memory: '256MiB' },
+  async ({ data }) => {
+    const { token } = data || {};
+    if (!token || token.length < 32) throw new HttpsError('invalid-argument', 'Token inválido.');
+
+    const tokenHash = require('crypto').createHash('sha256').update(token).digest('hex');
+    const tokenId   = token.slice(0, 16);
+
+    const tDoc = await db.collection('_magic_tokens').doc(tokenId).get();
+    if (!tDoc.exists) throw new HttpsError('not-found', 'Token não encontrado.');
+
+    const t = tDoc.data();
+    if (t.tokenHash !== tokenHash) throw new HttpsError('unauthenticated', 'Token inválido.');
+    if (new Date() > new Date(t.expiresAt)) throw new HttpsError('deadline-exceeded', 'Token expirado.');
+
+    // Buscar dados da oficina
+    const ofDoc = await db.collection('oficinas').doc(t.oficinaId).get();
+    if (!ofDoc.exists) throw new HttpsError('not-found', 'Oficina não encontrada.');
+
+    // Incrementar uso e renovar expiração (sliding window: 7 dias a partir de cada uso)
+    const novaExpiracao = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+    await tDoc.ref.update({
+      usos:     admin.firestore.FieldValue.increment(1),
+      expiresAt: novaExpiracao.toISOString(),
+      ultimoUso: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    return {
+      success:   true,
+      oficinaId: t.oficinaId,
+      oficina:   ofDoc.data(),
+      expiraEm:  novaExpiracao.toISOString(),
+    };
+  }
+);
+
+/** FN-ACQ-4: Reenviar código WPP (para quem não recebeu).
+ */
+exports.reenviarCodigoWPP = onCall(
+  { region: REGION, memory: '256MiB' },
+  async ({ data }) => {
+    const { oficinaId } = data || {};
+    if (!oficinaId) throw new HttpsError('invalid-argument', 'ID obrigatório.');
+
+    const vDoc = await db.collection('_verificacoes').doc(oficinaId).get();
+    if (!vDoc.exists) throw new HttpsError('not-found', 'Verificação não encontrada. Inicie novo cadastro.');
+
+    const v = vDoc.data();
+    // Rate limit: máx 3 reenvios por hora
+    if ((v.reenvios || 0) >= 3) throw new HttpsError('resource-exhausted', 'Máx. 3 reenvios por hora.');
+
+    // Novo código + nova expiração de 10 minutos
+    const novoCodigo = String(Math.floor(100000 + Math.random() * 900000));
+    const novoHash   = require('crypto').createHash('sha256').update(novoCodigo + v.wpp).digest('hex');
+    const novaExp    = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+
+    await vDoc.ref.update({
+      codigoHash: novoHash,
+      tentativas: 0,
+      expiresAt:  novaExp.toISOString(),
+      reenvios:   admin.firestore.FieldValue.increment(1),
+    });
+
+    const zapiId    = process.env.ZAPI_INSTANCE_ID;
+    const zapiToken = process.env.ZAPI_TOKEN;
+    if (zapiId && zapiToken) {
+      await fetch(`https://api.z-api.io/instances/${zapiId}/token/${zapiToken}/send-text`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: '55' + v.wpp,
+          message: `🔧 *MecBusca* — Novo código de verificação: *${novoCodigo}*\n\nVálido por 10 minutos.`,
+        }),
+      }).catch(() => {});
+    }
+
+    return {
+      success: true,
+      codigoDebug: (!zapiId || !zapiToken) ? novoCodigo : undefined,
+    };
+  }
+);
+
+/** FN-ACQ-5: Perfil sugerido — admin importa oficina do Google Maps.
+ *  Cria perfil "sugerido" (não publicado) que a oficina pode reivindicar.
+ */
+exports.criarPerfilSugerido = onCall(
+  { region: REGION, memory: '256MiB' },
+  async ({ data, auth: callAuth }) => {
+    // Apenas admins
+    if (!callAuth) throw new HttpsError('unauthenticated', 'Login necessário.');
+    const adminDoc = await db.collection('_admins').doc(callAuth.uid).get();
+    if (!adminDoc.exists) throw new HttpsError('permission-denied', 'Acesso restrito.');
+
+    const lote = (data?.oficinas || []).slice(0, 50); // máx 50 por chamada
+    const batch = db.batch();
+    const criados = [];
+
+    for (const of_ of lote) {
+      const nome   = sanitizeStr(of_.nome   || '', 120);
+      const wpp    = sanitizeStr((of_.whatsapp || of_.telefone || '').replace(/\D/g,''), 15);
+      const cidade = sanitizeStr(of_.cidade  || '', 80);
+      if (!nome || !cidade) continue;
+
+      const ref = db.collection('oficinas').doc();
+      batch.set(ref, {
+        nome, whatsapp: wpp, cidade,
+        estado: sanitizeStr(of_.estado || 'ES', 2),
+        bairro: sanitizeStr(of_.bairro || '', 80),
+        endereco: sanitizeStr(of_.endereco || '', 200),
+        lat: of_.lat || null,
+        lng: of_.lng || null,
+        plano: 'basico',
+        ativo:  false,
+        status: 'sugerido', // ← diferente de pendente_verificacao
+        origem: 'importacao_admin',
+        fonteUrl: sanitizeStr(of_.fonteUrl || '', 300), // URL do Google Maps
+        servicos: [],
+        stats: { impressoes:0, cliques:0, whatsapp:0, orcamentos:0 },
+        criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      criados.push(ref.id);
+    }
+
+    await batch.commit();
+    return { success: true, criados: criados.length, ids: criados };
+  }
+);
+
 // ── Trigger: sync oficina to Algolia on create/update ────────────────────────
 // Descomente e configure quando ativar Algolia (USE_CLOUD_SEARCH = true no front-end).
 //

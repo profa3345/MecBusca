@@ -100,6 +100,18 @@ if ! firebase functions:secrets:access ANTHROPIC_API_KEY &>/dev/null 2>&1; then
   WARNINGS=$((WARNINGS + 1))
 fi
 
+# Verificar Z-API para envio de WhatsApp (necessário para cadastro rápido)
+if ! firebase functions:secrets:access ZAPI_INSTANCE_ID &>/dev/null 2>&1; then
+  echo "   ⚠️  ZAPI_INSTANCE_ID não configurada — verificação por WhatsApp desativada."
+  echo "   Cadastre em z-api.io e configure: firebase functions:secrets:set ZAPI_INSTANCE_ID"
+  WARNINGS=$((WARNINGS + 1))
+fi
+if ! firebase functions:secrets:access ZAPI_TOKEN &>/dev/null 2>&1; then
+  echo "   ⚠️  ZAPI_TOKEN não configurada."
+  echo "   Configure: firebase functions:secrets:set ZAPI_TOKEN"
+  WARNINGS=$((WARNINGS + 1))
+fi
+
 # Verificar GA4 API Secret (para Measurement Protocol server-side)
 if ! firebase functions:secrets:access GA4_API_SECRET &>/dev/null 2>&1; then
   echo "   ℹ️  GA4_API_SECRET não configurada (conversões server-side desativadas)."
