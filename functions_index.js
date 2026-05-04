@@ -855,3 +855,106 @@ exports.buscarOficinas = onCall(
     };
   }
 );
+
+// ── Ana AI Chat Proxy (FN-10) ─────────────────────────────────────────────────
+/**
+ * Proxy seguro para a API da Anthropic.
+ * - Mantém a ANTHROPIC_API_KEY no servidor (nunca exposta ao client)
+ * - Aplica rate limiting por IP (10 req/min)
+ * - Valida e sanitiza mensagens antes de encaminhar
+ * - Registra uso no Firestore para auditoria/controle de custo
+ */
+const { defineSecret } = require('firebase-functions/params');
+const anthropicKey = defineSecret('ANTHROPIC_API_KEY');
+
+exports.anaChatProxy = onCall(
+  {
+    region: REGION,
+    secrets: [anthropicKey],
+    timeoutSeconds: 30,
+    memory: '256MiB',
+  },
+  async (request) => {
+    const ip = request.rawRequest?.ip || 'unknown';
+
+    // Rate limiting
+    try {
+      await checkRateLimit(ip, 'anaChatProxy');
+    } catch (e) {
+      throw new HttpsError('resource-exhausted', 'Muitas requisições. Aguarde um momento.');
+    }
+
+    const { messages, system } = request.data || {};
+
+    // Validação básica
+    if (!Array.isArray(messages) || messages.length === 0) {
+      throw new HttpsError('invalid-argument', 'messages deve ser um array não-vazio.');
+    }
+
+    // Sanitizar mensagens: aceita apenas role user/assistant e content string
+    const sanitizedMessages = messages
+      .filter(m => ['user', 'assistant'].includes(m?.role) && typeof m?.content === 'string')
+      .slice(-20) // máximo 20 mensagens de histórico
+      .map(m => ({
+        role: m.role,
+        content: sanitizeStr(m.content, 2000),
+      }));
+
+    if (sanitizedMessages.length === 0) {
+      throw new HttpsError('invalid-argument', 'Nenhuma mensagem válida recebida.');
+    }
+
+    const apiKey = anthropicKey.value();
+    if (!apiKey) {
+      throw new HttpsError('failed-precondition', 'Serviço de IA não configurado.');
+    }
+
+    // Chamar a API Anthropic
+    let anthropicResponse;
+    try {
+      
+      anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 600,
+          system: typeof system === 'string' ? system.slice(0, 8000) : undefined,
+          messages: sanitizedMessages,
+        }),
+      });
+    } catch (fetchErr) {
+      console.error('[anaChatProxy] Fetch error:', fetchErr.message);
+      throw new HttpsError('unavailable', 'Serviço de IA temporariamente indisponível.');
+    }
+
+    if (!anthropicResponse.ok) {
+      const errText = await anthropicResponse.text().catch(() => '');
+      console.error('[anaChatProxy] Anthropic API error:', anthropicResponse.status, errText);
+      throw new HttpsError('unavailable', 'Erro ao chamar IA. Tente novamente.');
+    }
+
+    const data = await anthropicResponse.json();
+    const reply = data?.content?.[0]?.text || '';
+
+    if (!reply) {
+      throw new HttpsError('unavailable', 'Resposta vazia da IA.');
+    }
+
+    // Registrar uso (custo/auditoria) — fire-and-forget
+    db.collection('_ana_usage').add({
+      ip,
+      uid: request.auth?.uid || null,
+      inputTokens: data.usage?.input_tokens || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      model: data.model || 'claude-sonnet-4-20250514',
+      criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+    }).catch(() => {});
+
+    return { reply };
+  }
+);
