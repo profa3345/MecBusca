@@ -12,6 +12,7 @@
       --accent: #e63946;
       --text: #f1f1f1;
       --muted: #8a8a9a;
+      --success: #00D084;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
@@ -68,13 +69,54 @@
       color: var(--muted);
       letter-spacing: 0.05em;
     }
+
+    /* FIX-SW-6: banner de reconexão */
+    #online-banner {
+      display: none;
+      position: fixed;
+      top: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--success);
+      color: #000;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 0.6rem 1.5rem;
+      border-radius: 999px;
+      box-shadow: 0 4px 16px rgba(0,208,132,0.3);
+      animation: slideDown 0.3s ease;
+      white-space: nowrap;
+      z-index: 100;
+    }
+    #online-banner.visible { display: block; }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
   </style>
 </head>
 <body>
+  <!-- FIX-SW-6: banner aparece quando conexão volta -->
+  <div id="online-banner">✓ Conexão restaurada — recarregando...</div>
+
   <div class="icon">📡</div>
   <h1>Você está offline</h1>
   <p>Verifique sua conexão com a internet e tente novamente.</p>
   <button class="btn" onclick="location.reload()">Tentar novamente</button>
   <span class="brand">MecBusca — mecbusca.com.br</span>
+
+  <script>
+    // FIX-SW-6: reload automático ao reconectar
+    window.addEventListener('online', () => {
+      const banner = document.getElementById('online-banner');
+      banner.classList.add('visible');
+      setTimeout(() => location.reload(), 1500);
+    });
+
+    // Se já está online quando a página carrega (ex: cache serviu a página mas rede voltou)
+    if (navigator.onLine) {
+      setTimeout(() => location.replace('/'), 300);
+    }
+  </script>
 </body>
 </html>

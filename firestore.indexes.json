@@ -64,7 +64,7 @@
       "collectionGroup": "oficinas",
       "fieldPath": "servicos",
       "indexes": [
-        { "order": "ASCENDING",  "queryScope": "COLLECTION" },
+        { "order": "ASCENDING",      "queryScope": "COLLECTION" },
         { "arrayConfig": "CONTAINS", "queryScope": "COLLECTION" }
       ]
     },
@@ -72,6 +72,11 @@
       "collectionGroup": "leads",
       "fieldPath": "ip",
       "indexes": []
+    },
+    {
+      "collectionGroup": "_ratelimits",
+      "fieldPath": "ttl",
+      "ttlConfig": {}
     }
   ]
 }

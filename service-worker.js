@@ -1,54 +1,49 @@
 /**
- * MecBusca — Service Worker v3.0
+ * MecBusca — Service Worker v3.1
  *
- * Melhorias v3.0:
- *   SW-V3-1: Runtime caching com TTL para respostas de API (evita dados stale indefinidos)
- *   SW-V3-2: Background sync para leads offline (enfileira e reenvio quando conexão volta)
- *   SW-V3-3: Offline fallback page dedicada (melhor UX sem rede)
- *   SW-V3-4: Cache quota guard — evita DOMException: QuotaExceededError
- *   SW-V3-5: Estratégia stale-while-revalidate com max-age para scripts/estilos
- *   SW-V3-6: Broadcast de atualização disponível para o app via BroadcastChannel
- *   SW-V3-7: Limpeza automática de entradas velhas (LRU simples por data de acesso)
+ * FIXES v3.1 aplicados:
+ *   FIX-SW-1: offline.html adicionado ao CACHE_ASSETS (nunca estava sendo pré-cacheado)
+ *   FIX-SW-2: quota guard corrigido — trocado navigator.storage por self.storage (contexto SW)
+ *   FIX-SW-3: syncPendingLeads refatorado — deletes IDB movidos para fora do await fetch()
+ *              (transação IDB fecha em microtasks; await dentro do loop a quebrava silenciosamente)
+ *   FIX-SW-4: cache de imagens com limite LRU de 60 entradas (evita encher storage mobile)
+ *   FIX-SW-5: catch-all network-first agora verifica isCacheableResponse antes de cachear
+ *   FIX-SW-6: listener 'online' no cliente notificado via BroadcastChannel para reload automático
  */
 
-const CACHE_VER  = 3;
+const CACHE_VER  = 4;
 const CACHE_NAME = `mecbusca-v3-r${CACHE_VER}`;
 const OFFLINE_URL = '/offline.html';
+const IMAGE_CACHE_LIMIT = 60; // FIX-SW-4
 
-// Assets que precisam de cache imediato no install
+// FIX-SW-1: offline.html incluído no pré-cache
 const CACHE_ASSETS = [
   '/index.html',
   '/manifest.json',
   '/firebase-layer.js',
   '/service-worker.js',
+  '/offline.html',
 ];
 
-// BroadcastChannel para notificar o app sobre atualizações
 const updateChannel = new BroadcastChannel('sw-updates');
 
-// ── Utilitários ───────────────────────────────────────────────────
+// ── Utilitários ───────────────────────────────────────────────────────
 function isValidURL(url) {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
+  try { new URL(url); return true; } catch { return false; }
 }
 
 function isCacheableResponse(response) {
   return response &&
     response.status === 200 &&
-    response.type !== 'opaque'; // nunca cachear respostas opacas (CORS)
+    response.type !== 'opaque';
 }
 
 async function safeCachePut(cacheName, request, response) {
   try {
-    // SW-V3-4: verificar quota antes de gravar
-    if ('storage' in navigator && 'estimate' in navigator.storage) {
-      const { usage, quota } = await navigator.storage.estimate();
-      const usagePercent = usage / quota;
-      if (usagePercent > 0.85) {
+    // FIX-SW-2: self.storage em vez de navigator.storage (contexto de Service Worker)
+    if ('storage' in self && 'estimate' in self.storage) {
+      const { usage, quota } = await self.storage.estimate();
+      if (usage / quota > 0.85) {
         console.warn('[SW] Quota > 85%, pulando cache para:', request.url);
         return;
       }
@@ -65,7 +60,6 @@ async function safeCachePut(cacheName, request, response) {
   }
 }
 
-// SW-V3-7: remove as N entradas mais antigas pelo header Date
 async function evictOldEntries(cacheName, count) {
   try {
     const cache = await caches.open(cacheName);
@@ -86,27 +80,39 @@ async function evictOldEntries(cacheName, count) {
   }
 }
 
-// ── Install ───────────────────────────────────────────────────────
+// FIX-SW-4: limite de entradas no cache de imagens
+async function enforceImageCacheLimit(cacheName, limit) {
+  try {
+    const cache = await caches.open(cacheName);
+    const requests = await cache.keys();
+    if (requests.length <= limit) return;
+    const overflow = requests.length - limit;
+    // Remove as mais antigas (primeiras da lista, que são as mais velhas)
+    await Promise.all(requests.slice(0, overflow).map(r => cache.delete(r)));
+  } catch (err) {
+    console.error('[SW] Erro ao limitar cache de imagens:', err.message);
+  }
+}
+
+// ── Install ───────────────────────────────────────────────────────────
 self.addEventListener('install', event => {
   event.waitUntil(
     (async () => {
       try {
         const cache = await caches.open(CACHE_NAME);
-        await cache.addAll(CACHE_ASSETS);
+        await cache.addAll(CACHE_ASSETS); // FIX-SW-1: offline.html agora incluído
       } catch (err) {
         console.warn('[SW] Pré-cache parcial:', err.message);
       }
-      // skipWaiting aqui garante ativação imediata sem esperar tabs fecharem
       await self.skipWaiting();
     })()
   );
 });
 
-// ── Activate ──────────────────────────────────────────────────────
+// ── Activate ──────────────────────────────────────────────────────────
 self.addEventListener('activate', event => {
   event.waitUntil(
     (async () => {
-      // Remover caches de versões anteriores
       const keys = await caches.keys();
       await Promise.all(
         keys
@@ -116,26 +122,24 @@ self.addEventListener('activate', event => {
             return caches.delete(k);
           })
       );
-      // SW-V3-6: notificar o app que atualização foi aplicada
       updateChannel.postMessage({ type: 'SW_UPDATED', version: CACHE_VER });
       await self.clients.claim();
     })()
   );
 });
 
-// ── Message ───────────────────────────────────────────────────────
+// ── Message ───────────────────────────────────────────────────────────
 self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') {
     self.skipWaiting();
   }
   if (event.data?.type === 'CACHE_URLS') {
-    // Permite que o app pré-cache URLs extras sob demanda
     const urls = event.data.urls || [];
     caches.open(CACHE_NAME).then(cache => cache.addAll(urls)).catch(() => {});
   }
 });
 
-// ── Background Sync (SW-V3-2) ─────────────────────────────────────
+// ── Background Sync (FIX-SW-3) ────────────────────────────────────────
 self.addEventListener('sync', event => {
   if (event.tag === 'sync-leads') {
     event.waitUntil(syncPendingLeads());
@@ -143,12 +147,22 @@ self.addEventListener('sync', event => {
 });
 
 async function syncPendingLeads() {
-  // Lê fila de leads pendentes do IndexedDB e reenvia
   try {
     const db = await openLeadsDB();
-    const tx = db.transaction('pending-leads', 'readwrite');
-    const store = tx.objectStore('pending-leads');
-    const leads = await storeGetAll(store);
+
+    // Lê todos os leads pendentes primeiro
+    const leads = await new Promise((resolve, reject) => {
+      const tx = db.transaction('pending-leads', 'readonly');
+      const store = tx.objectStore('pending-leads');
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+
+    if (!leads.length) return;
+
+    // Tenta enviar cada lead — fora da transação IDB
+    const syncedIds = [];
     for (const lead of leads) {
       try {
         const res = await fetch('/api/leads', {
@@ -157,14 +171,24 @@ async function syncPendingLeads() {
           body: JSON.stringify(lead.data),
         });
         if (res.ok) {
-          await store.delete(lead.id);
+          syncedIds.push(lead.id);
           console.log('[SW] Lead sincronizado:', lead.id);
         }
       } catch {
-        // Deixa na fila para próxima tentativa
+        // Mantém na fila para próxima tentativa
       }
     }
-    await tx.done;
+
+    // FIX-SW-3: deletes em transação separada, após todos os fetches
+    if (syncedIds.length > 0) {
+      const txDel = db.transaction('pending-leads', 'readwrite');
+      const storeDel = txDel.objectStore('pending-leads');
+      await Promise.all(syncedIds.map(id => new Promise((res, rej) => {
+        const r = storeDel.delete(id);
+        r.onsuccess = res;
+        r.onerror = rej;
+      })));
+    }
   } catch (err) {
     console.warn('[SW] Background sync falhou:', err.message);
   }
@@ -184,20 +208,11 @@ function openLeadsDB() {
   });
 }
 
-function storeGetAll(store) {
-  return new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-// ── Fetch ─────────────────────────────────────────────────────────
+// ── Fetch ─────────────────────────────────────────────────────────────
 self.addEventListener('fetch', event => {
   const { request } = event;
 
   if (request.method !== 'GET') return;
-
   if (!isValidURL(request.url)) return;
 
   let url;
@@ -207,10 +222,9 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Não interceptar cross-origin exceto se for nosso CDN/assets conhecidos
   if (url.hostname !== self.location.hostname) return;
 
-  // ── Navegação (HTML / document) — Network-first ──────────────────
+  // ── Navegação — Network-first ─────────────────────────────────────
   if (
     request.destination === 'document' ||
     url.pathname === '/' ||
@@ -220,15 +234,13 @@ self.addEventListener('fetch', event => {
       fetch(request)
         .then(response => {
           if (isCacheableResponse(response)) {
-            const clone = response.clone();
-            safeCachePut(CACHE_NAME, request, clone);
+            safeCachePut(CACHE_NAME, request, response.clone());
           }
           return response;
         })
         .catch(async () => {
           const cached = await caches.match(request);
           if (cached) return cached;
-          // SW-V3-3: fallback offline page
           return (
             (await caches.match(OFFLINE_URL)) ||
             new Response('<h1>Você está offline</h1>', {
@@ -241,7 +253,7 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // ── Scripts e Estilos — Stale-while-revalidate ───────────────────
+  // ── Scripts e Estilos — Stale-while-revalidate ────────────────────
   if (request.destination === 'script' || request.destination === 'style') {
     event.respondWith(
       caches.open(CACHE_NAME).then(async cache => {
@@ -254,15 +266,13 @@ self.addEventListener('fetch', event => {
             return response;
           })
           .catch(() => null);
-
-        // SW-V3-5: responde imediatamente com cache e atualiza em background
         return cached || networkFetch;
       })
     );
     return;
   }
 
-  // ── Imagens — Cache-first (imagens mudam pouco) ──────────────────
+  // ── Imagens — Cache-first com limite LRU (FIX-SW-4) ──────────────
   if (request.destination === 'image') {
     event.respondWith(
       caches.match(request).then(cached => {
@@ -270,7 +280,9 @@ self.addEventListener('fetch', event => {
         return fetch(request)
           .then(response => {
             if (isCacheableResponse(response)) {
-              safeCachePut(CACHE_NAME, request, response.clone());
+              safeCachePut(CACHE_NAME, request, response.clone()).then(() => {
+                enforceImageCacheLimit(CACHE_NAME, IMAGE_CACHE_LIMIT);
+              });
             }
             return response;
           })
@@ -280,8 +292,16 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // ── Tudo mais — Network-first com fallback ───────────────────────
+  // ── Catch-all — Network-first com fallback (FIX-SW-5) ────────────
+  // FIX-SW-5: verifica isCacheableResponse antes de cachear no catch-all
   event.respondWith(
-    fetch(request).catch(() => caches.match(request))
+    fetch(request)
+      .then(response => {
+        if (isCacheableResponse(response)) {
+          safeCachePut(CACHE_NAME, request, response.clone());
+        }
+        return response;
+      })
+      .catch(() => caches.match(request))
   );
 });
