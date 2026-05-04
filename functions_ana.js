@@ -14,7 +14,7 @@
 
 const { onRequest } = require('firebase-functions/v2/https');
 const { defineSecret } = require('firebase-functions/params');
-const { getFirestore, FieldValue } = require('firebase-admin/firestore');
+const { getFirestore, FieldValue, Timestamp } = require('firebase-admin/firestore');
 
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
@@ -44,24 +44,37 @@ Contexto MecBusca:
 Lembre: você é um oráculo — conhecimento amplo, respostas úteis, sem rodeios.`,
 };
 
-// ── Rate limiting simples via Firestore ───────────────────────────
+// ── Rate limiting via Firestore com serverTimestamp (ANA-FIX-9) ───
+// ANA-FIX-9: usa Timestamp.now() do servidor — imune a clock drift do cliente da função
 async function checkRateLimit(db, ip) {
   const windowMs = 60 * 1000; // 1 minuto
   const maxRequests = 20;
-  const ref = db.collection('_ratelimits').doc(`ana_${ip.replace(/[.:]/g, '_')}`);
+  const docId = `ana_${ip.replace(/[.:]/g, '_')}`;
+  const ref = db.collection('_ratelimits').doc(docId);
 
   return db.runTransaction(async tx => {
     const doc = await tx.get(ref);
-    const now = Date.now();
+    const now = Timestamp.now();
+    const nowMs = now.toMillis();
 
     if (!doc.exists) {
-      tx.set(ref, { count: 1, windowStart: now, ttl: new Date(now + windowMs * 10) });
+      tx.set(ref, {
+        count: 1,
+        windowStart: now,
+        ttl: new Timestamp(Math.floor(nowMs / 1000) + 600, 0), // TTL 10min → Firestore deleta auto
+      });
       return true;
     }
 
     const data = doc.data();
-    if (now - data.windowStart > windowMs) {
-      tx.update(ref, { count: 1, windowStart: now });
+    const windowStartMs = data.windowStart?.toMillis?.() ?? nowMs;
+
+    if (nowMs - windowStartMs > windowMs) {
+      tx.update(ref, {
+        count: 1,
+        windowStart: now,
+        ttl: new Timestamp(Math.floor(nowMs / 1000) + 600, 0),
+      });
       return true;
     }
 

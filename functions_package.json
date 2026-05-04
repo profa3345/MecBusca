@@ -1,15 +1,16 @@
 {
   "name": "mecbusca-functions",
   "description": "MecBusca Cloud Functions v2",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "scripts": {
     "serve": "firebase emulators:start --only functions,firestore,auth",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
     "lint": "eslint .",
+    "pretest": "npm audit --audit-level=high --omit=dev",
     "test": "jest --forceExit",
-    "setup-secrets": "firebase functions:secrets:set ANTHROPIC_API_KEY && firebase functions:secrets:set GA4_API_SECRET",
+    "setup-secrets": "firebase functions:secrets:set ANTHROPIC_API_KEY && firebase functions:secrets:set GA4_API_SECRET && firebase functions:secrets:set ZAPI_INSTANCE_ID && firebase functions:secrets:set ZAPI_TOKEN",
     "setup-ga4": "echo \"Set GA4_MEASUREMENT_ID in functions config: firebase functions:config:set ga4.measurement_id=G-XXXX\""
   },
   "engines": {

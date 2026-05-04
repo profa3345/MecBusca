@@ -1,47 +1,41 @@
 /**
- * MecBusca — ana-chat.js
- * Módulo de chat da Ana IA para integração no index.html
+ * MecBusca — ana-chat.js v2
+ * Módulo de chat da Ana IA + listener de atualização SW
  *
- * FIXES mobile:
- *   CLIENT-FIX-1: Timeout de 55s no fetch (antes do servidor expirar)
- *   CLIENT-FIX-2: Retry automático (1x) em falhas de rede — comum em 4G/5G
- *   CLIENT-FIX-3: AbortController para cancelar requests pendentes ao fechar chat
- *   CLIENT-FIX-4: Histórico de conversa mantido em memória (até 10 turnos)
- *   CLIENT-FIX-5: Estado de "digitando..." com animação enquanto aguarda
- *   CLIENT-FIX-6: Fila de mensagens — evita requests paralelos que causam out-of-order
- *   CLIENT-FIX-7: Detecção de offline antes de enviar (sem tentar request inútil)
- *   CLIENT-FIX-8: Endpoint /api/ana (não mais /api/leads)
+ * CLIENT-FIX-1: Timeout de 55s no fetch (antes do servidor expirar)
+ * CLIENT-FIX-2: Retry automático 1x em falhas de rede
+ * CLIENT-FIX-3: AbortController para cancelar requests ao fechar chat
+ * CLIENT-FIX-4: Histórico de conversa em memória (até 10 turnos)
+ * CLIENT-FIX-5: Estado "digitando..." com animação
+ * CLIENT-FIX-6: Fila de mensagens — sem requests paralelos
+ * CLIENT-FIX-7: Detecção de offline antes de enviar
+ * CLIENT-FIX-8: Endpoint /api/ana
+ * CLIENT-FIX-9: Listener BroadcastChannel 'sw-updates' → toast "Nova versão disponível"
  */
 
 const AnaChat = (() => {
-  // ── Estado ────────────────────────────────────────────────────
   const state = {
-    history: [],       // [{role: 'user'|'assistant', content: string}]
-    sending: false,    // CLIENT-FIX-6: fila simples — bloqueia envio paralelo
+    history: [],
+    sending: false,
     abortController: null,
   };
 
-  // ── Config ────────────────────────────────────────────────────
   const MAX_HISTORY_TURNS = 10;
   const FETCH_TIMEOUT_MS  = 55_000; // CLIENT-FIX-1
   const ENDPOINT          = '/api/ana'; // CLIENT-FIX-8
 
-  // ── Helpers ───────────────────────────────────────────────────
   function trimHistory() {
-    // Mantém apenas os últimos N turnos (user + assistant = 2 itens por turno)
     const maxItems = MAX_HISTORY_TURNS * 2;
     if (state.history.length > maxItems) {
       state.history = state.history.slice(-maxItems);
     }
   }
 
-  // CLIENT-FIX-1 + CLIENT-FIX-3: fetch com timeout e cancelamento
+  // CLIENT-FIX-1 + CLIENT-FIX-3
   async function fetchWithTimeout(url, options, timeoutMs) {
     const controller = new AbortController();
     state.abortController = controller;
-
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
     try {
       const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeoutId);
@@ -54,44 +48,32 @@ const AnaChat = (() => {
     }
   }
 
-  // CLIENT-FIX-2: retry 1x em erros de rede (não em erros HTTP 4xx)
+  // CLIENT-FIX-2: retry 1x em erro de rede (não em 4xx/5xx)
   async function fetchWithRetry(url, options, timeoutMs) {
     try {
       return await fetchWithTimeout(url, options, timeoutMs);
     } catch (err) {
-      if (err.name === 'AbortError') throw err; // cancelamento manual, não retry
-
+      if (err.name === 'AbortError') throw err;
       console.warn('[Ana] Primeiro fetch falhou, tentando novamente...', err.message);
-      await new Promise(r => setTimeout(r, 1500)); // pequena pausa
+      await new Promise(r => setTimeout(r, 1500));
       return await fetchWithTimeout(url, options, timeoutMs);
     }
   }
 
-  // ── API principal ─────────────────────────────────────────────
-
-  /**
-   * Envia mensagem para Ana e retorna a resposta.
-   * @param {string} message - texto do usuário
-   * @returns {Promise<{reply: string, error?: string}>}
-   */
   async function sendMessage(message) {
-    if (!message?.trim()) {
-      return { error: 'Mensagem vazia.' };
-    }
+    if (!message?.trim()) return { error: 'Mensagem vazia.' };
 
-    // CLIENT-FIX-6: fila — não permite envio paralelo
+    // CLIENT-FIX-6: sem requests paralelos
     if (state.sending) {
       return { error: 'Aguarde a resposta anterior antes de enviar outra mensagem.' };
     }
 
-    // CLIENT-FIX-7: verificar conexão antes de tentar
+    // CLIENT-FIX-7: checar conexão antes de tentar
     if (!navigator.onLine) {
       return { error: 'Você está offline. Conecte-se à internet e tente novamente.' };
     }
 
     state.sending = true;
-
-    // Adiciona ao histórico imediatamente
     state.history.push({ role: 'user', content: message.trim() });
     trimHistory();
 
@@ -106,8 +88,7 @@ const AnaChat = (() => {
           },
           body: JSON.stringify({
             message: message.trim(),
-            // Envia histórico excluindo a última mensagem do user (que já está no campo message)
-            history: state.history.slice(0, -1),
+            history: state.history.slice(0, -1), // CLIENT-FIX-4
           }),
         },
         FETCH_TIMEOUT_MS
@@ -116,10 +97,8 @@ const AnaChat = (() => {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        // Remove a mensagem do user do histórico se falhou (para não poluir)
         state.history.pop();
-        const errorMsg = data?.error || `Erro ${response.status}. Tente novamente.`;
-        return { error: errorMsg };
+        return { error: data?.error || `Erro ${response.status}. Tente novamente.` };
       }
 
       const reply = data?.reply;
@@ -128,54 +107,33 @@ const AnaChat = (() => {
         return { error: 'Resposta inesperada. Tente novamente.' };
       }
 
-      // Adiciona resposta da Ana ao histórico
       state.history.push({ role: 'assistant', content: reply });
       trimHistory();
-
       return { reply };
 
     } catch (err) {
-      // Remove a mensagem do user do histórico em caso de erro
       state.history.pop();
-
-      if (err.name === 'AbortError') {
-        return { error: 'Solicitação cancelada.' };
-      }
-
-      // Timeout ou erro de rede
+      if (err.name === 'AbortError') return { error: 'Solicitação cancelada.' };
       console.error('[Ana] Erro de comunicação:', err.message);
-      return {
-        error: 'Não consegui conectar à Ana. Verifique sua internet e tente novamente.',
-      };
+      return { error: 'Não consegui conectar à Ana. Verifique sua internet e tente novamente.' };
     } finally {
       state.sending = false;
     }
   }
 
-  /**
-   * Cancela request em andamento (ex: usuário fecha o chat)
-   */
   function cancel() {
-    if (state.abortController) {
-      state.abortController.abort();
-    }
+    state.abortController?.abort();
   }
 
-  /**
-   * Limpa o histórico (nova conversa)
-   */
   function resetHistory() {
     state.history = [];
   }
 
-  /**
-   * Retorna se há um request em andamento
-   */
   function isSending() {
     return state.sending;
   }
 
-  // ── UI Helper: renderiza bolha de "digitando..." ──────────────
+  // CLIENT-FIX-5: bolha de "digitando..."
   function createTypingBubble(containerEl) {
     const bubble = document.createElement('div');
     bubble.className = 'ana-bubble ana-bubble--typing';
@@ -189,15 +147,75 @@ const AnaChat = (() => {
     return bubble;
   }
 
-  // ── Expõe API pública ─────────────────────────────────────────
-  return {
-    sendMessage,
-    cancel,
-    resetHistory,
-    isSending,
-    createTypingBubble,
-  };
+  // CLIENT-FIX-9: toast de nova versão quando SW atualiza
+  function showUpdateToast() {
+    if (document.getElementById('sw-update-toast')) return;
+
+    if (!document.getElementById('sw-toast-styles')) {
+      const style = document.createElement('style');
+      style.id = 'sw-toast-styles';
+      style.textContent = `
+        @keyframes _anaSlideUp {
+          from { opacity:0; transform:translateX(-50%) translateY(12px); }
+          to   { opacity:1; transform:translateX(-50%) translateY(0); }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    const toast = document.createElement('div');
+    toast.id = 'sw-update-toast';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = [
+      'position:fixed', 'bottom:1.5rem', 'left:50%',
+      'transform:translateX(-50%)',
+      'background:#00D084', 'color:#000',
+      'font-family:system-ui,sans-serif',
+      'font-size:.875rem', 'font-weight:600',
+      'padding:.7rem 1.25rem',
+      'border-radius:999px',
+      'box-shadow:0 4px 20px rgba(0,208,132,.35)',
+      'display:flex', 'align-items:center', 'gap:10px',
+      'z-index:9999',
+      'animation:_anaSlideUp .3s ease',
+      'white-space:nowrap',
+    ].join(';');
+
+    const btn = document.createElement('button');
+    btn.textContent = 'Atualizar';
+    btn.onclick = () => location.reload();
+    btn.style.cssText = [
+      'background:rgba(0,0,0,.15)', 'border:none', 'color:#000',
+      'font-size:.8rem', 'font-weight:700',
+      'padding:.3rem .75rem', 'border-radius:999px', 'cursor:pointer',
+    ].join(';');
+
+    const span = document.createElement('span');
+    span.textContent = 'Nova versão disponível';
+
+    toast.appendChild(span);
+    toast.appendChild(btn);
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 12000);
+  }
+
+  function initSWUpdateListener() {
+    if (!('BroadcastChannel' in window)) return;
+    const channel = new BroadcastChannel('sw-updates');
+    channel.addEventListener('message', event => {
+      if (event.data?.type === 'SW_UPDATED') showUpdateToast();
+    });
+  }
+
+  // Inicializa imediatamente ou após DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSWUpdateListener);
+  } else {
+    initSWUpdateListener();
+  }
+
+  return { sendMessage, cancel, resetHistory, isSending, createTypingBubble };
 })();
 
-// Disponibiliza globalmente
 window.AnaChat = AnaChat;
