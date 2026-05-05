@@ -6397,8 +6397,23 @@ function validarEstadoCidade(estadoId, cidadeId, errMsgId) {
 // ── Bike toggle handlers (standard — used across all 3 bike cards) ───────────
 let _bikeSearchTipo  = 'comum';
 // ── Function aliases (backward compat) ─────────────────────────────────────
-const anaAiToggle = (...args) => typeof anaToggle === 'function' ? anaToggle(...args) : null;
-const anaAiSend   = (...args) => typeof anaEnviar === 'function' ? anaEnviar(...args) : null;
+// FIX-RECURSION v3: anaAiToggle é uma função-despachante segura.
+// Prioridade: window.anaAiToggle (impl real do chat IA, definida mais abaixo).
+// Fallback: _anaToggleOriginal (fn simples que abre o widget antigo, nunca chama anaAiToggle).
+// Nunca chama window.anaToggle (que é sobrescrito para chamar window.anaAiToggle → loop).
+var _anaToggleOriginal = null; // preenchido pelo bloco original antes de ser sobrescrito
+function anaAiToggle(force) {
+  if (typeof window.anaAiToggle === 'function') {
+    return window.anaAiToggle(force !== false && force !== 0);
+  }
+  // Bloco IA ainda não carregou — tenta widget legado
+  if (typeof _anaToggleOriginal === 'function') {
+    return _anaToggleOriginal(force);
+  }
+}
+function anaAiSend() {
+  if (typeof window.anaEnviar === 'function') return window.anaEnviar();
+}
 function solicitarGeolocalizacao(cb) { if (typeof pedirGeolocalizacao === 'function') pedirGeolocalizacao(cb); }
 
 let _bikePecasTipo   = 'comum';
@@ -15235,6 +15250,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   window.anaToggle = anaToggle;
+  // FIX: salva referência antes do bloco IA sobrescrever window.anaToggle
+  if (typeof _anaToggleOriginal !== 'undefined') _anaToggleOriginal = anaToggle;
   // Mobile: prevent body scroll when Ana chat is open
   const _anaObserver = new MutationObserver(() => {
     const widget = document.getElementById('ana-ai-chat');
@@ -16201,10 +16218,10 @@ Ao precisar escalar → [ESCALAR]`;
     // #ana-widget está oculto por CSS — sem necessidade de ajustar opacity
   };
 
-  // Override do anaToggle original para abrir o chat IA
-  const origAnaToggle = window.anaToggle;
+  // FIX-RECURSION v3: window.anaToggle delega para window.anaAiToggle (impl real).
+  // anaAiToggle() global usa window.anaAiToggle — sem loop.
   window.anaToggle = function(force) {
-    anaAiToggle(true);
+    window.anaAiToggle(force !== false && force !== 0);
   };
 
   // ── Adiciona mensagem na UI ──
@@ -16306,24 +16323,28 @@ Ao precisar escalar → [ESCALAR]`;
         : null;
 
       let reply;
-      if (anaChatFn) {
-                const callable = anaChatFn.httpsCallable('anaChatProxy');
-        const result = await callable({ messages: anaHistory, system: SYSTEM_PROMPT });
-        reply = result.data?.reply || 'Desculpe, não consegui processar. Tente novamente.';
-      } else {
-        // Fallback dev/Claude.ai: chamada direta (funciona apenas via proxy da Claude.ai)
-        const response = await fetch('https://api.anthropic.com/v1/messages', {
+      // FIX-CORS: chamada via /api/ana (Cloud Function). Sem AbortController —
+      // AbortSignal não é clonável e causava DataCloneError no Service Worker.
+      // Timeout implementado via Promise.race com rejeição manual.
+      {
+        const fetchPromise = fetch('/api/ana', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'X-App-Version': window.__APP_VERSION__ || '0'
+          },
           body: JSON.stringify({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 500,
-            system: SYSTEM_PROMPT,
-            messages: anaHistory
+            message: anaHistory[anaHistory.length - 1]?.content || '',
+            history: anaHistory.slice(0, -1)
           })
         });
-        const data = await response.json();
-        reply = data.content?.[0]?.text || 'Desculpe, não consegui processar. Tente novamente.';
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Tempo esgotado. Tente novamente.')), 55000)
+        );
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data?.error || 'Erro ' + response.status);
+        reply = data.reply || 'Desculpe, não consegui processar. Tente novamente.';
       }
 
       anaHistory.push({ role: 'assistant', content: reply });
