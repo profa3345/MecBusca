@@ -20,10 +20,6 @@
         "function": "criarLead"
       },
       {
-        "source": "/api/ana",
-        "function": "anaIA"
-      },
-      {
         "source": "**",
         "destination": "/index.html"
       }
