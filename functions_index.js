@@ -983,13 +983,14 @@ Contexto MecBusca:
 
 exports.anaIA = onRequest(
   {
-    region: 'us-central1',
+    region: 'southamerica-east1',
     secrets: [anthropicKey],
     timeoutSeconds: 60,
     memory: '256MiB',
     cors: false,
   },
   async (req, res) => {
+    console.log('[anaIA] chamada recebida', { method: req.method, origin: req.headers.origin || 'none' });
     // CORS
     const allowedOrigins = [
       'https://mecbusca.com.br',

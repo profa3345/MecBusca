@@ -16318,10 +16318,6 @@ Ao precisar escalar → [ESCALAR]`;
     updateStatus('Analisando...');
 
     try {
-            const anaChatFn = typeof firebase !== 'undefined' && firebase.functions
-        ? firebase.app().functions('southamerica-east1')
-        : null;
-
       let reply;
       // FIX-CORS: chamada via /api/ana (Cloud Function). Sem AbortController —
       // AbortSignal não é clonável e causava DataCloneError no Service Worker.
