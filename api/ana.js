@@ -2,11 +2,16 @@
  * MecBusca — api/ana.js
  * Vercel Serverless Function — endpoint /api/ana
  *
- * Deploy: basta colocar este arquivo em /api/ana.js na raiz do projeto.
+ * Deploy: coloque este arquivo em /api/ana.js na raiz do projeto.
  * A Vercel detecta automaticamente e serve como POST https://mecbusca.vercel.app/api/ana
  *
  * Variável de ambiente necessária (Vercel Dashboard → Settings → Environment Variables):
- *   ANTHROPIC_API_KEY = sk-ant-...
+ *   GEMINI_API_KEY = AIza...
+ *
+ * Como obter a chave GRATUITA:
+ *   1. Acesse https://aistudio.google.com
+ *   2. Clique em "Get API Key" → "Create API Key"
+ *   3. Copie a chave e adicione na Vercel como GEMINI_API_KEY
  */
 
 const ALLOWED_ORIGINS = [
@@ -33,7 +38,11 @@ Contexto MecBusca:
 - Usuários buscam oficinas, pedem orçamentos e falam pelo WhatsApp
 - Se a pergunta for sobre carros, mecânica ou manutenção, ofereça ajudar a encontrar uma oficina`;
 
-// Rate limit simples em memória (por instância — suficiente para Vercel Edge)
+// Modelo Gemini — gemini-1.5-flash é gratuito e rápido
+const GEMINI_MODEL = 'gemini-1.5-flash';
+const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+
+// Rate limit simples em memória (por instância — suficiente para Vercel)
 const rateLimitMap = new Map();
 function checkRateLimit(ip) {
   const now = Date.now();
@@ -80,38 +89,42 @@ export default async function handler(req, res) {
   if (!message?.trim()) return res.status(400).json({ error: 'Mensagem inválida.' });
   if (message.length > 4000) return res.status(400).json({ error: 'Mensagem muito longa.' });
 
-  // Montar histórico
-  const messages = [
+  // Montar histórico no formato Gemini
+  // Gemini usa "user" e "model" (não "assistant")
+  const contents = [
     ...(Array.isArray(history)
       ? history
           .slice(-10)
           .filter(m => ['user', 'assistant'].includes(m?.role) && typeof m?.content === 'string')
-          .map(m => ({ role: m.role, content: sanitize(m.content, 2000) }))
+          .map(m => ({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: sanitize(m.content, 2000) }],
+          }))
       : []),
-    { role: 'user', content: sanitize(message) },
+    { role: 'user', parts: [{ text: sanitize(message) }] },
   ];
 
-  // Chamar Anthropic
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // Chamar Gemini
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error('[Ana] ANTHROPIC_API_KEY não configurada');
+    console.error('[Ana] GEMINI_API_KEY não configurada');
     return res.status(503).json({ error: 'Ana indisponível. Tente mais tarde.' });
   }
 
-  let anthropicRes;
+  let geminiRes;
   try {
-    anthropicRes = await fetch('https://api.anthropic.com/v1/messages', {
+    geminiRes = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: ANA_SYSTEM_PROMPT,
-        messages,
+        system_instruction: {
+          parts: [{ text: ANA_SYSTEM_PROMPT }],
+        },
+        contents,
+        generationConfig: {
+          maxOutputTokens: 1024,
+          temperature: 0.85,
+        },
       }),
     });
   } catch (e) {
@@ -119,20 +132,21 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: 'Erro de conexão. Tente novamente.' });
   }
 
-  if (!anthropicRes.ok) {
-    const status = anthropicRes.status;
-    console.error('[Ana] Anthropic error:', status);
+  if (!geminiRes.ok) {
+    const status = geminiRes.status;
+    console.error('[Ana] Gemini error:', status);
     return res.status(502).json({
-      error: status === 529 ? 'Ana sobrecarregada. Tente em instantes.'
-           : status === 401 ? 'Erro de autenticação. Contate o suporte.'
+      error: status === 429 ? 'Ana sobrecarregada. Tente em instantes.'
+           : status === 400 ? 'Requisição inválida. Tente reformular.'
            : 'Ana encontrou um problema. Tente novamente.',
     });
   }
 
-  const data = await anthropicRes.json();
-  const reply = data?.content?.[0]?.text;
+  const data = await geminiRes.json();
+  const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!reply) return res.status(502).json({ error: 'Resposta vazia. Tente reformular.' });
 
-  console.log('[Ana] ok', { in: data.usage?.input_tokens, out: data.usage?.output_tokens });
+  const usage = data?.usageMetadata;
+  console.log('[Ana] ok', { in: usage?.promptTokenCount, out: usage?.candidatesTokenCount });
   return res.status(200).json({ reply });
 }
