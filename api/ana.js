@@ -38,8 +38,8 @@ Contexto MecBusca:
 - Usuários buscam oficinas, pedem orçamentos e falam pelo WhatsApp
 - Se a pergunta for sobre carros, mecânica ou manutenção, ofereça ajudar a encontrar uma oficina`;
 
-// Modelo Gemini — gemini-1.5-flash é gratuito e rápido
-const GEMINI_MODEL = 'gemini-1.5-flash';
+// Modelo Gemini — gemini-2.0-flash é gratuito e atual
+const GEMINI_MODEL = 'gemini-2.0-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // Rate limit simples em memória (por instância — suficiente para Vercel)
