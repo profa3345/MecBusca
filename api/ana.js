@@ -6,12 +6,12 @@
  * A Vercel detecta automaticamente e serve como POST https://mecbusca.vercel.app/api/ana
  *
  * Variável de ambiente necessária (Vercel Dashboard → Settings → Environment Variables):
- *   GEMINI_API_KEY = AIza...
+ *   GROQ_API_KEY = gsk_...
  *
  * Como obter a chave GRATUITA:
- *   1. Acesse https://aistudio.google.com
- *   2. Clique em "Get API Key" → "Create API Key"
- *   3. Copie a chave e adicione na Vercel como GEMINI_API_KEY
+ *   1. Acesse https://console.groq.com
+ *   2. Clique em "API Keys" → "Create API Key"
+ *   3. Copie a chave e adicione na Vercel como GROQ_API_KEY
  */
 
 const ALLOWED_ORIGINS = [
@@ -38,9 +38,9 @@ Contexto MecBusca:
 - Usuários buscam oficinas, pedem orçamentos e falam pelo WhatsApp
 - Se a pergunta for sobre carros, mecânica ou manutenção, ofereça ajudar a encontrar uma oficina`;
 
-// Modelo Gemini — gemini-2.0-flash é gratuito e atual
-const GEMINI_MODEL = 'gemini-2.0-flash';
-const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+// Modelo Groq — llama3-8b-8192 é ultra rápido e gratuito
+const GROQ_MODEL = 'llama3-8b-8192';
+const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
 // Rate limit simples em memória (por instância — suficiente para Vercel)
 const rateLimitMap = new Map();
@@ -89,42 +89,41 @@ export default async function handler(req, res) {
   if (!message?.trim()) return res.status(400).json({ error: 'Mensagem inválida.' });
   if (message.length > 4000) return res.status(400).json({ error: 'Mensagem muito longa.' });
 
-  // Montar histórico no formato Gemini
-  // Gemini usa "user" e "model" (não "assistant")
-  const contents = [
+  // Montar histórico no formato OpenAI (compatível com Groq)
+  const messages = [
+    { role: 'system', content: ANA_SYSTEM_PROMPT },
     ...(Array.isArray(history)
       ? history
           .slice(-10)
           .filter(m => ['user', 'assistant'].includes(m?.role) && typeof m?.content === 'string')
           .map(m => ({
-            role: m.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: sanitize(m.content, 2000) }],
+            role: m.role,
+            content: sanitize(m.content, 2000),
           }))
       : []),
-    { role: 'user', parts: [{ text: sanitize(message) }] },
+    { role: 'user', content: sanitize(message) },
   ];
 
-  // Chamar Gemini
-  const apiKey = process.env.GEMINI_API_KEY;
+  // Chamar Groq
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
-    console.error('[Ana] GEMINI_API_KEY não configurada');
+    console.error('[Ana] GROQ_API_KEY não configurada');
     return res.status(503).json({ error: 'Ana indisponível. Tente mais tarde.' });
   }
 
-  let geminiRes;
+  let groqRes;
   try {
-    geminiRes = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+    groqRes = await fetch(GROQ_API_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
       body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: ANA_SYSTEM_PROMPT }],
-        },
-        contents,
-        generationConfig: {
-          maxOutputTokens: 1024,
-          temperature: 0.85,
-        },
+        model: GROQ_MODEL,
+        messages,
+        max_tokens: 1024,
+        temperature: 0.85,
       }),
     });
   } catch (e) {
@@ -132,9 +131,9 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: 'Erro de conexão. Tente novamente.' });
   }
 
-  if (!geminiRes.ok) {
-    const status = geminiRes.status;
-    console.error('[Ana] Gemini error:', status);
+  if (!groqRes.ok) {
+    const status = groqRes.status;
+    console.error('[Ana] Groq error:', status);
     return res.status(502).json({
       error: status === 429 ? 'Ana sobrecarregada. Tente em instantes.'
            : status === 400 ? 'Requisição inválida. Tente reformular.'
@@ -142,11 +141,11 @@ export default async function handler(req, res) {
     });
   }
 
-  const data = await geminiRes.json();
-  const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+  const data = await groqRes.json();
+  const reply = data?.choices?.[0]?.message?.content;
   if (!reply) return res.status(502).json({ error: 'Resposta vazia. Tente reformular.' });
 
-  const usage = data?.usageMetadata;
-  console.log('[Ana] ok', { in: usage?.promptTokenCount, out: usage?.candidatesTokenCount });
+  const usage = data?.usage;
+  console.log('[Ana] ok', { in: usage?.prompt_tokens, out: usage?.completion_tokens });
   return res.status(200).json({ reply });
 }
