@@ -9,6 +9,8 @@
  *   GOOGLE_PLACES_KEY=AIza... FIREBASE_PROJECT=mecbusca node capture-oficinas.js
  *   node capture-oficinas.js --cidade "Vitória, ES" --categoria "oficina mecânica"
  *   node capture-oficinas.js --all-es     # percorre todas as cidades do ES
+ *   node capture-oficinas.js --all-br     # percorre todas as cidades do Brasil
+ *   node capture-oficinas.js --estado SP  # percorre todas as cidades de SP
  *   node capture-oficinas.js --dry-run    # simula sem salvar
  *
  * REQUISITOS:
@@ -34,9 +36,11 @@ const fs    = require('fs');
 const args = process.argv.slice(2);
 const DRY_RUN     = args.includes('--dry-run');
 const ALL_ES      = args.includes('--all-es');
+const ALL_BR      = args.includes('--all-br');
 const VERBOSE     = args.includes('--verbose');
 const cidadeArg   = args[args.indexOf('--cidade') + 1];
 const catArg      = args[args.indexOf('--categoria') + 1];
+const estadoArg   = args[args.indexOf('--estado') + 1];
 
 // ── Configuração ──────────────────────────────────────────────────────────────
 const GOOGLE_KEY      = process.env.GOOGLE_PLACES_KEY;
@@ -48,16 +52,92 @@ const RESULTS_PER_QUERY = 20;  // Google Places retorna até 20 por página
 const MAX_PAGES       = 3;     // até 3 páginas = até 60 resultados por query
 const DEDUP_KEY       = 'place_id'; // campo para deduplicação
 
-// ── Cidades do Espírito Santo ─────────────────────────────────────────────────
-const CIDADES_ES = [
-  'Vitória, ES', 'Vila Velha, ES', 'Cariacica, ES', 'Serra, ES',
-  'Cachoeiro de Itapemirim, ES', 'Linhares, ES', 'São Mateus, ES',
-  'Colatina, ES', 'Guarapari, ES', 'Aracruz, ES',
-  'Viana, ES', 'Nova Venécia, ES', 'Barra de São Francisco, ES',
-  'Santa Maria de Jetibá, ES', 'Iconha, ES', 'Piúma, ES',
-  'Anchieta, ES', 'Domingos Martins, ES', 'Afonso Cláudio, ES',
-  'Conceição da Barra, ES',
-];
+// ── Cidades por estado ────────────────────────────────────────────────────────
+const CIDADES_BR = {
+  AC: ['Rio Branco, AC', 'Cruzeiro do Sul, AC', 'Sena Madureira, AC', 'Tarauacá, AC'],
+  AL: ['Maceió, AL', 'Arapiraca, AL', 'Palmeira dos Índios, AL', 'União dos Palmares, AL', 'Penedo, AL'],
+  AM: ['Manaus, AM', 'Parintins, AM', 'Itacoatiara, AM', 'Manacapuru, AM', 'Coari, AM', 'Tefé, AM'],
+  AP: ['Macapá, AP', 'Santana, AP', 'Laranjal do Jari, AP', 'Oiapoque, AP'],
+  BA: ['Salvador, BA', 'Feira de Santana, BA', 'Vitória da Conquista, BA', 'Camaçari, BA',
+       'Itabuna, BA', 'Juazeiro, BA', 'Lauro de Freitas, BA', 'Ilhéus, BA', 'Jequié, BA',
+       'Teixeira de Freitas, BA', 'Barreiras, BA', 'Porto Seguro, BA', 'Alagoinhas, BA',
+       'Paulo Afonso, BA', 'Simões Filho, BA', 'Eunápolis, BA', 'Santo Antônio de Jesus, BA'],
+  CE: ['Fortaleza, CE', 'Caucaia, CE', 'Juazeiro do Norte, CE', 'Maracanaú, CE',
+       'Sobral, CE', 'Crato, CE', 'Itapipoca, CE', 'Maranguape, CE', 'Iguatu, CE',
+       'Quixadá, CE', 'Pacatuba, CE', 'Aquiraz, CE'],
+  DF: ['Brasília, DF', 'Ceilândia, DF', 'Taguatinga, DF', 'Samambaia, DF',
+       'Planaltina, DF', 'Gama, DF', 'Sobradinho, DF', 'Recanto das Emas, DF'],
+  ES: ['Vitória, ES', 'Vila Velha, ES', 'Cariacica, ES', 'Serra, ES',
+       'Cachoeiro de Itapemirim, ES', 'Linhares, ES', 'São Mateus, ES',
+       'Colatina, ES', 'Guarapari, ES', 'Aracruz, ES', 'Viana, ES',
+       'Nova Venécia, ES', 'Barra de São Francisco, ES', 'Piúma, ES', 'Anchieta, ES'],
+  GO: ['Goiânia, GO', 'Aparecida de Goiânia, GO', 'Anápolis, GO', 'Rio Verde, GO',
+       'Luziânia, GO', 'Águas Lindas de Goiás, GO', 'Valparaíso de Goiás, GO',
+       'Trindade, GO', 'Formosa, GO', 'Novo Gama, GO', 'Itumbiara, GO', 'Senador Canedo, GO'],
+  MA: ['São Luís, MA', 'Imperatriz, MA', 'Timon, MA', 'Caxias, MA', 'Codó, MA',
+       'Paço do Lumiar, MA', 'Açailândia, MA', 'Bacabal, MA', 'Balsas, MA', 'Santa Inês, MA'],
+  MG: ['Belo Horizonte, MG', 'Uberlândia, MG', 'Contagem, MG', 'Juiz de Fora, MG',
+       'Betim, MG', 'Montes Claros, MG', 'Ribeirão das Neves, MG', 'Uberaba, MG',
+       'Governador Valadares, MG', 'Ipatinga, MG', 'Sete Lagoas, MG', 'Divinópolis, MG',
+       'Santa Luzia, MG', 'Ibirité, MG', 'Poços de Caldas, MG', 'Patos de Minas, MG',
+       'Pouso Alegre, MG', 'Teófilo Otoni, MG', 'Barbacena, MG', 'Sabará, MG',
+       'Varginha, MG', 'Conselheiro Lafaiete, MG', 'Muriaé, MG', 'Araguari, MG'],
+  MS: ['Campo Grande, MS', 'Dourados, MS', 'Três Lagoas, MS', 'Corumbá, MS',
+       'Ponta Porã, MS', 'Naviraí, MS', 'Nova Andradina, MS', 'Aquidauana, MS'],
+  MT: ['Cuiabá, MT', 'Várzea Grande, MT', 'Rondonópolis, MT', 'Sinop, MT',
+       'Tangará da Serra, MT', 'Cáceres, MT', 'Sorriso, MT', 'Lucas do Rio Verde, MT'],
+  PA: ['Belém, PA', 'Ananindeua, PA', 'Santarém, PA', 'Marabá, PA', 'Castanhal, PA',
+       'Parauapebas, PA', 'Cameta, PA', 'Itaituba, PA', 'Abaetetuba, PA', 'Tucuruí, PA',
+       'Marituba, PA', 'Altamira, PA'],
+  PB: ['João Pessoa, PB', 'Campina Grande, PB', 'Santa Rita, PB', 'Patos, PB',
+       'Bayeux, PB', 'Sousa, PB', 'Cajazeiras, PB', 'Cabedelo, PB'],
+  PE: ['Recife, PE', 'Caruaru, PE', 'Olinda, PE', 'Petrolina, PE', 'Paulista, PE',
+       'Caboatã de São Agostinho, PE', 'Jaboatão dos Guararapes, PE', 'Garanhuns, PE',
+       'Vitória de Santo Antão, PE', 'Surubim, PE', 'Cabo de Santo Agostinho, PE'],
+  PI: ['Teresina, PI', 'Parnaíba, PI', 'Picos, PI', 'Piripiri, PI', 'Floriano, PI', 'Campo Maior, PI'],
+  PR: ['Curitiba, PR', 'Londrina, PR', 'Maringá, PR', 'Ponta Grossa, PR', 'Cascavel, PR',
+       'São José dos Pinhais, PR', 'Foz do Iguaçu, PR', 'Colombo, PR', 'Guarapuava, PR',
+       'Paranaguá, PR', 'Araucária, PR', 'Toledo, PR', 'Apucarana, PR', 'Pinhais, PR',
+       'Campo Largo, PR', 'Almirante Tamandaré, PR', 'Umuarama, PR', 'Piraquara, PR'],
+  RJ: ['Rio de Janeiro, RJ', 'São Gonçalo, RJ', 'Duque de Caxias, RJ', 'Nova Iguaçu, RJ',
+       'Niterói, RJ', 'Belford Roxo, RJ', 'São João de Meriti, RJ', 'Campos dos Goytacazes, RJ',
+       'Petrópolis, RJ', 'Volta Redonda, RJ', 'Magé, RJ', 'Itaboraí, RJ',
+       'Macaé, RJ', 'Cabo Frio, RJ', 'Mesquita, RJ', 'Nova Friburgo, RJ',
+       'Barra Mansa, RJ', 'Angra dos Reis, RJ', 'Nilópolis, RJ', 'Queimados, RJ'],
+  RN: ['Natal, RN', 'Mossoró, RN', 'Parnamirim, RN', 'São Gonçalo do Amarante, RN',
+       'Macaíba, RN', 'Ceará-Mirim, RN', 'Caicó, RN', 'Açu, RN'],
+  RO: ['Porto Velho, RO', 'Ji-Paraná, RO', 'Ariquemes, RO', 'Vilhena, RO',
+       'Cacoal, RO', 'Rolim de Moura, RO', 'Guajará-Mirim, RO'],
+  RR: ['Boa Vista, RR', 'Rorainópolis, RR', 'Caracaraí, RR'],
+  RS: ['Porto Alegre, RS', 'Caxias do Sul, RS', 'Canoas, RS', 'Pelotas, RS',
+       'Santa Maria, RS', 'Gravataí, RS', 'Viamão, RS', 'Novo Hamburgo, RS',
+       'São Leopoldo, RS', 'Rio Grande, RS', 'Alvorada, RS', 'Passo Fundo, RS',
+       'Sapucaia do Sul, RS', 'Uruguaiana, RS', 'Santa Cruz do Sul, RS',
+       'Cachoeirinha, RS', 'Bagé, RS', 'Bento Gonçalves, RS', 'Erechim, RS'],
+  SC: ['Florianópolis, SC', 'Joinville, SC', 'Blumenau, SC', 'São José, SC',
+       'Criciúma, SC', 'Chapecó, SC', 'Itajaí, SC', 'Lages, SC', 'Jaraguá do Sul, SC',
+       'Palhoça, SC', 'Balneário Camboriú, SC', 'Biguaçu, SC', 'São Bento do Sul, SC',
+       'Caçador, SC', 'Tubarão, SC', 'Concórdia, SC'],
+  SE: ['Aracaju, SE', 'Nossa Senhora do Socorro, SE', 'Lagarto, SE', 'Itabaiana, SE',
+       'São Cristóvão, SE', 'Estância, SE'],
+  SP: ['São Paulo, SP', 'Guarulhos, SP', 'Campinas, SP', 'São Bernardo do Campo, SP',
+       'Santo André, SP', 'Osasco, SP', 'São José dos Campos, SP', 'Ribeirão Preto, SP',
+       'Sorocaba, SP', 'Mauá, SP', 'Santos, SP', 'São José do Rio Preto, SP',
+       'Mogi das Cruzes, SP', 'Diadema, SP', 'Jundiaí, SP', 'Carapicuíba, SP',
+       'Piracicaba, SP', 'Bauru, SP', 'São Vicente, SP', 'Franca, SP',
+       'Guarujá, SP', 'Taubaté, SP', 'Limeira, SP', 'Suzano, SP',
+       'Praia Grande, SP', 'Taboão da Serra, SP', 'Barueri, SP', 'Sumaré, SP',
+       'Embu das Artes, SP', 'São Carlos, SP', 'Indaiatuba, SP', 'Cotia, SP',
+       'Americana, SP', 'Marília, SP', 'Araraquara, SP', 'Presidente Prudente, SP',
+       'Jacareí, SP', 'Hortolândia, SP', 'Itaquaquecetuba, SP', 'Botucatu, SP'],
+  TO: ['Palmas, TO', 'Araguaína, TO', 'Gurupi, TO', 'Porto Nacional, TO', 'Paraíso do Tocantins, TO'],
+};
+
+// Lista plana de todas as cidades do Brasil
+const TODAS_CIDADES_BR = Object.values(CIDADES_BR).flat();
+
+// Cidades do ES (mantido para compatibilidade com --all-es)
+const CIDADES_ES = CIDADES_BR.ES;
 
 // ── Categorias de busca ───────────────────────────────────────────────────────
 const CATEGORIAS = [
@@ -421,7 +501,18 @@ async function main() {
   initFirestore();
 
   // Define escopo da busca
-  const cidades    = ALL_ES ? CIDADES_ES : [cidadeArg || 'Vitória, ES'];
+  let cidades;
+  if (ALL_BR) {
+    cidades = TODAS_CIDADES_BR;
+  } else if (estadoArg) {
+    const uf = estadoArg.toUpperCase();
+    cidades = CIDADES_BR[uf] || [];
+    if (!cidades.length) { err(`Estado não encontrado: ${uf}`); process.exit(1); }
+  } else if (ALL_ES) {
+    cidades = CIDADES_ES;
+  } else {
+    cidades = [cidadeArg || 'Vitória, ES'];
+  }
   const categorias = catArg ? [catArg] : CATEGORIAS;
 
   log(`  Cidades (${cidades.length}): ${cidades.slice(0, 5).join(', ')}${cidades.length > 5 ? '...' : ''}`);
