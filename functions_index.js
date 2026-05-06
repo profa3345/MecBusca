@@ -983,7 +983,7 @@ Contexto MecBusca:
 
 exports.anaIA = onRequest(
   {
-    region: 'southamerica-east1',
+    region: 'us-central1',
     secrets: [anthropicKey],
     timeoutSeconds: 60,
     memory: '256MiB',
