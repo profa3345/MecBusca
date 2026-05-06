@@ -101,6 +101,7 @@ exports.anaIA = onRequest(
     // ANA-FIX-3: Preflight CORS
     const allowedOrigins = [
       'https://mecbusca.com.br',
+      'https://www.mecbusca.com.br',
       'https://mecbusca.firebaseapp.com',
       'http://localhost:5000',
       'http://localhost:5001',
