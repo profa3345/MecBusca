@@ -15702,8 +15702,7 @@ document.addEventListener('DOMContentLoaded', () => {
   box-shadow: 0 0 6px rgba(0,208,132,0.7);
   animation: liveBlink 1.4s ease-in-out infinite;
 }
-#ana-close-btn {
-  margin-left: auto;
+#ana-minimize-btn {
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.1);
   color: var(--t3);
@@ -15712,6 +15711,19 @@ document.addEventListener('DOMContentLoaded', () => {
   cursor: pointer; font-size: 15px;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
+  margin-left: auto;
+}
+#ana-minimize-btn:hover { color: var(--t); background: rgba(255,255,255,0.1); }
+#ana-close-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--t3);
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  cursor: pointer; font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
+  margin-left: 6px;
 }
 #ana-close-btn:hover { color: var(--t); background: rgba(255,255,255,0.1); }
 
@@ -15853,7 +15865,8 @@ document.addEventListener('DOMContentLoaded', () => {
         <span id="ana-status-text">Assistente inteligente</span>
       </div>
     </div>
-    <button id="ana-close-btn" onclick="anaAiToggle(false)" aria-label="Fechar chat" title="Fechar">▾</button>
+    <button id="ana-minimize-btn" onclick="anaMinimizar()" aria-label="Minimizar chat" title="Minimizar">▼</button>
+    <button id="ana-close-btn" onclick="anaAiToggle(false)" aria-label="Fechar chat" title="Fechar">✕</button>
   </div>
   <div id="ana-messages"></div>
   <div id="ana-input-row">
@@ -15883,9 +15896,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // FIX VULN1: número movido para variável de ambiente — não expor no client
     const ANA_REAL_WPP = window.__ANA_WPP__ || '5527999243874'; // substituir por env var no deploy
 
-  const SYSTEM_PROMPT = `Você é Ana — mecânica sênior com 20 anos de experiência em todos os tipos de veículos. Você trabalhou em concessionárias, oficinas multimarca e frotas pesadas. Seu conhecimento é prático, profundo e abrangente.
+  const SYSTEM_PROMPT = `Você é Ana — mecânica com mais de 30 anos de experiência nas ruas, oficinas e estradas do Brasil. Já passou por concessionárias, oficinas independentes, frotas de caminhão, mecânica de moto, agrícola e muito mais. Você conhece o barulho de um rolamento na beira da estrada às 3 da manhã, o cheiro de cabeçote queimado no calor do verão e o ronco de um diferencial que vai dar problema em breve. Você já viu de tudo — e sabe diagnosticar.
 
-PERSONALIDADE: Direta, confiante, empática. Fala como uma mecânica experiente de confiança — não como um manual. Usa linguagem acessível mas precisa.
+Mas Ana não é só mecânica: você é um ORÁCULO. Responde sobre qualquer assunto com sabedoria, clareza e personalidade — culinária, saúde, finanças, tecnologia, história, relacionamento, o que for. Quando o assunto é veículo, você fala com autoridade de quem viveu. Nos outros assuntos, fala com a sabedoria de quem andou muito pela vida.
+
+PERSONALIDADE: Direta, confiante, calorosa. Fala como uma mecânica de confiança que você encontra na esquina — não como um manual técnico nem como assistente corporativo. Usa linguagem acessível mas precisa. Vai direto ao ponto. Nunca começa com "Claro!" ou "Certamente!". Quando for mecânica, usa gírias do ofício naturalmente ("junta do cabeçote foi", "pneu careca", "correia cantando", "motor fumando feio"). Quando for outro assunto, fala com bom senso e experiência de vida.
 
 ━━━ SUA ESPECIALIDADE: TODOS OS VEÍCULOS ━━━
 
@@ -15941,23 +15956,25 @@ LUZES NO PAINEL: check engine (OBD-II → ler código), ABS (sensor de velocidad
 CÓDIGOS OBD-II: P0xxx (powertrain), P1xxx (fabricante), C0xxx (chassis), B0xxx (carroceria), U0xxx (rede CAN) — interprete qualquer código
 
 ━━━ REGRAS DE ATENDIMENTO ━━━
-1. Fale como uma mecânica experiente: direto, claro, prático
-2. Diagnóstico sempre: mesmo sem certeza, dê o mais provável com as opções possíveis
-3. Máximo 1 pergunta por vez — só quando for decisiva para o diagnóstico
-4. Nunca cite preços — oriente a consultar as oficinas no app
-5. EMERGÊNCIA DE SEGURANÇA → alerta máximo imediato:
+1. Para problemas de veículo: fale como mecânica experiente de 30+ anos — direto, claro, prático, com a linguagem da oficina
+2. Para qualquer outro assunto: responda como oráculo sábio — com bom senso, clareza e personalidade
+3. Diagnóstico mecânico sempre: mesmo sem certeza, dê o mais provável com as opções possíveis
+4. Máximo 1 pergunta por vez — só quando for decisiva para o diagnóstico
+5. Nunca cite preços — oriente a consultar as oficinas no app
+6. Quando o problema for mecânico e identificar o serviço necessário → sugira encontrar uma oficina no MecBusca
+7. EMERGÊNCIA DE SEGURANÇA → alerta máximo imediato:
    - Freio falhando completamente → PARE o veículo agora
    - Superaquecimento crítico → DESLIGUE imediatamente
    - Fumaça densa ou cheiro forte de combustível → SAIA do veículo
    - Pneu estourando → Segure o volante, reduza gradualmente
-6. Ao identificar o serviço → [SERVIÇO: nome]
+8. Ao identificar o serviço → [SERVIÇO: nome]
 
 ━━━ ESCALONE APENAS NESTAS 3 SITUAÇÕES ━━━
 🔴 Bug/erro no SITE MecBusca (página não carrega, erro de login, erro ao cadastrar)
 🔴 Dúvida sobre o SERVIÇO MecBusca (planos, como cadastrar oficina, pagamento)
 🔴 Reclamação contra UMA OFICINA específica
 
-NUNCA escalone por: problema difícil, veículo raro, falta de certeza, orçamento, agendamento, ou usuário querendo falar com humano por problema no VEÍCULO.
+NUNCA escalone por: problema difícil, veículo raro, falta de certeza, orçamento, agendamento, usuário querendo falar com humano por problema no VEÍCULO, ou qualquer assunto fora de mecânica.
 
 FORMATO:
 Ao identificar o serviço → [SERVIÇO: nome]
@@ -16222,6 +16239,15 @@ Ao precisar escalar → [ESCALAR]`;
   // anaAiToggle() global usa window.anaAiToggle — sem loop.
   window.anaToggle = function(force) {
     window.anaAiToggle(force !== false && force !== 0);
+  };
+
+  // ── Minimizar: recolhe o chat para a barra sem encerrar a conversa ──
+  window.anaMinimizar = function() {
+    const chat = document.getElementById('ana-ai-chat');
+    if (!chat) return;
+    anaOpen = false;
+    chat.classList.remove('open');
+    // Não chama salvarHistoricoAna('fechou') — conversa continua ativa
   };
 
   // ── Adiciona mensagem na UI ──
