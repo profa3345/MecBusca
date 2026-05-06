@@ -15723,7 +15723,7 @@ document.addEventListener('DOMContentLoaded', () => {
   cursor: pointer; font-size: 15px;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
-  margin-left: 6px;
+  margin-left: 12px;
 }
 #ana-close-btn:hover { color: var(--t); background: rgba(255,255,255,0.1); }
 
@@ -15866,16 +15866,18 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
     </div>
     <button id="ana-minimize-btn" onclick="anaMinimizar()" aria-label="Minimizar chat" title="Minimizar">▼</button>
-    <button id="ana-close-btn" onclick="anaAiToggle(false)" aria-label="Fechar chat" title="Fechar">✕</button>
+    <button id="ana-close-btn" onclick="(function(){var h=window.anaHistory||[];if(h.length>=3&&!confirm('Encerrar a conversa com a Ana? O histórico será perdido.'))return;anaAiToggle(false);})()" aria-label="Fechar chat" title="Fechar">✕</button>
   </div>
   <div id="ana-messages"></div>
   <div id="ana-input-row">
-    <input id="ana-input" placeholder="Descreva o problema do seu carro, moto ou bicicleta…" autocomplete="off" autocorrect="off" autocapitalize="sentences" inputmode="text" enterkeyhint="send" 
+    <input id="ana-input" placeholder="Pergunte qualquer coisa — mecânica, manutenção, dicas de vida…" autocomplete="off" autocorrect="off" autocapitalize="sentences" inputmode="text" enterkeyhint="send" maxlength="4000"
            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();if(window.anaEnviar)window.anaEnviar();}"
+           oninput="(function(el){var c=document.getElementById('ana-char-count');if(c){var n=el.value.length;c.textContent=n>3800?n+'/4000':'';c.style.color=n>3900?'var(--danger,#e55)':'var(--t3)';}})(this)"
            onfocus="if(window.anaToggle)window.anaToggle('open')"
            aria-label="Digite sua mensagem para a Ana, assistente MecBusca">
     <button id="ana-send-btn" onclick="anaEnviar?anaEnviar():window.anaEnviar&&window.anaEnviar()" aria-label="Enviar">➤</button>
   </div>
+  <div id="ana-char-count" style="font-size:11px;text-align:right;padding:2px 10px 4px;color:var(--t3);min-height:16px;"></div>
 
 </div>
 
@@ -16221,14 +16223,17 @@ Ao precisar escalar → [ESCALAR]`;
       if (anaHistory.length === 0) {
         setTimeout(() => {
           addAnaMessage('bot', 
-            '👋 Olá! Sou a **Ana**, sua assistente inteligente do MecBusca!\n\nPosso te ajudar a:\n🔧 Diagnosticar qualquer problema do seu carro\n🏪 Encontrar oficinas próximas a você\n📋 Tirar dúvidas sobre manutenção\n\nMe conta: o que está acontecendo com seu carro?',
-            ['🔊 Barulho estranho', '💡 Luz acesa no painel', '🚗 Carro puxando', '🌡️ Superaquecendo', '🛞 Problema nos pneus', '🔋 Problema na bateria']
+            '👋 Olá! Sou a **Ana** — mecânica com 30 anos de estrada e sua assistente do MecBusca.\n\nPosso te ajudar com qualquer coisa:\n🔧 Diagnosticar problemas do seu veículo\n🏪 Encontrar oficinas próximas\n💡 Responder qualquer dúvida que tiver\n\nQual é a pergunta?',
+            ['🔧 Problema no veículo', '💡 Luz acesa no painel', '🌡️ Superaquecendo', '🏪 Buscar oficina', '❓ Pergunta geral']
           );
         }, 200);
       }
       setTimeout(() => document.getElementById('ana-input')?.focus(), 300);
     } else {
       chat.classList.remove('open');
+      // Remove badge de conversa ativa ao fechar de verdade
+      const badge = document.getElementById('ana-active-badge');
+      if (badge) badge.remove();
       salvarHistoricoAna('fechou');
     }
 
@@ -16247,6 +16252,18 @@ Ao precisar escalar → [ESCALAR]`;
     if (!chat) return;
     anaOpen = false;
     chat.classList.remove('open');
+    // Badge visual no botão flutuante para indicar conversa ativa
+    const btn = document.getElementById('ana-btn');
+    if (btn && (window.anaHistory||[]).length > 0) {
+      if (!document.getElementById('ana-active-badge')) {
+        const badge = document.createElement('span');
+        badge.id = 'ana-active-badge';
+        badge.title = 'Conversa ativa — clique para retomar';
+        badge.style.cssText = 'position:absolute;top:2px;right:2px;width:10px;height:10px;background:#00D084;border-radius:50%;border:2px solid #fff;animation:liveBlink 1.4s ease-in-out infinite;';
+        btn.style.position = 'relative';
+        btn.appendChild(badge);
+      }
+    }
     // Não chama salvarHistoricoAna('fechou') — conversa continua ativa
   };
 
@@ -16261,7 +16278,11 @@ Ao precisar escalar → [ESCALAR]`;
 
     const div = document.createElement('div');
     div.className = `ana-msg ${role}`;
-    div.innerHTML = text
+    // XSS-FIX: escape raw text before processing markdown so user input
+    // cannot inject HTML. Bot replies from the API are also escaped — the
+    // **bold** and \n patterns are applied on the already-safe string.
+    const safe = esc(text);
+    div.innerHTML = safe
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\n/g, '<br>');
 
@@ -16305,7 +16326,7 @@ Ao precisar escalar → [ESCALAR]`;
       msgs.appendChild(chipsDiv);
     }
 
-    msgs.scrollTop = msgs.scrollHeight;
+    msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
   }
 
   function addTypingIndicator() {
@@ -16315,7 +16336,7 @@ Ao precisar escalar → [ESCALAR]`;
     div.className = 'ana-typing';
     div.innerHTML = '<span></span><span></span><span></span>';
     msgs.appendChild(div);
-    msgs.scrollTop = msgs.scrollHeight;
+    msgs.scrollTo({ top: msgs.scrollHeight, behavior: 'smooth' });
   }
 
   function updateStatus(text) {
