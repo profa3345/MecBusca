@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MecBusca — Reivindicar Perfil</title>
+<meta name="robots" content="noindex">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green:    #00D084;
+    --green-dk: #00A066;
+    --bg:       #080C09;
+    --bg2:      #111A12;
+    --bg3:      #1A2B1C;
+    --border:   rgba(0,208,132,.18);
+    --border2:  rgba(0,208,132,.35);
+    --text:     #E8F0E9;
+    --text2:    #8FA490;
+    --red:      #FF5252;
+    --amber:    #FFB800;
+    --radius:   14px;
+    --font:     'Inter', system-ui, sans-serif;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@700&display=swap');
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+  }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: var(--green);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: #000;
+    font-family: 'Space Grotesk', sans-serif;
+  }
+  .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700; }
+  .logo-text span { color: var(--green); }
+
+  /* ── Main layout ── */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    max-width: 1100px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 3rem 2rem;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  /* ── Left panel: pitch ── */
+  .pitch h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2.2rem;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+  }
+  .pitch h1 em {
+    color: var(--green);
+    font-style: normal;
+  }
+  .pitch p {
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+    font-size: 1rem;
+  }
+
+  .oficina-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .oficina-card .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,184,0,.12);
+    color: var(--amber);
+    font-size: .75rem;
+    font-weight: 600;
+    padding: .3rem .7rem;
+    border-radius: 999px;
+    margin-bottom: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .oficina-card h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: .35rem;
+  }
+  .oficina-card .meta {
+    color: var(--text2);
+    font-size: .85rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .oficina-card .meta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .benefits {
+    display: flex;
+    flex-direction: column;
+    gap: .65rem;
+  }
+  .benefit {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    font-size: .9rem;
+    color: var(--text2);
+  }
+  .benefit .icon {
+    width: 22px; height: 22px; border-radius: 6px;
+    background: rgba(0,208,132,.15);
+    color: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ── Right panel: form ── */
+  .form-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+  }
+
+  .step { display: none; }
+  .step.active { display: block; }
+
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: 1.5rem;
+  }
+  .step-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: .75rem; font-weight: 600;
+    border: 1.5px solid var(--border2);
+    color: var(--text2);
+    transition: all .3s;
+  }
+  .step-dot.done { background: var(--green); border-color: var(--green); color: #000; }
+  .step-dot.active { border-color: var(--green); color: var(--green); }
+  .step-line {
+    flex: 1; height: 1px;
+    background: var(--border);
+    transition: background .3s;
+  }
+  .step-line.done { background: var(--green); }
+
+  .form-card h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.25rem;
+    margin-bottom: .5rem;
+  }
+  .form-card .sub {
+    color: var(--text2);
+    font-size: .875rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+  }
+
+  .field { margin-bottom: 1.1rem; }
+  .field label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 500;
+    color: var(--text2);
+    margin-bottom: .4rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  .field input {
+    width: 100%;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    color: var(--text);
+    font-size: .95rem;
+    font-family: var(--font);
+    transition: border-color .2s;
+    outline: none;
+  }
+  .field input:focus { border-color: var(--green); }
+  .field input::placeholder { color: var(--text2); opacity: .6; }
+
+  .btn {
+    width: 100%;
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: .85rem 1.5rem;
+    font-size: .95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background .2s, opacity .2s, transform .1s;
+    margin-top: .5rem;
+  }
+  .btn:hover:not(:disabled) { background: var(--green-dk); }
+  .btn:active:not(:disabled) { transform: scale(.98); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn.secondary {
+    background: transparent;
+    color: var(--text2);
+    border: 1px solid var(--border);
+    margin-top: .75rem;
+  }
+  .btn.secondary:hover:not(:disabled) { border-color: var(--border2); color: var(--text); background: var(--bg3); }
+
+  .alert {
+    border-radius: 10px;
+    padding: .85rem 1rem;
+    font-size: .875rem;
+    margin-bottom: 1rem;
+    display: none;
+    align-items: flex-start;
+    gap: .6rem;
+    line-height: 1.5;
+  }
+  .alert.error { background: rgba(255,82,82,.1); border: 1px solid rgba(255,82,82,.3); color: #ff7272; display: flex; }
+  .alert.success { background: rgba(0,208,132,.1); border: 1px solid rgba(0,208,132,.3); color: var(--green); display: flex; }
+
+  /* OTP input */
+  .otp-grid {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: .5rem;
+  }
+  .otp-grid input {
+    flex: 1;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    padding: .75rem .25rem;
+    border-radius: 10px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .otp-grid input:focus { border-color: var(--green); }
+
+  .timer {
+    font-size: .8rem;
+    color: var(--text2);
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+  .timer span { color: var(--green); font-weight: 600; }
+
+  /* Success */
+  .success-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: rgba(0,208,132,.15);
+    border: 2px solid var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 1.25rem;
+  }
+  .text-center { text-align: center; }
+
+  /* ── Admin Panel ── */
+  #admin-panel {
+    display: none;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    width: 100%;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+  }
+  .panel-header h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.5rem;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+  }
+  .stat-card .label { font-size: .75rem; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .5rem; }
+  .stat-card .value { font-family: 'Space Grotesk', sans-serif; font-size: 1.8rem; font-weight: 700; }
+  .stat-card .value.green { color: var(--green); }
+  .stat-card .value.amber { color: var(--amber); }
+  .stat-card .delta { font-size: .8rem; color: var(--green); margin-top: .25rem; }
+
+  .table-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .table-toolbar {
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .table-toolbar h2 { font-size: 1rem; font-weight: 600; }
+  .toolbar-right { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+
+  .search-input {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem .85rem;
+    color: var(--text);
+    font-size: .875rem;
+    font-family: var(--font);
+    width: 220px;
+    outline: none;
+  }
+  .search-input:focus { border-color: var(--green); }
+
+  select.filter {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .5rem .85rem;
+    color: var(--text);
+    font-size: .875rem;
+    font-family: var(--font);
+    outline: none;
+    cursor: pointer;
+  }
+
+  .action-btn {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: .5rem 1rem;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: background .2s;
+    white-space: nowrap;
+  }
+  .action-btn:hover { background: var(--green-dk); }
+  .action-btn.ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+  }
+  .action-btn.ghost:hover { border-color: var(--border2); color: var(--text); background: var(--bg3); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    text-align: left;
+    font-size: .75rem;
+    font-weight: 500;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    padding: .875rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(0,208,132,.04); }
+  td {
+    padding: .875rem 1.25rem;
+    font-size: .875rem;
+    vertical-align: middle;
+  }
+  td .name { font-weight: 500; margin-bottom: 2px; }
+  td .sub  { font-size: .78rem; color: var(--text2); }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: .25rem .65rem;
+    border-radius: 999px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+  }
+  .pill.pending  { background: rgba(255,184,0,.12); color: var(--amber); }
+  .pill.active   { background: rgba(0,208,132,.12); color: var(--green); }
+  .pill.claimed  { background: rgba(88,160,255,.12); color: #58a0ff; }
+  .pill.rejected { background: rgba(255,82,82,.12);  color: var(--red); }
+
+  .row-actions { display: flex; gap: .5rem; }
+  .mini-btn {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text2);
+    border-radius: 6px;
+    padding: .3rem .6rem;
+    font-size: .75rem;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  .mini-btn:hover { border-color: var(--green); color: var(--green); }
+  .mini-btn.send { background: rgba(0,208,132,.1); border-color: var(--border2); color: var(--green); }
+  .mini-btn.send:hover { background: rgba(0,208,132,.2); }
+
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border);
+    font-size: .8rem;
+    color: var(--text2);
+  }
+  .page-btns { display: flex; gap: .5rem; }
+  .page-btn {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-size: .8rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .15s;
+  }
+  .page-btn:hover { border-color: var(--green); color: var(--green); }
+  .page-btn.active { background: var(--green); border-color: var(--green); color: #000; }
+
+  .empty-state {
+    padding: 3rem;
+    text-align: center;
+    color: var(--text2);
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 1rem; opacity: .4; }
+
+  @media (max-width: 768px) {
+    main { grid-template-columns: 1fr; padding: 1.5rem 1rem; gap: 2rem; }
+    .pitch { order: 2; }
+    .form-card { order: 1; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    #admin-panel { padding: 1rem; }
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: .75rem 1.25rem;
+    border-radius: 999px;
+    font-size: .875rem;
+    font-weight: 500;
+    z-index: 999;
+    transition: transform .3s ease;
+    white-space: nowrap;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: rgba(0,208,132,.5); }
+  .toast.error { border-color: rgba(255,82,82,.4); }
+
+  .loading {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid rgba(0,0,0,.3);
+    border-top-color: #000;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-mark">M</div>
+  <div class="logo-text">Mec<span>Busca</span></div>
+</header>
+
+<!-- ═══════ REIVINDICAÇÃO PAGE ═══════ -->
+<main id="reivindicar-page">
+  <!-- LEFT: pitch -->
+  <div class="pitch">
+    <h1>Sua oficina já está no <em>MecBusca</em></h1>
+    <p>Encontramos seu negócio e criamos um perfil inicial. Agora é só confirmar para começar a receber clientes gratuitamente.</p>
+
+    <div class="oficina-card" id="oficina-preview">
+      <div class="badge">⏳ Perfil em validação</div>
+      <h3 id="preview-nome">Carregando...</h3>
+      <div class="meta">
+        <span id="preview-cidade">📍 —</span>
+        <span id="preview-tel">📞 —</span>
+        <span id="preview-categoria">🔧 —</span>
+      </div>
+    </div>
+
+    <div class="benefits">
+      <div class="benefit">
+        <div class="icon">✓</div>
+        <div><strong>Apareça nas buscas</strong> — clientes da sua cidade te encontram no MecBusca e no Google</div>
+      </div>
+      <div class="benefit">
+        <div class="icon">✓</div>
+        <div><strong>Receba pedidos pelo WhatsApp</strong> — orçamentos direto no seu número</div>
+      </div>
+      <div class="benefit">
+        <div class="icon">✓</div>
+        <div><strong>Adicione fotos e promoções</strong> — painel completo de gerenciamento</div>
+      </div>
+      <div class="benefit">
+        <div class="icon">✓</div>
+        <div><strong>100% gratuito</strong> — sem taxa de cadastro, sem contrato</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: form -->
+  <div class="form-card">
+    <div class="step-indicator">
+      <div class="step-dot active" id="dot-1">1</div>
+      <div class="step-line" id="line-1"></div>
+      <div class="step-dot" id="dot-2">2</div>
+      <div class="step-line" id="line-2"></div>
+      <div class="step-dot" id="dot-3">3</div>
+    </div>
+
+    <!-- Step 1: Telefone -->
+    <div class="step active" id="step-1">
+      <h2>Confirme o telefone</h2>
+      <p class="sub">Vamos enviar um código pelo WhatsApp para confirmar que você é o responsável pela oficina.</p>
+
+      <div class="alert error" id="err-1"></div>
+
+      <div class="field">
+        <label>WhatsApp da oficina</label>
+        <input type="tel" id="input-tel" placeholder="(27) 99999-9999" maxlength="15">
+      </div>
+      <button class="btn" id="btn-solicitar" onclick="solicitarOTP()">Enviar código pelo WhatsApp</button>
+      <button class="btn secondary" onclick="showRemoval()">Solicitar remoção do cadastro</button>
+    </div>
+
+    <!-- Step 2: OTP -->
+    <div class="step" id="step-2">
+      <h2>Digite o código</h2>
+      <p class="sub" id="otp-sub">Enviamos um código de 6 dígitos para o WhatsApp informado.</p>
+
+      <div class="alert error" id="err-2"></div>
+
+      <div class="otp-grid" id="otp-grid">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+        <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]">
+      </div>
+
+      <div class="timer">Código válido por <span id="timer-text">10:00</span></div>
+
+      <div class="field">
+        <label>E-mail (para login)</label>
+        <input type="email" id="input-email" placeholder="seu@email.com">
+      </div>
+      <div class="field">
+        <label>Crie uma senha</label>
+        <input type="password" id="input-senha" placeholder="Mínimo 6 caracteres">
+      </div>
+
+      <button class="btn" id="btn-confirmar" onclick="confirmarOTP()">Ativar meu perfil</button>
+      <button class="btn secondary" onclick="goStep(1)">← Voltar</button>
+    </div>
+
+    <!-- Step 3: Sucesso -->
+    <div class="step" id="step-3">
+      <div class="success-icon">🎉</div>
+      <div class="text-center">
+        <h2>Perfil ativado!</h2>
+        <p class="sub" style="margin-top:.5rem">Sua oficina agora aparece nas buscas do MecBusca. Acesse o painel para completar seu perfil.</p>
+      </div>
+      <button class="btn" onclick="location.href='/painel'">Acessar meu painel →</button>
+    </div>
+  </div>
+</main>
+
+<!-- ═══════ ADMIN PANEL ═══════ -->
+<div id="admin-panel">
+  <div class="panel-header">
+    <h1>Painel Admin — Captura de Oficinas</h1>
+    <div style="display:flex;gap:.75rem;">
+      <button class="action-btn ghost" onclick="exportCSV()">⬇ Exportar CSV</button>
+      <button class="action-btn" onclick="showDispatch()">📱 Disparar WhatsApp</button>
+    </div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="label">Total capturadas</div>
+      <div class="value" id="stat-total">—</div>
+      <div class="delta" id="stat-total-delta"></div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Pendentes</div>
+      <div class="value amber" id="stat-pending">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">WhatsApp enviado</div>
+      <div class="value" id="stat-sent">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Perfis ativos</div>
+      <div class="value green" id="stat-active">—</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-toolbar">
+      <h2>Oficinas capturadas</h2>
+      <div class="toolbar-right">
+        <input class="search-input" type="text" placeholder="Buscar nome ou cidade..." id="search-input" oninput="filterTable()">
+        <select class="filter" id="status-filter" onchange="filterTable()">
+          <option value="">Todos os status</option>
+          <option value="pendente_confirmacao">Pendente</option>
+          <option value="ativo">Ativo</option>
+          <option value="reivindicado">Reivindicado</option>
+        </select>
+        <select class="filter" id="city-filter" onchange="filterTable()">
+          <option value="">Todas as cidades</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Oficina</th>
+            <th>Cidade</th>
+            <th>Telefone</th>
+            <th>Categorias</th>
+            <th>Status</th>
+            <th>WhatsApp</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- preenchido via JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <span id="pagination-info">Mostrando 0 de 0</span>
+      <div class="page-btns" id="page-btns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONFIGURAÇÃO — ajustar para seu projeto
+// ══════════════════════════════════════════════════════════
+const API_BASE = '/api';
+const ADMIN_SECRET = ''; // vazio = sem proteção (adicione header de auth para produção)
+
+// ══════════════════════════════════════════════════════════
+//  DETECÇÃO DE ROTA
+// ══════════════════════════════════════════════════════════
+const path = window.location.pathname;
+const isAdmin = path.startsWith('/admin/oficinas');
+const slugMatch = path.match(/\/reivindicar\/([^/]+)/);
+const SLUG = slugMatch ? slugMatch[1] : null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (isAdmin) {
+    document.getElementById('reivindicar-page').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+    initAdminPanel();
+  } else if (SLUG) {
+    loadOficinaPreview(SLUG);
+    initOTPInputs();
+    startTimer(600);
+  } else {
+    // Demo mode — mostra dados fictícios
+    loadDemoData();
+    initOTPInputs();
+    startTimer(600);
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+//  REIVINDICAÇÃO — Step 1: Solicitar OTP
+// ══════════════════════════════════════════════════════════
+async function loadOficinaPreview(slug) {
+  try {
+    const res = await fetch(`${API_BASE}/oficinas/${slug}/preview`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    document.getElementById('preview-nome').textContent    = data.nome;
+    document.getElementById('preview-cidade').textContent  = '📍 ' + data.cidade;
+    document.getElementById('preview-tel').textContent     = '📞 ' + (data.telefone || '—');
+    document.getElementById('preview-categoria').textContent = '🔧 ' + (data.categorias?.[0] || '—');
+  } catch {
+    document.getElementById('preview-nome').textContent = 'Oficina não encontrada';
+  }
+}
+
+function loadDemoData() {
+  // Demo: detecta slug da URL ou usa fictício
+  document.getElementById('preview-nome').textContent    = 'Oficina TurboCar';
+  document.getElementById('preview-cidade').textContent  = '📍 Vitória, ES';
+  document.getElementById('preview-tel').textContent     = '📞 (27) 99999-9999';
+  document.getElementById('preview-categoria').textContent = '🔧 Mecânica Geral';
+}
+
+let currentTelefone = '';
+
+async function solicitarOTP() {
+  const tel = document.getElementById('input-tel').value.replace(/\D/g, '');
+  if (tel.length < 10) {
+    showError('err-1', 'Informe o WhatsApp com DDD (ex: 27 99999-9999)');
+    return;
+  }
+  currentTelefone = tel;
+
+  const btn = document.getElementById('btn-solicitar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Enviando...';
+
+  try {
+    const res = await fetch(`${API_BASE}/reivindicar/solicitar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: SLUG || 'demo', telefone: tel }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao enviar código');
+
+    document.getElementById('otp-sub').textContent =
+      `Enviamos 6 dígitos para o WhatsApp terminado em ${tel.slice(-4)}`;
+    goStep(2);
+  } catch (e) {
+    showError('err-1', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar código pelo WhatsApp';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  REIVINDICAÇÃO — Step 2: Confirmar OTP
+// ══════════════════════════════════════════════════════════
+function initOTPInputs() {
+  const inputs = document.querySelectorAll('#otp-grid input');
+  inputs.forEach((input, i) => {
+    input.addEventListener('input', e => {
+      const val = e.target.value.replace(/\D/g, '');
+      e.target.value = val.slice(-1);
+      if (val && i < inputs.length - 1) inputs[i + 1].focus();
+    });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !input.value && i > 0) inputs[i - 1].focus();
+    });
+    input.addEventListener('paste', e => {
+      const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+      pasted.split('').forEach((ch, j) => {
+        if (inputs[j]) inputs[j].value = ch;
+      });
+      if (inputs[pasted.length - 1]) inputs[pasted.length - 1].focus();
+      e.preventDefault();
+    });
+  });
+}
+
+let timerInterval = null;
+function startTimer(seconds) {
+  clearInterval(timerInterval);
+  let remaining = seconds;
+  const el = document.getElementById('timer-text');
+  if (!el) return;
+  timerInterval = setInterval(() => {
+    remaining--;
+    const m = Math.floor(remaining / 60);
+    const s = remaining % 60;
+    el.textContent = `${m}:${String(s).padStart(2, '0')}`;
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      el.textContent = 'expirado';
+      el.style.color = 'var(--red)';
+    }
+  }, 1000);
+}
+
+async function confirmarOTP() {
+  const inputs = document.querySelectorAll('#otp-grid input');
+  const otp = Array.from(inputs).map(i => i.value).join('');
+  const email = document.getElementById('input-email').value.trim();
+  const senha = document.getElementById('input-senha').value;
+
+  if (otp.length !== 6) { showError('err-2', 'Digite todos os 6 dígitos do código'); return; }
+  if (!email.includes('@')) { showError('err-2', 'Informe um e-mail válido'); return; }
+  if (senha.length < 6) { showError('err-2', 'A senha deve ter pelo menos 6 caracteres'); return; }
+
+  const btn = document.getElementById('btn-confirmar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loading"></span> Ativando...';
+
+  try {
+    const res = await fetch(`${API_BASE}/reivindicar/confirmar`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: SLUG || 'demo', otp, email, senha }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao ativar perfil');
+    goStep(3);
+  } catch (e) {
+    showError('err-2', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Ativar meu perfil';
+  }
+}
+
+function goStep(n) {
+  [1, 2, 3].forEach(i => {
+    document.getElementById(`step-${i}`).classList.toggle('active', i === n);
+    const dot = document.getElementById(`dot-${i}`);
+    dot.classList.remove('active', 'done');
+    if (i < n) dot.classList.add('done');
+    else if (i === n) dot.classList.add('active');
+  });
+  [1, 2].forEach(i => {
+    const line = document.getElementById(`line-${i}`);
+    if (line) line.classList.toggle('done', i < n);
+  });
+}
+
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = '⚠ ' + msg;
+  el.className = 'alert error';
+}
+
+function showRemoval() {
+  showToast('Envie um e-mail para contato@mecbusca.com.br solicitando a remoção.', 'success');
+}
+
+// ══════════════════════════════════════════════════════════
+//  ADMIN PANEL
+// ══════════════════════════════════════════════════════════
+
+// Mock data para demonstração (substituir por fetch real do Firestore)
+const MOCK_OFICINAS = [
+  { id: '1', nome: 'Oficina TurboCar', cidade: 'Vitória', telefone: '27999990001', categorias: ['mecanica_geral'], status: 'pendente_confirmacao', zapEnviadoAt: null, avaliacaoGoogle: 4.5 },
+  { id: '2', nome: 'Auto Elétrica Silva', cidade: 'Cariacica', telefone: '27988880002', categorias: ['auto_eletrica'], status: 'pendente_confirmacao', zapEnviadoAt: '2024-01-15T10:00:00Z', avaliacaoGoogle: 4.2 },
+  { id: '3', nome: 'Borracharia Rápida', cidade: 'Serra', telefone: '27977770003', categorias: ['borracharia'], status: 'ativo', zapEnviadoAt: '2024-01-14T09:00:00Z', avaliacaoGoogle: 4.8 },
+  { id: '4', nome: 'Funilaria e Pintura Central', cidade: 'Vila Velha', telefone: '27966660004', categorias: ['funilaria_pintura'], status: 'ativo', zapEnviadoAt: '2024-01-13T11:00:00Z', avaliacaoGoogle: 3.9 },
+  { id: '5', nome: 'Retífica Brasil', cidade: 'Vitória', telefone: '27955550005', categorias: ['retica_motor'], status: 'pendente_confirmacao', zapEnviadoAt: null, avaliacaoGoogle: 4.1 },
+  { id: '6', nome: 'AR Automotivo Pro', cidade: 'Guarapari', telefone: null, categorias: ['ar_condicionado'], status: 'pendente_confirmacao', zapEnviadoAt: null, avaliacaoGoogle: 4.6 },
+  { id: '7', nome: 'Mecânica do João', cidade: 'Linhares', telefone: '27944440007', categorias: ['mecanica_geral', 'suspensao_freios'], status: 'pendente_confirmacao', zapEnviadoAt: '2024-01-16T08:00:00Z', avaliacaoGoogle: 4.3 },
+  { id: '8', nome: 'Multi Auto Center', cidade: 'Colatina', telefone: '27933330008', categorias: ['mecanica_geral', 'auto_eletrica'], status: 'ativo', zapEnviadoAt: '2024-01-12T14:00:00Z', avaliacaoGoogle: 4.7 },
+];
+
+let allOfficinas = [...MOCK_OFICINAS];
+let filteredOfficinas = [...allOfficinas];
+let currentPage = 1;
+const PAGE_SIZE = 6;
+
+const CAT_LABELS = {
+  mecanica_geral: 'Mecânica', auto_eletrica: 'Auto Elétrica',
+  borracharia: 'Borracharia', funilaria_pintura: 'Funilaria',
+  retica_motor: 'Retífica', ar_condicionado: 'A/C',
+  suspensao_freios: 'Suspensão', troca_oleo: 'Troca de Óleo',
+};
+
+function initAdminPanel() {
+  updateStats();
+  populateCityFilter();
+  renderTable();
+}
+
+function updateStats() {
+  const total   = allOfficinas.length;
+  const pending = allOfficinas.filter(o => o.status === 'pendente_confirmacao').length;
+  const sent    = allOfficinas.filter(o => o.zapEnviadoAt).length;
+  const active  = allOfficinas.filter(o => o.status === 'ativo').length;
+
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-pending').textContent  = pending;
+  document.getElementById('stat-sent').textContent     = sent;
+  document.getElementById('stat-active').textContent   = active;
+  document.getElementById('stat-total-delta').textContent = `+${total} esta semana`;
+}
+
+function populateCityFilter() {
+  const cities = [...new Set(allOfficinas.map(o => o.cidade))].sort();
+  const sel = document.getElementById('city-filter');
+  cities.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c; opt.textContent = c;
+    sel.appendChild(opt);
+  });
+}
+
+function filterTable() {
+  const search = document.getElementById('search-input').value.toLowerCase();
+  const status = document.getElementById('status-filter').value;
+  const city   = document.getElementById('city-filter').value;
+
+  filteredOfficinas = allOfficinas.filter(o => {
+    const matchSearch = !search || o.nome.toLowerCase().includes(search) || o.cidade.toLowerCase().includes(search);
+    const matchStatus = !status || o.status === status;
+    const matchCity   = !city || o.cidade === city;
+    return matchSearch && matchStatus && matchCity;
+  });
+
+  currentPage = 1;
+  renderTable();
+}
+
+function renderTable() {
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const page  = filteredOfficinas.slice(start, start + PAGE_SIZE);
+  const tbody = document.getElementById('table-body');
+
+  if (page.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="icon">🔍</div>Nenhuma oficina encontrada</div></td></tr>`;
+    document.getElementById('pagination-info').textContent = 'Nenhum resultado';
+    document.getElementById('page-btns').innerHTML = '';
+    return;
+  }
+
+  tbody.innerHTML = page.map(o => {
+    const statusPill = {
+      pendente_confirmacao: '<span class="pill pending">⏳ Pendente</span>',
+      ativo:                '<span class="pill active">✓ Ativo</span>',
+      reivindicado:         '<span class="pill claimed">★ Reivindicado</span>',
+    }[o.status] || o.status;
+
+    const zapStatus = o.zapEnviadoAt
+      ? `<span style="color:var(--green);font-size:.78rem;">✓ ${new Date(o.zapEnviadoAt).toLocaleDateString('pt-BR')}</span>`
+      : `<span style="color:var(--text2);font-size:.78rem;">Não enviado</span>`;
+
+    const cats = (o.categorias || []).map(c => CAT_LABELS[c] || c).slice(0, 2).join(', ');
+    const tel  = o.telefone
+      ? o.telefone.replace(/(\d{2})(\d{4,5})(\d{4})/, '($1) $2-$3')
+      : '<span style="color:var(--text2)">—</span>';
+
+    const canSend = !o.zapEnviadoAt && o.telefone && o.status === 'pendente_confirmacao';
+
+    return `
+    <tr>
+      <td>
+        <div class="name">${o.nome}</div>
+        <div class="sub">${o.avaliacaoGoogle ? '⭐ ' + o.avaliacaoGoogle : '—'}</div>
+      </td>
+      <td>${o.cidade}</td>
+      <td style="font-family:monospace;font-size:.82rem;">${tel}</td>
+      <td style="color:var(--text2);font-size:.8rem;">${cats || '—'}</td>
+      <td>${statusPill}</td>
+      <td>${zapStatus}</td>
+      <td>
+        <div class="row-actions">
+          ${canSend ? `<button class="mini-btn send" onclick="sendSingleWA('${o.id}')">📱 Enviar</button>` : ''}
+          <button class="mini-btn" onclick="viewOficina('${o.id}')">Ver</button>
+          <button class="mini-btn" onclick="removeOficina('${o.id}')">✕</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  const total = filteredOfficinas.length;
+  const pages = Math.ceil(total / PAGE_SIZE);
+  document.getElementById('pagination-info').textContent =
+    `Mostrando ${start + 1}–${Math.min(start + PAGE_SIZE, total)} de ${total}`;
+
+  const btns = document.getElementById('page-btns');
+  btns.innerHTML = '';
+  for (let i = 1; i <= pages; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'page-btn' + (i === currentPage ? ' active' : '');
+    btn.textContent = i;
+    btn.onclick = () => { currentPage = i; renderTable(); };
+    btns.appendChild(btn);
+  }
+}
+
+function sendSingleWA(id) {
+  const o = allOfficinas.find(x => x.id === id);
+  if (!o) return;
+  showToast(`📱 Enviando WhatsApp para ${o.nome}...`);
+  // Aqui chamaria o endpoint real
+  setTimeout(() => {
+    o.zapEnviadoAt = new Date().toISOString();
+    renderTable();
+    updateStats();
+    showToast(`✅ WhatsApp enviado para ${o.nome}!`, 'success');
+  }, 1500);
+}
+
+function viewOficina(id) {
+  const o = allOfficinas.find(x => x.id === id);
+  if (!o) return;
+  showToast(`Abrindo perfil de ${o.nome}...`);
+}
+
+function removeOficina(id) {
+  if (!confirm('Remover esta oficina do sistema?')) return;
+  allOfficinas = allOfficinas.filter(x => x.id !== id);
+  filteredOfficinas = filteredOfficinas.filter(x => x.id !== id);
+  renderTable();
+  updateStats();
+  showToast('Oficina removida.', 'success');
+}
+
+function showDispatch() {
+  const pending = allOfficinas.filter(o => !o.zapEnviadoAt && o.telefone && o.status === 'pendente_confirmacao');
+  if (pending.length === 0) {
+    showToast('Nenhuma oficina pendente para contatar.'); return;
+  }
+  if (!confirm(`Disparar WhatsApp para ${pending.length} oficina(s) sem contato anterior?`)) return;
+
+  showToast(`📱 Disparando ${pending.length} mensagens...`);
+  setTimeout(() => {
+    pending.forEach(o => { o.zapEnviadoAt = new Date().toISOString(); });
+    renderTable();
+    updateStats();
+    showToast(`✅ ${pending.length} mensagens enviadas!`, 'success');
+  }, 2000);
+}
+
+function exportCSV() {
+  const cols = ['nome', 'cidade', 'telefone', 'status', 'categorias', 'avaliacaoGoogle', 'zapEnviadoAt'];
+  const header = cols.join(',');
+  const rows = allOfficinas.map(o =>
+    cols.map(c => {
+      const v = Array.isArray(o[c]) ? o[c].join('|') : (o[c] ?? '');
+      return `"${String(v).replace(/"/g, '""')}"`;
+    }).join(',')
+  );
+  const csv = [header, ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `mecbusca-oficinas-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exportado!', 'success');
+}
+
+// ══════════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════════
+let toastTimeout;
+function showToast(msg, type = '') {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.className = 'toast show ' + type;
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 3500);
+}
+</script>
+</body>
+</html>
