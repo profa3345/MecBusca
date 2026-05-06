@@ -41,6 +41,7 @@ const VERBOSE     = args.includes('--verbose');
 const cidadeArg   = args[args.indexOf('--cidade') + 1];
 const catArg      = args[args.indexOf('--categoria') + 1];
 const estadoArg   = args[args.indexOf('--estado') + 1];
+const tipoArg     = args[args.indexOf('--tipo') + 1]; // oficinas | pecas | tudo
 
 // ── Configuração ──────────────────────────────────────────────────────────────
 const GOOGLE_KEY      = process.env.GOOGLE_PLACES_KEY;
@@ -139,8 +140,8 @@ const TODAS_CIDADES_BR = Object.values(CIDADES_BR).flat();
 // Cidades do ES (mantido para compatibilidade com --all-es)
 const CIDADES_ES = CIDADES_BR.ES;
 
-// ── Categorias de busca ───────────────────────────────────────────────────────
-const CATEGORIAS = [
+// ── Categorias de busca — OFICINAS ───────────────────────────────────────────
+const CATEGORIAS_OFICINAS = [
   'oficina mecânica',
   'auto elétrica',
   'borracharia',
@@ -151,8 +152,59 @@ const CATEGORIAS = [
   'suspensão e freios',
 ];
 
+// ── Categorias de busca — FORNECEDORES DE PEÇAS ──────────────────────────────
+const CATEGORIAS_PECAS = [
+  // Peças gerais
+  'autopeças',
+  'distribuidora de peças automotivas',
+  'peças usadas para carros',
+  'sucata de carros peças',
+
+  // Veículos pesados
+  'peças para caminhão',
+  'distribuidora de peças para caminhão',
+  'peças para ônibus',
+  'peças para trator',
+  'implementos agrícolas peças',
+
+  // Motos e scooters
+  'peças para moto',
+  'distribuidora de peças para moto',
+  'peças para scooter',
+
+  // Vans e utilitários
+  'peças para van',
+  'peças para utilitários',
+
+  // Especialidades
+  'pneus e rodas',
+  'baterias automotivas',
+  'distribuidora de filtros automotivos',
+  'escapamentos automotivos',
+  'vidros automotivos',
+  'som automotivo e acessórios',
+];
+
+// ── Categorias de busca — LAVA-JATOS ─────────────────────────────────────────
+const CATEGORIAS_LAVAJATO = [
+  'lava jato',
+  'lava rápido automotivo',
+  'higienização automotiva',
+  'polimento automotivo',
+  'detailing automotivo',
+  'lavagem a vapor automotiva',
+  'estética automotiva',
+];
+
+// Todas as categorias juntas
+const CATEGORIAS_TODAS = [...CATEGORIAS_OFICINAS, ...CATEGORIAS_PECAS, ...CATEGORIAS_LAVAJATO];
+
+// Seleção padrão (oficinas) — pode ser alterada via --tipo
+const CATEGORIAS = CATEGORIAS_OFICINAS;
+
 // ── Mapa de normalização de categoria ─────────────────────────────────────────
 const CATEGORIA_MAP = {
+  // Oficinas
   'oficina mecânica':        'mecanica_geral',
   'auto elétrica':           'auto_eletrica',
   'borracharia':             'borracharia',
@@ -162,6 +214,34 @@ const CATEGORIA_MAP = {
   'retífica':                'retica_motor',
   'suspensão':               'suspensao_freios',
   'freios':                  'suspensao_freios',
+
+  // Fornecedores de peças
+  'autopeças':               'autopecas',
+  'distribuidora de peças':  'autopecas',
+  'peças usadas':            'pecas_usadas',
+  'sucata':                  'pecas_usadas',
+  'peças para caminhão':     'pecas_caminhao',
+  'peças para ônibus':       'pecas_onibus',
+  'peças para trator':       'pecas_trator',
+  'implementos':             'pecas_trator',
+  'peças para moto':         'pecas_moto',
+  'peças para scooter':      'pecas_moto',
+  'peças para van':          'pecas_van',
+  'pneus':                   'pneus_rodas',
+  'baterias':                'baterias',
+  'filtros':                 'filtros',
+  'escapamentos':            'escapamentos',
+  'vidros automotivos':      'vidros_automotivos',
+  'som automotivo':          'acessorios',
+
+  // Lava-jatos
+  'lava jato':               'lavajato',
+  'lava rápido':             'lavajato',
+  'higienização automotiva': 'lavajato',
+  'polimento automotivo':    'lavajato',
+  'detailing':               'lavajato',
+  'lavagem a vapor':         'lavajato',
+  'estética automotiva':     'lavajato',
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -513,7 +593,11 @@ async function main() {
   } else {
     cidades = [cidadeArg || 'Vitória, ES'];
   }
-  const categorias = catArg ? [catArg] : CATEGORIAS;
+  const categorias = catArg ? [catArg]
+    : tipoArg === 'pecas'    ? CATEGORIAS_PECAS
+    : tipoArg === 'lavajato' ? CATEGORIAS_LAVAJATO
+    : tipoArg === 'tudo'     ? CATEGORIAS_TODAS
+    : CATEGORIAS_OFICINAS;
 
   log(`  Cidades (${cidades.length}): ${cidades.slice(0, 5).join(', ')}${cidades.length > 5 ? '...' : ''}`);
   log(`  Categorias (${categorias.length}): ${categorias.join(', ')}`);
