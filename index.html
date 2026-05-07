@@ -4667,6 +4667,7 @@ window.FB = {
     const snap = await getDocs(q);
     let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
     // Inclui pendentes de confirmação (capturadas automaticamente)
+    // FIX: query isolada com catch robusto — erro aqui nunca deve derrubar loadOficinas()
     try {
       const snapPendente = await getDocs(query(collection(db, "oficinas"), where("status", "==", "pendente_confirmacao"), limit(pagSize)));
       const ativosIds = new Set(oficinas.map(o => o.id));
@@ -4674,7 +4675,9 @@ window.FB = {
         .map(d => ({ id: d.id, _doc: d, ...d.data() }))
         .filter(o => !ativosIds.has(o.id));
       oficinas = [...oficinas, ...pendentes];
-    } catch(e) { /* índice não criado ainda — ignora */ }
+    } catch(e) {
+      logW('listarOficinas: query de pendentes falhou (índice ausente ou sem permissão) — continuando sem pendentes.', e?.code || e?.message || e);
+    }
         if (filtros.servico) {
       const terms = expandirQuery(filtros.servico);
       oficinas = oficinas.filter(o =>
@@ -10049,6 +10052,19 @@ async function loadOficinas() {
     renderOficinas();
   } catch(e) {
     logE('loadOficinas error:', e);
+    // FIX: se Firebase falhar (permissão, índice ausente, offline),
+    // tenta usar os dados demo de carros como fallback antes de exibir erro.
+    const filtros = {
+      servico: STATE.filtroChip, ...STATE.advFilters,
+      ...(STATE.userLat ? { lat: STATE.userLat, lng: STATE.userLng } : {})
+    };
+    if (window.demoOficinas) {
+      try {
+        STATE.oficinas = window.demoOficinas(filtros);
+        renderOficinas();
+        return;
+      } catch(e2) { logE('demoOficinas fallback error:', e2); }
+    }
     list.innerHTML = '<div class="empty-state">'
       +'<div class="empty-icon">⚠️</div>'
       +'<div class="empty-title">Erro ao carregar oficinas</div>'
