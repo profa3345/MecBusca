@@ -4662,11 +4662,14 @@ window.FB = {
       if (window.__fbReadyPromise) await window.__fbReadyPromise;
       if (!isFirebaseReady) return window.demoOficinas ? window.demoOficinas(filtros) : [];
     }
-    let q = query(collection(db, "oficinas"), where("ativo", "in", [true, false]), limit(pagSize));
-    if (lastDoc) q = query(q, startAfter(lastDoc));
-    const snap = await getDocs(q);
-    let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }))
-      .filter(o => o.ativo === true || o.status === 'pendente_confirmacao');
+    const [snapAtivo, snapPendente] = await Promise.all([
+      getDocs(query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize))),
+      getDocs(query(collection(db, "oficinas"), where("status", "==", "pendente_confirmacao"), limit(pagSize))),
+    ]);
+    const vistos = new Set();
+    let oficinas = [...snapAtivo.docs, ...snapPendente.docs]
+      .filter(d => { if (vistos.has(d.id)) return false; vistos.add(d.id); return true; })
+      .map(d => ({ id: d.id, _doc: d, ...d.data() }));
         if (filtros.servico) {
       const terms = expandirQuery(filtros.servico);
       oficinas = oficinas.filter(o =>
