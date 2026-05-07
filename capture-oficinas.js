@@ -34,14 +34,20 @@ const fs    = require('fs');
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
-const DRY_RUN     = args.includes('--dry-run');
-const ALL_ES      = args.includes('--all-es');
-const ALL_BR      = args.includes('--all-br');
-const VERBOSE     = args.includes('--verbose');
-const cidadeArg   = args[args.indexOf('--cidade') + 1];
-const catArg      = args[args.indexOf('--categoria') + 1];
-const estadoArg   = args[args.indexOf('--estado') + 1];
-const tipoArg     = args[args.indexOf('--tipo') + 1]; // oficinas | pecas | tudo
+const DRY_RUN  = args.includes('--dry-run');
+const ALL_ES   = args.includes('--all-es');
+const ALL_BR   = args.includes('--all-br');
+const VERBOSE  = args.includes('--verbose');
+
+function getArg(name) {
+  const i = args.indexOf(name);
+  return i !== -1 ? args[i + 1] : null;
+}
+
+const cidadeArg = getArg('--cidade');
+const catArg    = getArg('--categoria');
+const estadoArg = getArg('--estado');
+const tipoArg   = getArg('--tipo');
 
 // ── Configuração ──────────────────────────────────────────────────────────────
 const GOOGLE_KEY      = process.env.GOOGLE_PLACES_KEY;
