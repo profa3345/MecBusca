@@ -4662,10 +4662,11 @@ window.FB = {
       if (window.__fbReadyPromise) await window.__fbReadyPromise;
       if (!isFirebaseReady) return window.demoOficinas ? window.demoOficinas(filtros) : [];
     }
-    let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize));
+    let q = query(collection(db, "oficinas"), where("ativo", "in", [true, false]), limit(pagSize));
     if (lastDoc) q = query(q, startAfter(lastDoc));
     const snap = await getDocs(q);
-    let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
+    let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }))
+      .filter(o => o.ativo === true || o.status === 'pendente_confirmacao');
         if (filtros.servico) {
       const terms = expandirQuery(filtros.servico);
       oficinas = oficinas.filter(o =>
@@ -10104,7 +10105,7 @@ function renderOficinas() {
     else if (isNearest)   rankBadge = '<span class="rank-badge rank-nearest">📍 Mais próximo</span>';
     else if (isTop)       rankBadge = '<span class="rank-badge rank-top">🏆 Top da busca</span>';
     return `<article class="of-card${of.plano==='pro'?' of-card-pro':''}" data-id="${esc(of.id)}" style="animation-delay:${_i*40}ms" onclick="openBudget('${esc(of.id)}')" tabindex="0" onkeypress="if(event.key==='Enter')openBudget('${esc(of.id)}')" aria-label="${esc(of.nome)}">
-      <div class="of-top">
+      ${of.status==="pendente_confirmacao"?`<div style="background:rgba(255,179,71,0.1);border:1px solid rgba(255,179,71,0.25);border-radius:8px 8px 0 0;padding:4px 10px;font-size:10.5px;color:#ffb347;font-weight:600;margin:-14px -14px 10px -14px;">⚠️ Perfil não verificado — <span style="font-weight:400;opacity:0.85;">Esta oficina ainda não confirmou seus dados</span></div>`:""}      <div class="of-top">
         <div class="of-avatar" aria-hidden="true">${ini}</div>
         <div class="of-info">
           <div class="of-name">
