@@ -4678,13 +4678,22 @@ window.FB = {
     } catch(e) {
       logW('listarOficinas: query de pendentes falhou (índice ausente ou sem permissão) — continuando sem pendentes.', e?.code || e?.message || e);
     }
-        if (filtros.servico) {
+    if (filtros.servico) {
       const terms = expandirQuery(filtros.servico);
-      oficinas = oficinas.filter(o =>
-        (o.servicos||[]).some(s => s.ativo &&
-          terms.some(t => s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase()))
-        )
-      );
+      oficinas = oficinas.filter(o => {
+        const svcs = o.servicos || [];
+        return svcs.some(s => {
+          // Suporta dois formatos:
+          // 1. Objeto: { nome: 'Troca de óleo', ativo: true }  (oficinas cadastradas)
+          // 2. String: 'mecanica_geral'                        (oficinas capturadas do Google)
+          const nome = typeof s === 'string' ? s : s?.nome;
+          if (!nome) return false;
+          if (typeof s === 'object' && s.ativo === false) return false;
+          return terms.some(t =>
+            nome.toLowerCase().includes(t) || t.includes(nome.toLowerCase())
+          );
+        });
+      });
     }
     if (filtros.cidade) oficinas = oficinas.filter(o =>
       (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
@@ -5749,7 +5758,7 @@ function updateMetaTags(of) {
   const title = of.nome + ' — MecBusca';
   const desc  = 'Oficina em ' + (of.bairro ? of.bairro + ', ' : '') + (of.cidade || 'ES')
     + '. Avaliação ' + (of.avaliacao || '—') + '★. '
-    + (of.servicos || []).slice(0,3).map(s => s.nome).join(', ') + '.';
+    + (of.servicos || []).slice(0,3).map(s => typeof s==="string"?s:s.nome||"").filter(Boolean).join(', ') + '.';
   const url   = getPerfilUrl(of);
 
   document.title = title;
@@ -6697,14 +6706,14 @@ function renderTratores() {
   const base = STATE.oficinas || [];
   let shops = base.filter(o =>
     (o.tipoVeiculo||[]).includes('trator') ||
-    (o.servicos||[]).some(s => /trator|agrícol|colheit|retroesc|implemento/i.test(s.nome))
+    (o.servicos||[]).some(s => /trator|agrícol|colheit|retroesc|implemento/i.test(typeof s==="string"?s:s.nome||""))
   );
   if (q && q !== 'trator') {
     const terms = expandirQuery(q);
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
       (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
-        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
+        (typeof s==="string"?s:s.nome||"").toLowerCase().includes(t) || t.includes((typeof s==="string"?s:s.nome||"").toLowerCase())
       ))
     );
   }
@@ -7247,7 +7256,7 @@ async function _buildServicoSelectFromFirebase(sel) {
     const svcsReais = new Set();
     oficinas.forEach(o => {
       (o.servicos || []).forEach(s => {
-        if (s.ativo && s.nome) svcsReais.add(s.nome.trim());
+        const _sn = typeof s==="string"?s:s.nome; if (_sn && s.ativo !== false) svcsReais.add(_sn.trim());
       });
     });
 
@@ -7344,7 +7353,7 @@ function onOficinaChange(sel) {
     const of = (STATE.oficinas||[]).find(o => o.id === ofId)
              || demoOficinas({}).find(o => o.id === ofId);
     if (of) {
-      const svcsOf = (of.servicos||[]).filter(s => s.ativo).map(s => s.nome);
+      const svcsOf = (of.servicos||[]).filter(s => typeof s==="string"||s.ativo!==false).map(s => typeof s==="string"?s:s.nome||"");
       if (svcsOf.length) {
         // marca como desabilitado qualquer option que não seja da oficina
         [...svcSel.options].forEach(opt => {
@@ -8881,10 +8890,13 @@ function calcRankingScore(o, distKm, query) {
   // 2. Match de serviço (0–20 pts)
   if (query) {
     const q = query.toLowerCase();
-    const svcs = (o.servicos || []).filter(sv => sv.ativo);
-    const exactMatch = svcs.some(sv => sv.nome.toLowerCase().includes(q));
-    const partialMatch = svcs.some(sv => q.split(' ').some(t => sv.nome.toLowerCase().includes(t)));
-    if (exactMatch)   s += 20;
+    // Suporta string[] e object[] no campo servicos
+    const svcs = (o.servicos || [])
+      .filter(sv => typeof sv === 'string' || sv.ativo !== false)
+      .map(sv => typeof sv === 'string' ? sv : sv.nome || '');
+    const exactMatch   = svcs.some(nome => nome.toLowerCase().includes(q));
+    const partialMatch = svcs.some(nome => q.split(' ').some(t => nome.toLowerCase().includes(t)));
+    if (exactMatch)        s += 20;
     else if (partialMatch) s += 10;
   }
 
@@ -9691,7 +9703,7 @@ function renderLavaJatos() {
     if (veiculo && veiculo !== 'carro') {
       ljs = ljs.filter(o =>
         (o.tipoVeiculo||[]).includes(veiculo) ||
-        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(veiculo))
+        (o.servicos||[]).some(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(veiculo))
       );
     }
 
@@ -9701,7 +9713,7 @@ function renderLavaJatos() {
         o.nome.toLowerCase().includes(servico) ||
         (o.bairro||'').toLowerCase().includes(servico) ||
         (o.cidade||'').toLowerCase().includes(servico) ||
-        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(servico))
+        (o.servicos||[]).some(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(servico))
       );
       if (filtered.length) ljs = filtered;
     }
@@ -9970,7 +9982,7 @@ function renderOficinas() {
     log('[Ranking]', ofs.map(o => ({ nome:o.nome, score:o._score, dist:(o._dist?.toFixed?.(1)||'?')+'km' })));
   }
   list.innerHTML = ofs.map((of, _i) => {
-    const svcMatch = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
+    const svcMatch = q ? (of.servicos||[]).find(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(q) && s.ativo!==false) : null;
     const preco = svcMatch ? `R$ ${svcMatch.min} – ${svcMatch.max}` :
       (of.servicos&&of.servicos.length ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
     const svcs = (of.servicos||[]).slice(0, 4).map(s =>
@@ -10074,7 +10086,7 @@ function renderMotoShops() {
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
       (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
-        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
+        (typeof s==="string"?s:s.nome||"").toLowerCase().includes(t) || t.includes((typeof s==="string"?s:s.nome||"").toLowerCase())
       ))
     );
   }
@@ -10141,7 +10153,7 @@ function renderBikeShops() {
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
       (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
-        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
+        (typeof s==="string"?s:s.nome||"").toLowerCase().includes(t) || t.includes((typeof s==="string"?s:s.nome||"").toLowerCase())
       ))
     );
   }
@@ -10606,7 +10618,7 @@ async function openBudget(id) {
   selecionarOficina(id, of.nome); // mantém STATE e visual legado em sync
 
   const q = (STATE.filtroChip||'').toLowerCase();
-  const svc = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
+  const svc = q ? (of.servicos||[]).find(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(q) && s.ativo!==false) : null;
 
   let body = '';
   if (svc) {
