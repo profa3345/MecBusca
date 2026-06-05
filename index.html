@@ -4666,7 +4666,6 @@ window.FB = {
     if (lastDoc) q = query(q, startAfter(lastDoc));
     const snap = await getDocs(q);
     let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
-    console.log('[DEBUG] Firestore retornou:', oficinas.length, 'oficinas. Primeira:', oficinas[0]?.nome, oficinas[0]?.ativo);
     // Inclui pendentes de confirmação (capturadas automaticamente)
     // FIX: query isolada com catch robusto — erro aqui nunca deve derrubar loadOficinas()
     try {
@@ -4711,8 +4710,12 @@ window.FB = {
     if (filtros.guincho)      oficinas = oficinas.filter(o => o.guincho === true);
     if (filtros.marca)        oficinas = oficinas.filter(o =>
       (o.marcasEspeciais||[]).some(m => m.toLowerCase() === filtros.marca.toLowerCase()));
-    if (filtros.tipoVeiculo) oficinas = oficinas.filter(o =>
-      (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
+    if (filtros.tipoVeiculo) oficinas = oficinas.filter(o => {
+      const tv = o.tipoVeiculo || [];
+      // Se a oficina não tem tipoVeiculo definido, inclui (dados do Google Places)
+      if (tv.length === 0) return true;
+      return tv.includes(filtros.tipoVeiculo);
+    });
     // Ranking inteligente — sempre aplicado
     oficinas = oficinas.map(o => {
       const dist = (filtros.lat && filtros.lng && o.lat && o.lng)
