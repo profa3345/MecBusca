@@ -4666,6 +4666,7 @@ window.FB = {
     if (lastDoc) q = query(q, startAfter(lastDoc));
     const snap = await getDocs(q);
     let oficinas = snap.docs.map(d => ({ id: d.id, _doc: d, ...d.data() }));
+    console.log('[DEBUG] Firestore retornou:', oficinas.length, 'oficinas. Primeira:', oficinas[0]?.nome, oficinas[0]?.ativo);
     // Inclui pendentes de confirmação (capturadas automaticamente)
     // FIX: query isolada com catch robusto — erro aqui nunca deve derrubar loadOficinas()
     try {
@@ -9660,8 +9661,9 @@ const _LJ_KEYWORDS = ['lava','lavagem','lavajato','polimento','higieniza','crist
 
 function _isLavaJato(o) {
   if (o.tipoEstabelecimento === 'lavajato') return true;
+  if ((o.categorias||[]).some(c => ['lavajato','lava_jato'].includes(c))) return true;
   return (o.servicos||[]).some(s => {
-    const n = s.nome.toLowerCase();
+    const n = (typeof s === 'string' ? s : s?.nome || '').toLowerCase();
     return _LJ_KEYWORDS.some(k => n.includes(k));
   });
 }
@@ -9984,9 +9986,9 @@ function renderOficinas() {
   list.innerHTML = ofs.map((of, _i) => {
     const svcMatch = q ? (of.servicos||[]).find(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(q) && s.ativo!==false) : null;
     const preco = svcMatch ? `R$ ${svcMatch.min} – ${svcMatch.max}` :
-      (of.servicos&&of.servicos.length ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
+      (of.servicos&&of.servicos.length&&of.servicos[0].min ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
     const svcs = (of.servicos||[]).slice(0, 4).map(s =>
-      `<span class="svc-tag${q&&s.nome.toLowerCase().includes(q)?' match':''}">${esc(s.nome)}</span>`).join('');
+      `<span class="svc-tag${q&&(typeof s==="string"?s:s.nome||"").toLowerCase().includes(q)?' match':''}">${esc(typeof s==="string"?s:s.nome||"")}</span>`).join('');
     const ini = esc((of.nome||'OF').slice(0, 2).toUpperCase());
     const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
     const statusTxt = esc(of.aberto ? '● Aberto · ' + (of.horario||'') : '● Fechado · ' + (of.horario||''));
@@ -10720,7 +10722,7 @@ async function enviarLead(ofId) {
   setBtnLoading('btnEnviarLead', 'enviarLeadText', 'enviarLeadSpin', true);
   const of = getOficina(resolvedOfId);
   const q = STATE.filtroChip;
-  const svc = q ? (of?.servicos||[]).find(s => s.nome.toLowerCase().includes(q.toLowerCase()) && s.ativo) : null;
+  const svc = q ? (of?.servicos||[]).find(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(q.toLowerCase()) && s.ativo!==false) : null;
   const valor = svc ? Math.round((svc.min+svc.max)/2) : 0;
 
   try {
@@ -16031,7 +16033,7 @@ Ao precisar escalar → [ESCALAR]`;
       txt += `\n\n${i+1}. **${o.nome}**${plano}  ${aval}${dist}\n${bairro}`;
       // Adicionar serviços em destaque
       const svcsRelev = (o.servicos||[])
-        .filter(s => s.ativo && s.nome.toLowerCase().includes(servico.toLowerCase().slice(0,5)))
+        .filter(s => s.ativo!==false && (typeof s==="string"?s:s.nome||"").toLowerCase().includes(servico.toLowerCase().slice(0,5)))
         .slice(0,2).map(s => s.nome).join(', ');
       if (svcsRelev) txt += `\n🔧 ${svcsRelev}`;
     });
