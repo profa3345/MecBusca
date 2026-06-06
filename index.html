@@ -9711,13 +9711,20 @@ function setMode(modo) {
 }
 
 // ── renderFerroVelho ─────────────────────────────────────────────
-const _FV_KEYWORDS = ['ferro velho','sucateiro','desmanche','sucata','ferro-velho','ferrovelho','desmanch'];
+const _FV_KEYWORDS = [
+  'ferro velho','sucateiro','desmanche','sucata','ferro-velho','ferrovelho','desmanch',
+  'ferro e velho','ferrovelo','sucatas','desmontadora','desmontagem','reciclagem veic',
+  'peças usadas','auto peças usadas','pecas usadas'
+];
 
 function _isFerroVelho(o) {
   if (o.tipoEstabelecimento === 'ferrovelho') return true;
-  if ((o.categorias||[]).some(c => c === 'ferro_velho')) return true;
+  // Detecta pela categoria salva pelo script de captura
+  if ((o.categorias||[]).some(c => ['ferro_velho','pecas_usadas'].includes(c))) return true;
+  // Detecta pelo nome
   const nome = (o.nome||'').toLowerCase();
   if (_FV_KEYWORDS.some(k => nome.includes(k))) return true;
+  // Detecta pelos serviços
   return (o.servicos||[]).some(s => {
     const n = (typeof s === 'string' ? s : s?.nome || '').toLowerCase();
     return _FV_KEYWORDS.some(k => n.includes(k));
