@@ -10008,14 +10008,14 @@ async function loadOficinas() {
     ...(STATE.userLat ? { lat: STATE.userLat, lng: STATE.userLng } : {})
   };
   try {
-        if (USE_CLOUD_SEARCH) {
-      const cloudResults = await cloudSearch(filtros);
-      STATE.oficinas = cloudResults || await window.FB.listarOficinas(filtros);
-    } else {
-      STATE.oficinas = window.Services?.Search
-        ? await window.Services.Search.buscar(filtros)
-        : await window.FB.listarOficinas(filtros);
+    // Aguarda Firebase estar pronto antes de buscar
+    if (!window.FB?.ready() && window.__fbReadyPromise) {
+      await window.__fbReadyPromise;
     }
+    if (!window.FB?.ready()) {
+      throw new Error('Firebase não inicializado');
+    }
+    STATE.oficinas = await window.FB.listarOficinas(filtros);
 
     // Filtro por oficina específica (selecionada na home)
     if (STATE.filtroOficinaId) {
@@ -10253,9 +10253,13 @@ async function renderBikeShops() {
   const base = STATE.oficinas || [];
   let shops = base.filter(o => {
     const tv = o.tipoVeiculo || [];
+    const nome = (o.nome||'').toLowerCase();
+    const cats = (o.categorias||[]).join(' ').toLowerCase();
+    const svcs = (o.servicos||[]).map(s=>typeof s==='string'?s:s.nome||'').join(' ').toLowerCase();
     return tv.includes('bicicleta') || o.tipo === 'bikeshop' ||
-      /bike|biciclet|ciclo/i.test(o.nome||'') ||
-      (o.categorias||[]).includes('bikeshop');
+      cats.includes('bikeshop') ||
+      /bike|biciclet|ciclo/i.test(nome) ||
+      /bike|biciclet|ciclo/i.test(svcs);
   });
   if (q && q !== 'bicicleta') {
     const terms = expandirQuery(q);
