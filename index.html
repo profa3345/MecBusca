@@ -10030,17 +10030,6 @@ async function loadOficinas() {
     logE('loadOficinas error:', e);
     // FIX: se Firebase falhar (permissão, índice ausente, offline),
     // tenta usar os dados demo de carros como fallback antes de exibir erro.
-    const filtros = {
-      servico: STATE.filtroChip, ...STATE.advFilters,
-      ...(STATE.userLat ? { lat: STATE.userLat, lng: STATE.userLng } : {})
-    };
-    if (window.demoOficinas) {
-      try {
-        STATE.oficinas = window.demoOficinas(filtros);
-        renderOficinas();
-        return;
-      } catch(e2) { logE('demoOficinas fallback error:', e2); }
-    }
     list.innerHTML = '<div class="empty-state">'
       +'<div class="empty-icon">⚠️</div>'
       +'<div class="empty-title">Erro ao carregar oficinas</div>'
@@ -10162,9 +10151,8 @@ async function loadMaisOficinas() {
 }
 
 // ── MOTO-SHOPS ──────────────────────────────────────────────────
-function renderMotoShops() {
+async function renderMotoShops() {
   const list = document.getElementById('resultsList');
-  // FIX-7: exibir skeleton enquanto filtra/renderiza — consistente com loadOficinas().
   list.innerHTML = [1,2,3].map(() => `
     <div class="of-card" style="pointer-events:none;">
       <div class="of-top">
@@ -10181,7 +10169,10 @@ function renderMotoShops() {
     </div>`).join('');
   document.getElementById('resultsCount').innerHTML = '';
   const q = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
-  // Usa STATE.oficinas se já carregadas pelo Firebase, senão fallback demo
+  // Busca do Firebase se STATE.oficinas vazio
+  if (!STATE.oficinas?.length && window.FB?.ready()) {
+    try { STATE.oficinas = await window.FB.listarOficinas({}); } catch(e) {}
+  }
   const base = STATE.oficinas || [];
   let shops = base.filter(o => {
     const tv = o.tipoVeiculo || [];
@@ -10237,9 +10228,8 @@ function renderMotoShops() {
 }
 
 // ── BIKE-SHOPS ──────────────────────────────────────────────────
-function renderBikeShops() {
+async function renderBikeShops() {
   const list = document.getElementById('resultsList');
-  // FIX-7: skeleton loading — consistente com loadOficinas().
   list.innerHTML = [1,2,3].map(() => `
     <div class="of-card" style="pointer-events:none;">
       <div class="of-top">
@@ -10256,9 +10246,11 @@ function renderBikeShops() {
     </div>`).join('');
   document.getElementById('resultsCount').innerHTML = '';
   const q = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
-  const base = STATE.oficinas?.length
-    ? STATE.oficinas
-    : (STATE.oficinas || []);
+  // Busca do Firebase se STATE.oficinas vazio
+  if (!STATE.oficinas?.length && window.FB?.ready()) {
+    try { STATE.oficinas = await window.FB.listarOficinas({}); } catch(e) {}
+  }
+  const base = STATE.oficinas || [];
   let shops = base.filter(o => {
     const tv = o.tipoVeiculo || [];
     return tv.includes('bicicleta') || o.tipo === 'bikeshop' ||
@@ -10881,7 +10873,9 @@ function wppOficina(id) {
   window.FB?.trackEvent(id, 'whatsapp');
   const of = getOficina(id);
   Analytics.wppClick(id, of?.nome || '');
-  if (!of?.whatsapp) { toast('WhatsApp não cadastrado', 'warning'); return; }
+  // Usa whatsapp primeiro, depois telefone como fallback
+  const tel = (of?.whatsapp || of?.telefone || '').replace(/\D/g, '');
+  if (!tel) { toast('WhatsApp não cadastrado para esta oficina', 'warning'); return; }
   const svc = STATE.filtroChip || STATE.filtroServico || '';
   const veiculo = STATE._buscarVeiculo || '';
   const linhas = [`Olá! Vi o perfil da *${of.nome}* no MecBusca e gostaria de um orçamento.`];
@@ -10889,8 +10883,7 @@ function wppOficina(id) {
   if (veiculo && veiculo !== 'carro') linhas.push(`\n🚗 Veículo: ${veiculo}`);
   linhas.push('\n\nPode me passar o preço e disponibilidade? Obrigado!');
   const msg = encodeURIComponent(linhas.join(''));
-  // FIX-6: adicionado 'noreferrer' — evita window.opener attack (mesma proteção das outras chamadas).
-  window.open(`https://wa.me/55${of.whatsapp.replace(/\D/g,'')}?text=${msg}`, '_blank', 'noopener,noreferrer');
+  window.open(`https://wa.me/55${tel}?text=${msg}`, '_blank', 'noopener,noreferrer');
 }
 
 function openBudgetPeca(id) {
