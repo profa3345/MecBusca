@@ -3968,6 +3968,7 @@ button,a,[role=button]{min-height:44px;}
       <button class="mode-btn" id="mode-tratores" onclick="setMode('tratores')" role="tab" aria-selected="false">🚜 Tratores & Máquinas</button>
       <button class="mode-btn" id="mode-lavajato" onclick="setMode('lavajato')" role="tab" aria-selected="false">🚿 Lava-Jato</button>
       <button class="mode-btn" id="mode-pecas" onclick="setMode('pecas')" role="tab" aria-selected="false">🔩 Peças</button>
+      <button class="mode-btn" id="mode-ferrovelho" onclick="setMode('ferrovelho')" role="tab" aria-selected="false">♻️ Ferro-Velho</button>
       <button class="mode-btn" id="mode-ofertas" onclick="setMode('ofertas')" role="tab" aria-selected="false">🔥 Ofertas <span id="ofertasBadge" style="display:none;background:var(--re);color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 5px;margin-left:2px;animation:pulse 1.5s infinite;">●</span></button>
       <button class="mode-btn" id="mode-mapa" onclick="setMode('mapa')" role="tab" aria-selected="false">🗺️ Mapa</button>
     </div>
@@ -4210,7 +4211,7 @@ button,a,[role=button]{min-height:44px;}
       <div class="of-info-bar" onclick="doLogout()" title="Sair" role="button" tabindex="0" aria-label="Logout">
         <div class="of-avatar-sm" id="painelAvatar" aria-hidden="true">AC</div>
         <div>
-          <div style="font-size:12.5px;font-weight:500;color:var(--t);" id="painelNome">Minha Oficina</div>
+          <div style="font-size:12.5px;font-weight:500;color:var(--t);" id="painelNome">Auto Center Vitória</div>
           <div style="font-size:11px;color:var(--t3);" id="painelEmail">—</div>
         </div>
         <span style="margin-left:auto;font-size:11px;color:var(--t3);">Sair</span>
@@ -4660,7 +4661,7 @@ window.FB = {
     // dispara antes do módulo ES ser avaliado). Sem este await, todas as
         if (!isFirebaseReady) {
       if (window.__fbReadyPromise) await window.__fbReadyPromise;
-      if (!isFirebaseReady) return [];
+      if (!isFirebaseReady) return window.demoOficinas ? window.demoOficinas(filtros) : [];
     }
     let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize));
     if (lastDoc) q = query(q, startAfter(lastDoc));
@@ -4678,22 +4679,13 @@ window.FB = {
     } catch(e) {
       logW('listarOficinas: query de pendentes falhou (índice ausente ou sem permissão) — continuando sem pendentes.', e?.code || e?.message || e);
     }
-    if (filtros.servico) {
+        if (filtros.servico) {
       const terms = expandirQuery(filtros.servico);
-      oficinas = oficinas.filter(o => {
-        const svcs = o.servicos || [];
-        return svcs.some(s => {
-          // Suporta dois formatos:
-          // 1. Objeto: { nome: 'Troca de óleo', ativo: true }  (oficinas cadastradas)
-          // 2. String: 'mecanica_geral'                        (oficinas capturadas do Google)
-          const nome = typeof s === 'string' ? s : s?.nome;
-          if (!nome) return false;
-          if (typeof s === 'object' && s.ativo === false) return false;
-          return terms.some(t =>
-            nome.toLowerCase().includes(t) || t.includes(nome.toLowerCase())
-          );
-        });
-      });
+      oficinas = oficinas.filter(o =>
+        (o.servicos||[]).some(s => s.ativo &&
+          terms.some(t => s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase()))
+        )
+      );
     }
     if (filtros.cidade) oficinas = oficinas.filter(o =>
       (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
@@ -4710,12 +4702,8 @@ window.FB = {
     if (filtros.guincho)      oficinas = oficinas.filter(o => o.guincho === true);
     if (filtros.marca)        oficinas = oficinas.filter(o =>
       (o.marcasEspeciais||[]).some(m => m.toLowerCase() === filtros.marca.toLowerCase()));
-    if (filtros.tipoVeiculo) oficinas = oficinas.filter(o => {
-      const tv = o.tipoVeiculo || [];
-      // Se a oficina não tem tipoVeiculo definido, inclui (dados do Google Places)
-      if (tv.length === 0) return true;
-      return tv.includes(filtros.tipoVeiculo);
-    });
+    if (filtros.tipoVeiculo) oficinas = oficinas.filter(o =>
+      (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
     // Ranking inteligente — sempre aplicado
     oficinas = oficinas.map(o => {
       const dist = (filtros.lat && filtros.lng && o.lat && o.lng)
@@ -4962,7 +4950,99 @@ function demoSave(col, data) {
 }
 
 function demoOficinas(filtros = {}) {
-  return [];
+  const now = new Date(), hour = now.getHours();
+  const base = [
+    { id:"of001", nome:"Auto Center Vitória", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999990001", avaliacao:4.8, totalAvaliacoes:47, distancia:"0,8 km", plano:"pro",
+      aberto: hour>=7&&hour<18, horario:"até 18h", tipoVeiculo:["carro"], lat:-20.268, lng:-40.413,
+      stats:{impressoes:890, cliques:245, whatsapp:87, orcamentos:34},
+      servicos:[{nome:"Troca de óleo",min:89,max:120,ativo:true},{nome:"Freios dianteiros",min:220,max:350,ativo:true},{nome:"Alinhamento",min:60,max:80,ativo:true},{nome:"Suspensão",min:180,max:320,ativo:true}]},
+    { id:"of002", nome:"Oficina do Zé", cidade:"Cariacica", bairro:"Padre Gabriel",
+      whatsapp:"27999990002", avaliacao:4.3, totalAvaliacoes:23, distancia:"1,2 km", plano:"basico",
+      aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["carro","moto"], lat:-20.271, lng:-40.418,
+      stats:{impressoes:410, cliques:98, whatsapp:32, orcamentos:12},
+      servicos:[{nome:"Troca de óleo",min:75,max:95,ativo:true},{nome:"Elétrica automotiva",min:80,max:200,ativo:true}]},
+    { id:"of003", nome:"MasterCar Revisões", cidade:"Cariacica", bairro:"Nova Rosa da Penha",
+      whatsapp:"27999990003", avaliacao:4.9, totalAvaliacoes:89, distancia:"2,1 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"abre 8h", tipoVeiculo:["carro"], lat:-20.262, lng:-40.421,
+      stats:{impressoes:1240, cliques:380, whatsapp:142, orcamentos:67},
+      servicos:[{nome:"Troca de óleo",min:110,max:150,ativo:true},{nome:"Revisão completa",min:450,max:750,ativo:true},{nome:"Ar-condicionado",min:120,max:200,ativo:true},{nome:"Suspensão",min:200,max:400,ativo:true}]},
+    { id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
+      whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km",
+      aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","caminhao"], lat:-20.275, lng:-40.408,
+      stats:{impressoes:180, cliques:28, whatsapp:9, orcamentos:2},
+      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]},
+    // ── Moto-shops ──────────────────────────────────────────────
+    { id:"ms001", nome:"MotoCenter ES", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999995001", avaliacao:4.7, totalAvaliacoes:38, distancia:"0,9 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.267, lng:-40.412,
+      stats:{impressoes:520, cliques:145, whatsapp:58, orcamentos:22}, tipo:"motoshop",
+      servicos:[{nome:"Revisão de moto",min:120,max:250,ativo:true},{nome:"Troca de óleo moto",min:50,max:90,ativo:true},{nome:"Freios moto",min:80,max:180,ativo:true},{nome:"Corrente e relação",min:40,max:90,ativo:true},{nome:"Pneu de moto",min:60,max:140,ativo:true}]},
+    { id:"ms002", nome:"Oficina Honda Vitória", cidade:"Vitória", bairro:"Jardim Camburi",
+      whatsapp:"27999995002", avaliacao:4.9, totalAvaliacoes:62, distancia:"2,4 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.260, lng:-40.404,
+      stats:{impressoes:780, cliques:210, whatsapp:82, orcamentos:35}, tipo:"motoshop",
+      servicos:[{nome:"Revisão de moto",min:150,max:300,ativo:true},{nome:"Injeção eletrônica moto",min:120,max:250,ativo:true},{nome:"Embreagem moto",min:180,max:350,ativo:true},{nome:"Suspensão moto",min:200,max:450,ativo:true},{nome:"Elétrica moto",min:80,max:200,ativo:true}]},
+    { id:"ms003", nome:"Moto Rápida Service", cidade:"Cariacica", bairro:"Padre Gabriel",
+      whatsapp:"27999995003", avaliacao:4.4, totalAvaliacoes:25, distancia:"1,5 km",
+      aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["moto"], lat:-20.272, lng:-40.417,
+      stats:{impressoes:290, cliques:75, whatsapp:28, orcamentos:10}, tipo:"motoshop",
+      servicos:[{nome:"Troca de óleo moto",min:45,max:80,ativo:true},{nome:"Pneu de moto",min:60,max:140,ativo:true},{nome:"Freios moto",min:70,max:160,ativo:true},{nome:"Carburador",min:80,max:180,ativo:true}]},
+    { id:"ms004", nome:"Yamaha Oficial ES", cidade:"Serra", bairro:"Carapina",
+      whatsapp:"27999995004", avaliacao:4.8, totalAvaliacoes:54, distancia:"4,2 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.235, lng:-40.395,
+      stats:{impressoes:650, cliques:178, whatsapp:70, orcamentos:28}, tipo:"motoshop",
+      servicos:[{nome:"Revisão de moto",min:130,max:280,ativo:true},{nome:"Funilaria moto",min:200,max:600,ativo:true},{nome:"Embreagem moto",min:160,max:320,ativo:true},{nome:"Suspensão moto",min:180,max:400,ativo:true}]},
+    // ── Bike-shops ──────────────────────────────────────────────
+    { id:"bs001", nome:"BikePro Cariacica", cidade:"Cariacica", bairro:"Campo Grande",
+      whatsapp:"27999996001", avaliacao:4.8, totalAvaliacoes:41, distancia:"1,0 km", plano:"pro",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["bicicleta"], lat:-20.268, lng:-40.415,
+      stats:{impressoes:430, cliques:120, whatsapp:45, orcamentos:18}, tipo:"bikeshop",
+      servicos:[{nome:"Revisão de bicicleta",min:50,max:150,ativo:true},{nome:"Câmbio bike",min:30,max:80,ativo:true},{nome:"Freios bike",min:25,max:90,ativo:true},{nome:"Suspensão bike",min:80,max:250,ativo:true},{nome:"Rodas bike",min:40,max:120,ativo:true}]},
+    { id:"bs002", nome:"Speed & Trail ES", cidade:"Vitória", bairro:"Praia do Canto",
+      whatsapp:"27999996002", avaliacao:4.9, totalAvaliacoes:73, distancia:"3,1 km", plano:"pro",
+      aberto: hour>=9&&hour<19, horario:"até 19h", tipoVeiculo:["bicicleta"], lat:-20.255, lng:-40.300,
+      stats:{impressoes:680, cliques:195, whatsapp:78, orcamentos:31}, tipo:"bikeshop",
+      servicos:[{nome:"Revisão de bicicleta",min:70,max:200,ativo:true},{nome:"Freio hidráulico bike",min:60,max:150,ativo:true},{nome:"Suspensão bike",min:100,max:300,ativo:true},{nome:"Rodas bike",min:60,max:180,ativo:true},{nome:"Pedivela bike",min:50,max:160,ativo:true}]},
+    { id:"bs003", nome:"Bike Shop Serra", cidade:"Serra", bairro:"Serra Sede",
+      whatsapp:"27999996003", avaliacao:4.5, totalAvaliacoes:29, distancia:"5,0 km",
+      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["bicicleta"], lat:-20.215, lng:-40.310,
+      stats:{impressoes:260, cliques:68, whatsapp:22, orcamentos:8}, tipo:"bikeshop",
+      servicos:[{nome:"Pneu bike",min:20,max:60,ativo:true},{nome:"Corrente bike",min:15,max:45,ativo:true},{nome:"Câmbio bike",min:25,max:70,ativo:true},{nome:"Limpeza lubrificação bike",min:30,max:80,ativo:true}]}
+  ];
+  let r = [...base];
+  if (filtros.servico) {
+    const terms = expandirQuery(filtros.servico);
+    r = r.filter(o => (o.servicos||[]).some(s => s.ativo &&
+      terms.some(t => s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase()))
+    ));
+  }
+  if (filtros.cidade)  r = r.filter(o => o.cidade.toLowerCase().includes(filtros.cidade.toLowerCase()));
+  if (filtros.bairro)  r = r.filter(o => o.bairro.toLowerCase().includes(filtros.bairro.toLowerCase()));
+  if (filtros.avaliacaoMin > 0) r = r.filter(o => o.avaliacao >= filtros.avaliacaoMin);
+  if (filtros.precoMax)     r = r.filter(o => o.servicos.some(s => s.min <= filtros.precoMax));
+  if (filtros.apenasAberta) r = r.filter(o => o.aberto);
+  if (filtros.atendeHoje)   r = r.filter(o => o.atendeHoje || o.aberto);
+  if (filtros.buscaEntrega) r = r.filter(o => o.buscaEntrega);
+  if (filtros.guincho)      r = r.filter(o => o.guincho);
+  if (filtros.marca)        r = r.filter(o => (o.marcasEspeciais||[]).some(m => m.toLowerCase() === filtros.marca.toLowerCase()));
+  if (filtros.tipoVeiculo)  r = r.filter(o => (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
+  r = r.map(o => {
+    const dist = (filtros.lat && filtros.lng && o.lat && o.lng)
+      ? haversineKm(filtros.lat, filtros.lng, o.lat, o.lng)
+      : parseFloat((o.distancia || '10').replace(',', '.'));
+    return { ...o, _dist: dist, _score: calcRankingScore(o, dist, filtros.servico || '') };
+  }).sort((a, b) => {
+    const diff = b._score - a._score;
+    // Tiebreaker within 5pts: Pro first
+    if (Math.abs(diff) < 5) {
+      const aPro = a.plano === 'pro' ? 1 : 0;
+      const bPro = b.plano === 'pro' ? 1 : 0;
+      if (bPro !== aPro) return bPro - aPro;
+    }
+    return diff;
+  });
+  return r;
 }
 
 function demoLeads(id) {
@@ -5104,7 +5184,7 @@ window.seedFirebase = async function() {
   const isLocal = ['localhost','127.0.0.1','0.0.0.0'].includes(location.hostname);
   if (!isLocal) { logE('seedFirebase() bloqueado em produção.'); return; }
   if (!isFirebaseReady) { logE('Firebase not ready'); return; }
-  const oficinas = STATE.oficinas || [];
+  const oficinas = demoOficinas({});
   const batch = [];
   for (const o of oficinas) {
     const { _dist, _score, ...data } = o;
@@ -5741,7 +5821,7 @@ async function abrirPerfil(ofId) {
     // Busca real em andamento ou ainda não iniciada — não sobrescrever com demo
     return; // renderServicosCliente será chamada novamente por loadOficinas()
   }
-  if (!STATE.oficinas.length) STATE.oficinas = [];
+  if (!STATE.oficinas.length) STATE.oficinas = window.demoOficinas ? window.demoOficinas({}) : [];
     of = getOficina(ofId);
   }
   if (!of) { toast('Perfil não encontrado', 'error'); return; }
@@ -5762,7 +5842,7 @@ function updateMetaTags(of) {
   const title = of.nome + ' — MecBusca';
   const desc  = 'Oficina em ' + (of.bairro ? of.bairro + ', ' : '') + (of.cidade || 'ES')
     + '. Avaliação ' + (of.avaliacao || '—') + '★. '
-    + (of.servicos || []).slice(0,3).map(s => typeof s==="string"?s:s.nome||"").filter(Boolean).join(', ') + '.';
+    + (of.servicos || []).slice(0,3).map(s => s.nome).join(', ') + '.';
   const url   = getPerfilUrl(of);
 
   document.title = title;
@@ -6046,7 +6126,7 @@ function renderFavoritos() {
     document.getElementById('resultsCount').innerHTML = '';
     return;
   }
-  
+  if (!STATE.oficinas.length) STATE.oficinas = demoOficinas({});
   const favOficinas = STATE.oficinas.filter(o => favIds.has(o.id));
   if (!favOficinas.length) {
     toast('Suas oficinas favoritas não estão na busca atual. Limpe os filtros.', 'warning');
@@ -6707,17 +6787,17 @@ function homeBuscarLavaJatoTrator() {
 function renderTratores() {
   const list = document.getElementById('resultsList');
   const q = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
-  const base = STATE.oficinas || [];
+  const base = STATE.oficinas?.length ? STATE.oficinas : demoOficinas({});
   let shops = base.filter(o =>
     (o.tipoVeiculo||[]).includes('trator') ||
-    (o.servicos||[]).some(s => /trator|agrícol|colheit|retroesc|implemento/i.test(typeof s==="string"?s:s.nome||""))
+    (o.servicos||[]).some(s => /trator|agrícol|colheit|retroesc|implemento/i.test(s.nome))
   );
   if (q && q !== 'trator') {
     const terms = expandirQuery(q);
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
       (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
-        (typeof s==="string"?s:s.nome||"").toLowerCase().includes(t) || t.includes((typeof s==="string"?s:s.nome||"").toLowerCase())
+        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
       ))
     );
   }
@@ -7260,7 +7340,7 @@ async function _buildServicoSelectFromFirebase(sel) {
     const svcsReais = new Set();
     oficinas.forEach(o => {
       (o.servicos || []).forEach(s => {
-        const _sn = typeof s==="string"?s:s.nome; if (_sn && s.ativo !== false) svcsReais.add(_sn.trim());
+        if (s.ativo && s.nome) svcsReais.add(s.nome.trim());
       });
     });
 
@@ -7357,7 +7437,7 @@ function onOficinaChange(sel) {
     const of = (STATE.oficinas||[]).find(o => o.id === ofId)
              || demoOficinas({}).find(o => o.id === ofId);
     if (of) {
-      const svcsOf = (of.servicos||[]).filter(s => typeof s==="string"||s.ativo!==false).map(s => typeof s==="string"?s:s.nome||"");
+      const svcsOf = (of.servicos||[]).filter(s => s.ativo).map(s => s.nome);
       if (svcsOf.length) {
         // marca como desabilitado qualquer option que não seja da oficina
         [...svcSel.options].forEach(opt => {
@@ -7999,7 +8079,19 @@ async function doLogin() {
 
 async function demoLogin() {
   STATE.user = { uid: 'demo', email: 'demo@mecbusca.com', isDemo: true };
-  STATE.oficinaAtual = null;
+  STATE.oficinaAtual = {
+    id: 'of001', nome: 'Auto Center Vitória',
+    email: 'admin@autocenter.com', cidade: 'Cariacica',
+    plano: 'pro', avaliacao: 4.8, totalAvaliacoes: 47,
+    whatsapp: '27999990001', bairro: 'Campo Grande',
+    stats: { impressoes:890, cliques:245, whatsapp:87, orcamentos:34 },
+    servicos: [
+      {nome:'Troca de óleo',min:89,max:120,ativo:true},
+      {nome:'Freios dianteiros',min:220,max:350,ativo:true},
+      {nome:'Alinhamento',min:60,max:80,ativo:true},
+      {nome:'Revisão completa',min:450,max:750,ativo:true}
+    ]
+  };
   // Reset state BEFORE loadPainel to avoid finally-block race
   STATE._submitting = false;
   setBtnLoading('btnLogin', 'loginBtnText', 'loginBtnSpinner', false);
@@ -8894,13 +8986,10 @@ function calcRankingScore(o, distKm, query) {
   // 2. Match de serviço (0–20 pts)
   if (query) {
     const q = query.toLowerCase();
-    // Suporta string[] e object[] no campo servicos
-    const svcs = (o.servicos || [])
-      .filter(sv => typeof sv === 'string' || sv.ativo !== false)
-      .map(sv => typeof sv === 'string' ? sv : sv.nome || '');
-    const exactMatch   = svcs.some(nome => nome.toLowerCase().includes(q));
-    const partialMatch = svcs.some(nome => q.split(' ').some(t => nome.toLowerCase().includes(t)));
-    if (exactMatch)        s += 20;
+    const svcs = (o.servicos || []).filter(sv => sv.ativo);
+    const exactMatch = svcs.some(sv => sv.nome.toLowerCase().includes(q));
+    const partialMatch = svcs.some(sv => q.split(' ').some(t => sv.nome.toLowerCase().includes(t)));
+    if (exactMatch)   s += 20;
     else if (partialMatch) s += 10;
   }
 
@@ -9432,7 +9521,29 @@ document.addEventListener('click', e => {
   }
 });
 
-const DEMO_SERVICOS_AGRUPADOS = [];
+const DEMO_SERVICOS_AGRUPADOS = [
+  {id:'sv001',nome:'Troca de óleo',cat:'Manutenção',icon:'🛢️',cor:'var(--gg)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:89,max:120,avaliacao:4.8},{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:75,max:95,avaliacao:4.3},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:110,max:150,avaliacao:4.9}]},
+  {id:'sv002',nome:'Freios dianteiros',cat:'Freios',icon:'🔴',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:220,max:350,avaliacao:4.8},{id:'of004',nome:'Top Mecânica',dist:'3,0 km',min:180,max:300,avaliacao:3.9}]},
+  {id:'sv003',nome:'Alinhamento e balanceamento',cat:'Suspensão',icon:'🎯',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:60,max:90,avaliacao:4.8},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:70,max:100,avaliacao:4.9},{id:'of004',nome:'Top Mecânica',dist:'3,0 km',min:55,max:80,avaliacao:3.9}]},
+  {id:'sv004',nome:'Revisão completa',cat:'Manutenção',icon:'✅',cor:'var(--gg)',oficinas:[{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:450,max:750,avaliacao:4.9}]},
+  {id:'sv005',nome:'Ar-condicionado (recarga)',cat:'Ar-condicionado',icon:'❄️',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:120,max:200,avaliacao:4.9},{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:130,max:190,avaliacao:4.8}]},
+  {id:'sv006',nome:'Suspensão (amortecedores)',cat:'Suspensão',icon:'🔩',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of001',nome:'Auto Center Vitória',dist:'0,8 km',min:280,max:450,avaliacao:4.8},{id:'of003',nome:'MasterCar Revisões',dist:'2,1 km',min:300,max:500,avaliacao:4.9}]},
+  {id:'sv007',nome:'Elétrica automotiva',cat:'Elétrica',icon:'⚡',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'of002',nome:'Oficina do Zé',dist:'1,2 km',min:80,max:200,avaliacao:4.3}]},
+  // ── Motos
+  {id:'sv008',nome:'Revisão de moto',cat:'Moto',icon:'🏍️',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:120,max:250,avaliacao:4.7},{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:150,max:300,avaliacao:4.9},{id:'ms003',nome:'Moto Rápida Service',dist:'1,5 km',min:100,max:200,avaliacao:4.4}]},
+  {id:'sv009',nome:'Troca de óleo (moto)',cat:'Moto',icon:'🛢️',cor:'var(--gg)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:50,max:90,avaliacao:4.7},{id:'ms003',nome:'Moto Rápida Service',dist:'1,5 km',min:45,max:80,avaliacao:4.4}]},
+  {id:'sv010',nome:'Freios de moto',cat:'Moto',icon:'🔴',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:80,max:180,avaliacao:4.7},{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:90,max:200,avaliacao:4.9}]},
+  {id:'sv011',nome:'Pneu de moto',cat:'Moto',icon:'⭕',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:60,max:140,avaliacao:4.7},{id:'ms003',nome:'Moto Rápida Service',dist:'1,5 km',min:55,max:130,avaliacao:4.4}]},
+  {id:'sv012',nome:'Corrente e relação',cat:'Moto',icon:'⛓️',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'ms001',nome:'MotoCenter ES',dist:'0,9 km',min:40,max:90,avaliacao:4.7}]},
+  {id:'sv013',nome:'Elétrica de moto',cat:'Moto',icon:'⚡',cor:'rgba(255,179,71,0.12)',oficinas:[{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:80,max:200,avaliacao:4.9}]},
+  {id:'sv014',nome:'Suspensão de moto',cat:'Moto',icon:'🔩',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'ms002',nome:'Oficina Honda Vitória',dist:'2,4 km',min:200,max:450,avaliacao:4.9},{id:'ms004',nome:'Yamaha Oficial ES',dist:'4,2 km',min:180,max:400,avaliacao:4.8}]},
+  // ── Bicicletas
+  {id:'sv015',nome:'Revisão de bicicleta',cat:'Bicicleta',icon:'🚲',cor:'rgba(0,208,132,0.12)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:50,max:150,avaliacao:4.8},{id:'bs002',nome:'Speed & Trail ES',dist:'3,1 km',min:70,max:200,avaliacao:4.9}]},
+  {id:'sv016',nome:'Câmbio de bicicleta',cat:'Bicicleta',icon:'⚙️',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:30,max:80,avaliacao:4.8},{id:'bs003',nome:'Bike Shop Serra',dist:'5,0 km',min:25,max:70,avaliacao:4.5}]},
+  {id:'sv017',nome:'Freios de bicicleta',cat:'Bicicleta',icon:'🛑',cor:'rgba(255,107,107,0.15)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:25,max:90,avaliacao:4.8},{id:'bs002',nome:'Speed & Trail ES',dist:'3,1 km',min:40,max:120,avaliacao:4.9}]},
+  {id:'sv018',nome:'Pneu de bicicleta',cat:'Bicicleta',icon:'🔵',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'bs001',nome:'BikePro Cariacica',dist:'1,0 km',min:20,max:60,avaliacao:4.8},{id:'bs003',nome:'Bike Shop Serra',dist:'5,0 km',min:18,max:55,avaliacao:4.5}]},
+  {id:'sv019',nome:'Suspensão de bicicleta',cat:'Bicicleta',icon:'🛞',cor:'rgba(91,156,246,0.12)',oficinas:[{id:'bs002',nome:'Speed & Trail ES',dist:'3,1 km',min:100,max:300,avaliacao:4.9}]},
+];
 
 const TIPOS_ESTABELECIMENTO = [
   {id:'oficina',icon:'🔧',label:'Oficinas',count:4},
@@ -9453,7 +9564,22 @@ const TIPO_INFO = {
   vidros:{icon:'🪟',label:'Vidros'},pecas:{icon:'🔩',label:'Autopeças'},
   moto:{icon:'🏍️',label:'Moto'},bicicleta:{icon:'🚲',label:'Bicicleta'},
 };
-const DEMO_ESTABELECIMENTOS = {};
+const DEMO_ESTABELECIMENTOS = {
+  pneu:[{id:'pn001',nome:'Pneus Vitória Centro',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999991001',avaliacao:4.6,avaliacoes:34,distancia:'1,1 km',aberto:true,horario:'até 18h',tipo:'pneu',servicos:[{nome:'Troca de pneu',min:35,max:60,ativo:true},{nome:'Balanceamento',min:20,max:30,ativo:true}]}],
+  eletrica:[{id:'el001',nome:'AutoElétrica Souza',cidade:'Cariacica',bairro:'Padre Gabriel',whatsapp:'27999992001',avaliacao:4.7,avaliacoes:28,distancia:'1,4 km',aberto:true,horario:'até 17h',tipo:'eletrica',servicos:[{nome:'Diagnóstico elétrico',min:80,max:150,ativo:true}]}],
+  funilaria:[{id:'fu001',nome:'Funilaria Premium',cidade:'Cariacica',bairro:'Itaquari',whatsapp:'27999993001',avaliacao:4.5,avaliacoes:19,distancia:'2,8 km',aberto:false,horario:'abre 8h',tipo:'funilaria',servicos:[{nome:'Amassado simples',min:150,max:400,ativo:true}]}],
+  moto:[
+    {id:'ms001',nome:'MotoCenter ES',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999995001',avaliacao:4.7,avaliacoes:38,distancia:'0,9 km',aberto:true,horario:'até 18h',tipo:'moto',servicos:[{nome:'Revisão de moto',min:120,max:250,ativo:true},{nome:'Troca de óleo moto',min:50,max:90,ativo:true},{nome:'Corrente e relação',min:40,max:90,ativo:true}]},
+    {id:'ms002',nome:'Oficina Honda Vitória',cidade:'Vitória',bairro:'Jardim Camburi',whatsapp:'27999995002',avaliacao:4.9,avaliacoes:62,distancia:'2,4 km',aberto:true,horario:'até 18h',tipo:'moto',servicos:[{nome:'Revisão de moto',min:150,max:300,ativo:true},{nome:'Elétrica moto',min:80,max:200,ativo:true}]},
+    {id:'ms003',nome:'Moto Rápida Service',cidade:'Cariacica',bairro:'Padre Gabriel',whatsapp:'27999995003',avaliacao:4.4,avaliacoes:25,distancia:'1,5 km',aberto:true,horario:'até 17h',tipo:'moto',servicos:[{nome:'Freios moto',min:70,max:160,ativo:true},{nome:'Pneu de moto',min:60,max:140,ativo:true}]},
+    {id:'ms004',nome:'Yamaha Oficial ES',cidade:'Serra',bairro:'Carapina',whatsapp:'27999995004',avaliacao:4.8,avaliacoes:54,distancia:'4,2 km',aberto:true,horario:'até 18h',tipo:'moto',servicos:[{nome:'Revisão de moto',min:130,max:280,ativo:true},{nome:'Suspensão moto',min:180,max:400,ativo:true}]},
+  ],
+  bicicleta:[
+    {id:'bs001',nome:'BikePro Cariacica',cidade:'Cariacica',bairro:'Campo Grande',whatsapp:'27999996001',avaliacao:4.8,avaliacoes:41,distancia:'1,0 km',aberto:true,horario:'até 18h',tipo:'bicicleta',servicos:[{nome:'Revisão de bicicleta',min:50,max:150,ativo:true},{nome:'Freios bike',min:25,max:90,ativo:true},{nome:'Suspensão bike',min:80,max:250,ativo:true}]},
+    {id:'bs002',nome:'Speed & Trail ES',cidade:'Vitória',bairro:'Praia do Canto',whatsapp:'27999996002',avaliacao:4.9,avaliacoes:73,distancia:'3,1 km',aberto:true,horario:'até 19h',tipo:'bicicleta',servicos:[{nome:'Revisão de bicicleta',min:70,max:200,ativo:true},{nome:'Freio hidráulico bike',min:60,max:150,ativo:true},{nome:'Rodas bike',min:60,max:180,ativo:true}]},
+    {id:'bs003',nome:'Bike Shop Serra',cidade:'Serra',bairro:'Serra Sede',whatsapp:'27999996003',avaliacao:4.5,avaliacoes:29,distancia:'5,0 km',aberto:true,horario:'até 18h',tipo:'bicicleta',servicos:[{nome:'Pneu bike',min:20,max:60,ativo:true},{nome:'Câmbio bike',min:25,max:70,ativo:true},{nome:'Limpeza lubrificação bike',min:30,max:80,ativo:true}]},
+  ],
+};
 
 const FILTERS = {
   oficinas:[
@@ -9649,6 +9775,14 @@ function setMode(modo) {
     STATE.filtroChip = 'lava-jato';
     document.getElementById('cliSearch').value = 'lava-jato';
     renderLavaJatos();
+  } else if (modo === 'ferrovelho') {
+    const mapaCont = document.getElementById('mapaContainer');
+    const cliBody  = document.querySelector('.cli-body');
+    if (mapaCont) mapaCont.style.display = 'none';
+    if (cliBody)  cliBody.style.display  = '';
+    STATE.filtroChip = 'ferro velho';
+    document.getElementById('cliSearch').value = 'ferro velho';
+    renderFerroVelho();
   } else {
     const mapaCont = document.getElementById('mapaContainer');
     const cliBody  = document.querySelector('.cli-body');
@@ -9658,15 +9792,100 @@ function setMode(modo) {
   }
 }
 
+// ── renderFerroVelho ─────────────────────────────────────────────
+const _FV_KEYWORDS = ['ferro velho','sucateiro','desmanche','sucata','ferro-velho','ferrovelho','desmanch'];
+
+function _isFerroVelho(o) {
+  if (o.tipoEstabelecimento === 'ferrovelho') return true;
+  if ((o.categorias||[]).some(c => c === 'ferro_velho')) return true;
+  const nome = (o.nome||'').toLowerCase();
+  if (_FV_KEYWORDS.some(k => nome.includes(k))) return true;
+  return (o.servicos||[]).some(s => {
+    const n = (typeof s === 'string' ? s : s?.nome || '').toLowerCase();
+    return _FV_KEYWORDS.some(k => n.includes(k));
+  });
+}
+
+function renderFerroVelho() {
+  const list = document.getElementById('resultsList');
+  if (!list) return;
+
+  const cidade  = document.getElementById('fCidade')?.value || '';
+  const servico = (document.getElementById('cliSearch')?.value || STATE.filtroChip || '').toLowerCase().trim();
+
+  list.innerHTML = '<div style="text-align:center;padding:32px;color:var(--t3);"><div style="font-size:32px;margin-bottom:10px;">♻️</div>Buscando ferro-velhos...</div>';
+  document.getElementById('resultsCount').innerHTML = '';
+
+  const source = (window.FB?.ready()
+    ? window.FB.listarOficinas({ cidade })
+    : Promise.resolve([])
+  ).catch(() => Promise.resolve([]));
+
+  source.then(ofs => {
+    let fvs = ofs.filter(_isFerroVelho);
+
+    if (servico && servico !== 'ferro velho' && servico !== 'ferrovelho') {
+      const filtered = fvs.filter(o =>
+        (o.nome||'').toLowerCase().includes(servico) ||
+        (o.bairro||'').toLowerCase().includes(servico) ||
+        (o.cidade||'').toLowerCase().includes(servico)
+      );
+      if (filtered.length) fvs = filtered;
+    }
+
+    if (cidade) fvs = fvs.filter(o => (o.cidade||'').toLowerCase().includes(cidade.toLowerCase()));
+
+    document.getElementById('resultsCount').innerHTML =
+      `<span>${fvs.length} ferro-velho${fvs.length !== 1 ? 's' : ''} encontrado${fvs.length !== 1 ? 's' : ''}</span>`;
+
+    if (!fvs.length) {
+      list.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">♻️</div>
+          <div class="empty-title">Nenhum ferro-velho encontrado</div>
+          <div class="empty-sub">Tente outra cidade ou busque por "desmanche" ou "sucata".</div>
+        </div>`;
+      return;
+    }
+
+    list.innerHTML = fvs.map((o, i) => {
+      const ini = esc((o.nome||'FV').slice(0,2).toUpperCase());
+      const cats = (o.categorias||[]).slice(0,2).map(c =>
+        `<span class="svc-tag">${esc(c.replace(/_/g,' '))}</span>`).join('');
+      const tel = o.whatsapp || o.telefone;
+      const wppBtn = tel
+        ? `<button class="btn btn-wpp" onclick="window.open('https://wa.me/55${tel.replace(/\D/g,'')}','_blank')">💬 WhatsApp</button>`
+        : `<button class="btn btn-ghost" disabled>📞 ${esc(o.telefone||'Sem contato')}</button>`;
+      return `
+        <article class="of-card" style="animation-delay:${i*40}ms">
+          <div class="of-top">
+            <div class="of-avatar" style="background:linear-gradient(135deg,#4a4a2a,#8a7a3a);">${ini}</div>
+            <div class="of-info">
+              <div class="of-name">${esc(o.nome||'')}</div>
+              <div class="of-meta">
+                <span class="of-dist">📍 ${esc(o.bairro ? o.bairro+', ' : '')}${esc(o.cidade||'')}</span>
+                ${o.avaliacaoGoogle ? `<span>⭐ ${o.avaliacaoGoogle}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          <div class="of-svcs">${cats || '<span class="svc-tag">♻️ Desmanche</span>'}</div>
+          <div class="of-actions">
+            ${wppBtn}
+            ${o.googleMapsUrl ? `<a href="${esc(o.googleMapsUrl)}" target="_blank" rel="noopener" class="btn btn-ghost btn-sm btn-icon" title="Ver no Maps">📍</a>` : ''}
+          </div>
+        </article>`;
+    }).join('');
+  });
+}
+
 // ── renderLavaJatos ──────────────────────────────────────────────
 // Palavras-chave que identificam um lava-jato nos serviços indexados
 const _LJ_KEYWORDS = ['lava','lavagem','lavajato','polimento','higieniza','cristaliza','cera ','vitrifica','dry wash','sanitiza','detailing'];
 
 function _isLavaJato(o) {
   if (o.tipoEstabelecimento === 'lavajato') return true;
-  if ((o.categorias||[]).some(c => ['lavajato','lava_jato'].includes(c))) return true;
   return (o.servicos||[]).some(s => {
-    const n = (typeof s === 'string' ? s : s?.nome || '').toLowerCase();
+    const n = s.nome.toLowerCase();
     return _LJ_KEYWORDS.some(k => n.includes(k));
   });
 }
@@ -9708,7 +9927,7 @@ function renderLavaJatos() {
     if (veiculo && veiculo !== 'carro') {
       ljs = ljs.filter(o =>
         (o.tipoVeiculo||[]).includes(veiculo) ||
-        (o.servicos||[]).some(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(veiculo))
+        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(veiculo))
       );
     }
 
@@ -9718,7 +9937,7 @@ function renderLavaJatos() {
         o.nome.toLowerCase().includes(servico) ||
         (o.bairro||'').toLowerCase().includes(servico) ||
         (o.cidade||'').toLowerCase().includes(servico) ||
-        (o.servicos||[]).some(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(servico))
+        (o.servicos||[]).some(s => s.nome.toLowerCase().includes(servico))
       );
       if (filtered.length) ljs = filtered;
     }
@@ -9987,11 +10206,11 @@ function renderOficinas() {
     log('[Ranking]', ofs.map(o => ({ nome:o.nome, score:o._score, dist:(o._dist?.toFixed?.(1)||'?')+'km' })));
   }
   list.innerHTML = ofs.map((of, _i) => {
-    const svcMatch = q ? (of.servicos||[]).find(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(q) && s.ativo!==false) : null;
+    const svcMatch = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
     const preco = svcMatch ? `R$ ${svcMatch.min} – ${svcMatch.max}` :
-      (of.servicos&&of.servicos.length&&of.servicos[0].min ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
+      (of.servicos&&of.servicos.length ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
     const svcs = (of.servicos||[]).slice(0, 4).map(s =>
-      `<span class="svc-tag${q&&(typeof s==="string"?s:s.nome||"").toLowerCase().includes(q)?' match':''}">${esc(typeof s==="string"?s:s.nome||"")}</span>`).join('');
+      `<span class="svc-tag${q&&s.nome.toLowerCase().includes(q)?' match':''}">${esc(s.nome)}</span>`).join('');
     const ini = esc((of.nome||'OF').slice(0, 2).toUpperCase());
     const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
     const statusTxt = esc(of.aberto ? '● Aberto · ' + (of.horario||'') : '● Fechado · ' + (of.horario||''));
@@ -10091,7 +10310,7 @@ function renderMotoShops() {
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
       (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
-        (typeof s==="string"?s:s.nome||"").toLowerCase().includes(t) || t.includes((typeof s==="string"?s:s.nome||"").toLowerCase())
+        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
       ))
     );
   }
@@ -10158,7 +10377,7 @@ function renderBikeShops() {
     shops = shops.filter(o =>
       o.nome.toLowerCase().includes(q) || (o.bairro||'').toLowerCase().includes(q) ||
       (o.servicos||[]).some(s => s.ativo !== false && terms.some(t =>
-        (typeof s==="string"?s:s.nome||"").toLowerCase().includes(t) || t.includes((typeof s==="string"?s:s.nome||"").toLowerCase())
+        s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase())
       ))
     );
   }
@@ -10371,7 +10590,7 @@ function renderServicosCliente() {
 function openBudgetFromSvc(ofId, svcNome, min, max) {
   if (!STATE.oficinas.find(o => o.id === ofId)) STATE.oficinas = demoOficinas({});
   STATE.filtroChip = svcNome;
-  
+  if (!STATE.oficinas.length) STATE.oficinas = demoOficinas({});
   const of = getOficina(ofId);
   if (!of) { toast('Oficina não encontrada', 'warning'); return; }
   openBudget(ofId);
@@ -10604,16 +10823,38 @@ document.addEventListener('click', (e) => {
   if (!card || !card.dataset.id) return;
   const id = card.dataset.id;
   const oficina = STATE.oficinas.find(o => o.id === id)
-               || null;
+               || (window.demoOficinas ? window.demoOficinas({}) : []).find(o => o.id === id);
   if (!oficina) return;
   window.APP.selecionar(oficina);
 });
 
-// ── openBudget — abre modal de orçamento ────────────────────────
+// ── DELEGAÇÃO DE CLIQUE — .of-card ──────────────────────────────
+// Captura cliques em qualquer card, inclusive renderizados depois.
+// Grava em window.APP — não em STATE (que é volátil).
+document.addEventListener('click', function(e) {
+  const card = e.target.closest('.of-card');
+  if (!card || !card.dataset.id) return;
+  const id = card.dataset.id;
+  // PERF FIX: busca em STATE primeiro; demoOficinas só se STATE vazio
+  const oficina = STATE.oficinas.find(o => o.id === id)
+    || (STATE.oficinas.length === 0 && window.demoOficinas
+        ? window.demoOficinas({}).find(o => o.id === id)
+        : null);
+  if (oficina) window.APP.selecionar(oficina);
+});
+
+function getOficina(id) { return STATE.oficinas.find(o => o.id === id); }
+
 async function openBudget(id) {
-  // PERF FIX: busca em STATE primeiro; depois busca no Firebase
-  let of = STATE.oficinas.find(o => o.id === id) || null;
-  if (!of) {
+  // Analytics: clique em oficina — sinal forte de intenção
+  window.FB?.trackEvent(id, 'clique');
+  if (window.ConversionTracker) {
+    const rank = STATE.oficinas ? STATE.oficinas.findIndex(o => o.id === id) + 1 : 0;
+    window.ConversionTracker.click(id, rank);
+  }
+  if (window.MbAnalytics) window.MbAnalytics.track('perfil_aberto', { oficina_id: id });
+  let of = getOficina(id);
+  if (!of && window.FB?.ready()) {
     try { of = await window.FB.getOficinaById(id); if (of) STATE.oficinas.push(of); } catch(_) {}
   }
   if (!of) { toast('Oficina não encontrada', 'error'); return; }
@@ -10623,7 +10864,7 @@ async function openBudget(id) {
   selecionarOficina(id, of.nome); // mantém STATE e visual legado em sync
 
   const q = (STATE.filtroChip||'').toLowerCase();
-  const svc = q ? (of.servicos||[]).find(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(q) && s.ativo!==false) : null;
+  const svc = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
 
   let body = '';
   if (svc) {
@@ -10725,7 +10966,7 @@ async function enviarLead(ofId) {
   setBtnLoading('btnEnviarLead', 'enviarLeadText', 'enviarLeadSpin', true);
   const of = getOficina(resolvedOfId);
   const q = STATE.filtroChip;
-  const svc = q ? (of?.servicos||[]).find(s => (typeof s==="string"?s:s.nome||"").toLowerCase().includes(q.toLowerCase()) && s.ativo!==false) : null;
+  const svc = q ? (of?.servicos||[]).find(s => s.nome.toLowerCase().includes(q.toLowerCase()) && s.ativo) : null;
   const valor = svc ? Math.round((svc.min+svc.max)/2) : 0;
 
   try {
@@ -10817,7 +11058,7 @@ async function enviarLeadPeca(pecaId) {
   STATE._submitting = true;
   setBtnLoading('btnEnviarLeadPeca', 'enviarLeadPecaText', 'enviarLeadPecaSpin', true);
   try {
-    const _pecaOfId = window.APP?.oficinaSelecionada?.id || '';
+    const _pecaOfId = window.APP?.oficinaSelecionada?.id || 'of001';
     await window.FB.enviarLead({
       oficinaId: _pecaOfId, nomeCliente: nome,
       whatsapp: wpp.replace(/\D/g,''), carro,
@@ -10835,7 +11076,7 @@ async function enviarLeadPeca(pecaId) {
 function wppPeca(id) {
   const p = DEMO_PECAS.find(x => x.id === id);
   const msg = encodeURIComponent(`Olá! Vi no MecBusca e gostaria de orçamento para: ${p?.nome||id}.`);
-  const fornWpp = p?.fornecedorWpp || null;
+  const fornWpp = p?.fornecedorWpp || '5527999990001';
   window.open(`https://wa.me/${fornWpp}?text=${msg}`, '_blank', 'noopener,noreferrer');
 }
 </script>
@@ -10927,7 +11168,7 @@ async function preloadPainelData() {
 
 async function loadLeadsPainel() {
   try {
-    STATE.leads = STATE.oficinaAtual?.id ? await window.FB.listarLeadsDaOficina(STATE.oficinaAtual.id) : [];
+    STATE.leads = await window.FB.listarLeadsDaOficina(STATE.oficinaAtual?.id||'of001');
     const novos = STATE.leads.filter(l => l.status === 'novo').length;
     document.getElementById('leadsNavBadge').textContent = novos;
     document.getElementById('leadsNavBadge').setAttribute('aria-label', novos + ' leads novos');
@@ -10977,7 +11218,7 @@ function promosSave(list) {
 // Promoções de demo para o feed do cliente
 const DEMO_PROMOS = [
   {
-    id:'demo1', oficinaId:'', oficinaNome:'',
+    id:'demo1', oficinaId:'of001', oficinaNome:'Auto Center Vitória',
     bairro:'Praia do Canto', cidade:'Vitória', dist:1.2,
     tipo:'urgente', emoji:'🔥',
     titulo:'Troca de óleo com desconto hoje',
@@ -11122,7 +11363,7 @@ function wppPromo(promoId) {
   if (!p) return;
   // Tenta achar whatsapp da oficina no STATE
   const of = STATE.oficinas.find(o => o.id === p.oficinaId);
-  const wpp = of?.whatsapp || of?.wpp || null;
+  const wpp = of?.whatsapp || of?.wpp || '27999990000';
   const msg = encodeURIComponent(`Olá! Vi a promoção "${p.titulo}" no MecBusca (R$${p.precoNovo}). Ainda está disponível?`);
   // FIX-A: adicionado 'noopener,noreferrer' — evita window.opener attack.
   window.open(`https://wa.me/55${wpp}?text=${msg}`, '_blank', 'noopener,noreferrer');
@@ -16036,7 +16277,7 @@ Ao precisar escalar → [ESCALAR]`;
       txt += `\n\n${i+1}. **${o.nome}**${plano}  ${aval}${dist}\n${bairro}`;
       // Adicionar serviços em destaque
       const svcsRelev = (o.servicos||[])
-        .filter(s => s.ativo!==false && (typeof s==="string"?s:s.nome||"").toLowerCase().includes(servico.toLowerCase().slice(0,5)))
+        .filter(s => s.ativo && s.nome.toLowerCase().includes(servico.toLowerCase().slice(0,5)))
         .slice(0,2).map(s => s.nome).join(', ');
       if (svcsRelev) txt += `\n🔧 ${svcsRelev}`;
     });
