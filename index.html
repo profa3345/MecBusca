@@ -4656,13 +4656,9 @@ window.FB = {
   },
 
   async listarOficinas(filtros = {}, pagSize = 20, lastDoc = null) {
-    // FIX BUG B: não retornar demo imediatamente — aguardar o módulo
-    // inicializar antes de decidir. Race condition: runSearch() pode ser
-    // chamado antes do <script type="module"> terminar (ex: DOMContentLoaded
-    // dispara antes do módulo ES ser avaliado). Sem este await, todas as
-        if (!isFirebaseReady) {
+    if (!isFirebaseReady) {
       if (window.__fbReadyPromise) await window.__fbReadyPromise;
-      if (!isFirebaseReady) return window.demoOficinas ? window.demoOficinas(filtros) : [];
+      if (!isFirebaseReady) return [];
     }
     let q = query(collection(db, "oficinas"), where("ativo", "==", true), limit(pagSize));
     if (lastDoc) q = query(q, startAfter(lastDoc));
@@ -4680,7 +4676,7 @@ window.FB = {
     } catch(e) {
       logW('listarOficinas: query de pendentes falhou (índice ausente ou sem permissão) — continuando sem pendentes.', e?.code || e?.message || e);
     }
-        if (filtros.servico) {
+    if (filtros.servico) {
       const terms = expandirQuery(filtros.servico);
       oficinas = oficinas.filter(o => {
         const svcs = o.servicos || [];
