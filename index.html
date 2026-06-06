@@ -1928,6 +1928,7 @@ button,a,[role=button]{min-height:44px;}
       <div class="home-subtabs" id="homeSubtabs" role="tablist" aria-label="Tipo de serviço">
         <button class="home-subtab active" id="hstab-oficinas"  onclick="homeSetSubtab('oficinas')"  role="tab" aria-selected="true">🔧 Oficinas</button>
         <button class="home-subtab"        id="hstab-pecas"     onclick="STATE.pecaVeiculo=STATE._categoriaAtiva||'carro';homeSetSubtab('pecas')"     role="tab" aria-selected="false">🔩 Peças</button>
+        <button class="home-subtab"        id="hstab-ferrovelho" onclick="homeSetSubtab('ferrovelho')" role="tab" aria-selected="false">♻️ Ferro-Velho</button>
         <button class="home-subtab"        id="hstab-lavajato"  onclick="homeSetSubtab('lavajato')"  role="tab" aria-selected="false">🚿 Lava-Jato</button>
       </div>
 
@@ -4681,11 +4682,16 @@ window.FB = {
     }
         if (filtros.servico) {
       const terms = expandirQuery(filtros.servico);
-      oficinas = oficinas.filter(o =>
-        (o.servicos||[]).some(s => s.ativo &&
-          terms.some(t => s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase()))
-        )
-      );
+      oficinas = oficinas.filter(o => {
+        const svcs = o.servicos || [];
+        if (!svcs.length) return true;
+        return svcs.some(s => {
+          const nome = typeof s === 'string' ? s : s?.nome;
+          if (!nome) return false;
+          if (typeof s === 'object' && s.ativo === false) return false;
+          return terms.some(t => nome.toLowerCase().includes(t) || t.includes(nome.toLowerCase()));
+        });
+      });
     }
     if (filtros.cidade) oficinas = oficinas.filter(o =>
       (o.cidade||'').toLowerCase().includes(filtros.cidade.toLowerCase()));
@@ -4702,8 +4708,11 @@ window.FB = {
     if (filtros.guincho)      oficinas = oficinas.filter(o => o.guincho === true);
     if (filtros.marca)        oficinas = oficinas.filter(o =>
       (o.marcasEspeciais||[]).some(m => m.toLowerCase() === filtros.marca.toLowerCase()));
-    if (filtros.tipoVeiculo) oficinas = oficinas.filter(o =>
-      (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
+    if (filtros.tipoVeiculo) oficinas = oficinas.filter(o => {
+      const tv = o.tipoVeiculo || [];
+      if (tv.length === 0) return true;
+      return tv.includes(filtros.tipoVeiculo);
+    });
     // Ranking inteligente — sempre aplicado
     oficinas = oficinas.map(o => {
       const dist = (filtros.lat && filtros.lng && o.lat && o.lng)
@@ -4950,99 +4959,7 @@ function demoSave(col, data) {
 }
 
 function demoOficinas(filtros = {}) {
-  const now = new Date(), hour = now.getHours();
-  const base = [
-    { id:"of001", nome:"Auto Center Vitória", cidade:"Cariacica", bairro:"Campo Grande",
-      whatsapp:"27999990001", avaliacao:4.8, totalAvaliacoes:47, distancia:"0,8 km", plano:"pro",
-      aberto: hour>=7&&hour<18, horario:"até 18h", tipoVeiculo:["carro"], lat:-20.268, lng:-40.413,
-      stats:{impressoes:890, cliques:245, whatsapp:87, orcamentos:34},
-      servicos:[{nome:"Troca de óleo",min:89,max:120,ativo:true},{nome:"Freios dianteiros",min:220,max:350,ativo:true},{nome:"Alinhamento",min:60,max:80,ativo:true},{nome:"Suspensão",min:180,max:320,ativo:true}]},
-    { id:"of002", nome:"Oficina do Zé", cidade:"Cariacica", bairro:"Padre Gabriel",
-      whatsapp:"27999990002", avaliacao:4.3, totalAvaliacoes:23, distancia:"1,2 km", plano:"basico",
-      aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["carro","moto"], lat:-20.271, lng:-40.418,
-      stats:{impressoes:410, cliques:98, whatsapp:32, orcamentos:12},
-      servicos:[{nome:"Troca de óleo",min:75,max:95,ativo:true},{nome:"Elétrica automotiva",min:80,max:200,ativo:true}]},
-    { id:"of003", nome:"MasterCar Revisões", cidade:"Cariacica", bairro:"Nova Rosa da Penha",
-      whatsapp:"27999990003", avaliacao:4.9, totalAvaliacoes:89, distancia:"2,1 km", plano:"pro",
-      aberto: hour>=8&&hour<18, horario:"abre 8h", tipoVeiculo:["carro"], lat:-20.262, lng:-40.421,
-      stats:{impressoes:1240, cliques:380, whatsapp:142, orcamentos:67},
-      servicos:[{nome:"Troca de óleo",min:110,max:150,ativo:true},{nome:"Revisão completa",min:450,max:750,ativo:true},{nome:"Ar-condicionado",min:120,max:200,ativo:true},{nome:"Suspensão",min:200,max:400,ativo:true}]},
-    { id:"of004", nome:"Top Mecânica", cidade:"Cariacica", bairro:"Itaquari",
-      whatsapp:"27999990004", avaliacao:3.9, totalAvaliacoes:11, distancia:"3,0 km",
-      aberto: hour>=7&&hour<19, horario:"até 19h", tipoVeiculo:["carro","caminhao"], lat:-20.275, lng:-40.408,
-      stats:{impressoes:180, cliques:28, whatsapp:9, orcamentos:2},
-      servicos:[{nome:"Freios dianteiros",min:180,max:300,ativo:true},{nome:"Alinhamento",min:55,max:75,ativo:true}]},
-    // ── Moto-shops ──────────────────────────────────────────────
-    { id:"ms001", nome:"MotoCenter ES", cidade:"Cariacica", bairro:"Campo Grande",
-      whatsapp:"27999995001", avaliacao:4.7, totalAvaliacoes:38, distancia:"0,9 km", plano:"pro",
-      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.267, lng:-40.412,
-      stats:{impressoes:520, cliques:145, whatsapp:58, orcamentos:22}, tipo:"motoshop",
-      servicos:[{nome:"Revisão de moto",min:120,max:250,ativo:true},{nome:"Troca de óleo moto",min:50,max:90,ativo:true},{nome:"Freios moto",min:80,max:180,ativo:true},{nome:"Corrente e relação",min:40,max:90,ativo:true},{nome:"Pneu de moto",min:60,max:140,ativo:true}]},
-    { id:"ms002", nome:"Oficina Honda Vitória", cidade:"Vitória", bairro:"Jardim Camburi",
-      whatsapp:"27999995002", avaliacao:4.9, totalAvaliacoes:62, distancia:"2,4 km", plano:"pro",
-      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.260, lng:-40.404,
-      stats:{impressoes:780, cliques:210, whatsapp:82, orcamentos:35}, tipo:"motoshop",
-      servicos:[{nome:"Revisão de moto",min:150,max:300,ativo:true},{nome:"Injeção eletrônica moto",min:120,max:250,ativo:true},{nome:"Embreagem moto",min:180,max:350,ativo:true},{nome:"Suspensão moto",min:200,max:450,ativo:true},{nome:"Elétrica moto",min:80,max:200,ativo:true}]},
-    { id:"ms003", nome:"Moto Rápida Service", cidade:"Cariacica", bairro:"Padre Gabriel",
-      whatsapp:"27999995003", avaliacao:4.4, totalAvaliacoes:25, distancia:"1,5 km",
-      aberto: hour>=7&&hour<17, horario:"até 17h", tipoVeiculo:["moto"], lat:-20.272, lng:-40.417,
-      stats:{impressoes:290, cliques:75, whatsapp:28, orcamentos:10}, tipo:"motoshop",
-      servicos:[{nome:"Troca de óleo moto",min:45,max:80,ativo:true},{nome:"Pneu de moto",min:60,max:140,ativo:true},{nome:"Freios moto",min:70,max:160,ativo:true},{nome:"Carburador",min:80,max:180,ativo:true}]},
-    { id:"ms004", nome:"Yamaha Oficial ES", cidade:"Serra", bairro:"Carapina",
-      whatsapp:"27999995004", avaliacao:4.8, totalAvaliacoes:54, distancia:"4,2 km", plano:"pro",
-      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["moto"], lat:-20.235, lng:-40.395,
-      stats:{impressoes:650, cliques:178, whatsapp:70, orcamentos:28}, tipo:"motoshop",
-      servicos:[{nome:"Revisão de moto",min:130,max:280,ativo:true},{nome:"Funilaria moto",min:200,max:600,ativo:true},{nome:"Embreagem moto",min:160,max:320,ativo:true},{nome:"Suspensão moto",min:180,max:400,ativo:true}]},
-    // ── Bike-shops ──────────────────────────────────────────────
-    { id:"bs001", nome:"BikePro Cariacica", cidade:"Cariacica", bairro:"Campo Grande",
-      whatsapp:"27999996001", avaliacao:4.8, totalAvaliacoes:41, distancia:"1,0 km", plano:"pro",
-      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["bicicleta"], lat:-20.268, lng:-40.415,
-      stats:{impressoes:430, cliques:120, whatsapp:45, orcamentos:18}, tipo:"bikeshop",
-      servicos:[{nome:"Revisão de bicicleta",min:50,max:150,ativo:true},{nome:"Câmbio bike",min:30,max:80,ativo:true},{nome:"Freios bike",min:25,max:90,ativo:true},{nome:"Suspensão bike",min:80,max:250,ativo:true},{nome:"Rodas bike",min:40,max:120,ativo:true}]},
-    { id:"bs002", nome:"Speed & Trail ES", cidade:"Vitória", bairro:"Praia do Canto",
-      whatsapp:"27999996002", avaliacao:4.9, totalAvaliacoes:73, distancia:"3,1 km", plano:"pro",
-      aberto: hour>=9&&hour<19, horario:"até 19h", tipoVeiculo:["bicicleta"], lat:-20.255, lng:-40.300,
-      stats:{impressoes:680, cliques:195, whatsapp:78, orcamentos:31}, tipo:"bikeshop",
-      servicos:[{nome:"Revisão de bicicleta",min:70,max:200,ativo:true},{nome:"Freio hidráulico bike",min:60,max:150,ativo:true},{nome:"Suspensão bike",min:100,max:300,ativo:true},{nome:"Rodas bike",min:60,max:180,ativo:true},{nome:"Pedivela bike",min:50,max:160,ativo:true}]},
-    { id:"bs003", nome:"Bike Shop Serra", cidade:"Serra", bairro:"Serra Sede",
-      whatsapp:"27999996003", avaliacao:4.5, totalAvaliacoes:29, distancia:"5,0 km",
-      aberto: hour>=8&&hour<18, horario:"até 18h", tipoVeiculo:["bicicleta"], lat:-20.215, lng:-40.310,
-      stats:{impressoes:260, cliques:68, whatsapp:22, orcamentos:8}, tipo:"bikeshop",
-      servicos:[{nome:"Pneu bike",min:20,max:60,ativo:true},{nome:"Corrente bike",min:15,max:45,ativo:true},{nome:"Câmbio bike",min:25,max:70,ativo:true},{nome:"Limpeza lubrificação bike",min:30,max:80,ativo:true}]}
-  ];
-  let r = [...base];
-  if (filtros.servico) {
-    const terms = expandirQuery(filtros.servico);
-    r = r.filter(o => (o.servicos||[]).some(s => s.ativo &&
-      terms.some(t => s.nome.toLowerCase().includes(t) || t.includes(s.nome.toLowerCase()))
-    ));
-  }
-  if (filtros.cidade)  r = r.filter(o => o.cidade.toLowerCase().includes(filtros.cidade.toLowerCase()));
-  if (filtros.bairro)  r = r.filter(o => o.bairro.toLowerCase().includes(filtros.bairro.toLowerCase()));
-  if (filtros.avaliacaoMin > 0) r = r.filter(o => o.avaliacao >= filtros.avaliacaoMin);
-  if (filtros.precoMax)     r = r.filter(o => o.servicos.some(s => s.min <= filtros.precoMax));
-  if (filtros.apenasAberta) r = r.filter(o => o.aberto);
-  if (filtros.atendeHoje)   r = r.filter(o => o.atendeHoje || o.aberto);
-  if (filtros.buscaEntrega) r = r.filter(o => o.buscaEntrega);
-  if (filtros.guincho)      r = r.filter(o => o.guincho);
-  if (filtros.marca)        r = r.filter(o => (o.marcasEspeciais||[]).some(m => m.toLowerCase() === filtros.marca.toLowerCase()));
-  if (filtros.tipoVeiculo)  r = r.filter(o => (o.tipoVeiculo||[]).includes(filtros.tipoVeiculo));
-  r = r.map(o => {
-    const dist = (filtros.lat && filtros.lng && o.lat && o.lng)
-      ? haversineKm(filtros.lat, filtros.lng, o.lat, o.lng)
-      : parseFloat((o.distancia || '10').replace(',', '.'));
-    return { ...o, _dist: dist, _score: calcRankingScore(o, dist, filtros.servico || '') };
-  }).sort((a, b) => {
-    const diff = b._score - a._score;
-    // Tiebreaker within 5pts: Pro first
-    if (Math.abs(diff) < 5) {
-      const aPro = a.plano === 'pro' ? 1 : 0;
-      const bPro = b.plano === 'pro' ? 1 : 0;
-      if (bPro !== aPro) return bPro - aPro;
-    }
-    return diff;
-  });
-  return r;
+  return [];
 }
 
 function demoLeads(id) {
@@ -6506,7 +6423,7 @@ function homeSetCategoria(cat) {
 
 function homeSetSubtab(sub) {
   _homeSubtab = sub;
-  ['oficinas','pecas','lavajato'].forEach(s => {
+  ['oficinas','pecas','ferrovelho','lavajato'].forEach(s => {
     const btn = document.getElementById('hstab-' + s);
     if (btn) { btn.classList.toggle('active', s === sub); btn.setAttribute('aria-selected', s === sub); }
   });
@@ -6515,14 +6432,16 @@ function homeSetSubtab(sub) {
     pecaInitSelects?.();
     const veiculoMap = { carros:'carro', motos:'moto', bikes:'bicicleta', caminhao:'caminhao', tratores:'trator' };
     const tv = veiculoMap[_homeCategoria] || 'carro';
-    // Load fornecedores
     const fornMap = { carros:'hFornecedorCarro', motos:'hFornecedorMoto', bikes:'hFornecedorBike', caminhao:'hFornecedorCaminhao', tratores:'hFornecedorTrator' };
     const fornId = fornMap[_homeCategoria];
     if (fornId) loadFornecedoresParaSelect(fornId, tv);
-    // Load peças
     const pecaMap = { carros:'hPeca', motos:'hPecaMoto', bikes:'hPecaBike', caminhao:'hPecaCaminhao', tratores:'hPecaTrator' };
     const pecaId = pecaMap[_homeCategoria];
     if (pecaId) loadPecasParaSelect(pecaId, tv);
+  } else if (sub === 'ferrovelho') {
+    // Navega direto para a busca de ferro-velho
+    goTo('scCliente');
+    setMode('ferrovelho');
   }
 }
 
@@ -6790,7 +6709,7 @@ function renderTratores() {
   const base = STATE.oficinas?.length ? STATE.oficinas : demoOficinas({});
   let shops = base.filter(o =>
     (o.tipoVeiculo||[]).includes('trator') ||
-    (o.servicos||[]).some(s => /trator|agrícol|colheit|retroesc|implemento/i.test(s.nome))
+    (o.servicos||[]).some(s => /trator|agrícol|colheit|retroesc|implemento/i.test(typeof s==="string"?s:s.nome||""))
   );
   if (q && q !== 'trator') {
     const terms = expandirQuery(q);
@@ -7437,7 +7356,7 @@ function onOficinaChange(sel) {
     const of = (STATE.oficinas||[]).find(o => o.id === ofId)
              || demoOficinas({}).find(o => o.id === ofId);
     if (of) {
-      const svcsOf = (of.servicos||[]).filter(s => s.ativo).map(s => s.nome);
+      const svcsOf = (of.servicos||[]).filter(s=>typeof s==="string"||s.ativo!==false).map(s=>typeof s==="string"?s:s.nome||"");
       if (svcsOf.length) {
         // marca como desabilitado qualquer option que não seja da oficina
         [...svcSel.options].forEach(opt => {
@@ -8986,11 +8905,10 @@ function calcRankingScore(o, distKm, query) {
   // 2. Match de serviço (0–20 pts)
   if (query) {
     const q = query.toLowerCase();
-    const svcs = (o.servicos || []).filter(sv => sv.ativo);
-    const exactMatch = svcs.some(sv => sv.nome.toLowerCase().includes(q));
-    const partialMatch = svcs.some(sv => q.split(' ').some(t => sv.nome.toLowerCase().includes(t)));
-    if (exactMatch)   s += 20;
-    else if (partialMatch) s += 10;
+    const _svcs = (o.servicos||[]).filter(sv=>typeof sv==='string'||sv.ativo!==false).map(sv=>typeof sv==='string'?sv:sv.nome||'');
+    const exactMatch=_svcs.some(n=>n.toLowerCase().includes(q));
+    const partialMatch=_svcs.some(n=>q.split(' ').some(t=>n.toLowerCase().includes(t)));
+    if (exactMatch) s+=20; else if (partialMatch) s+=10;
   }
 
   // 3. Proximidade (0–20 pts) — distância inversa com cap em 10km
@@ -9884,8 +9802,9 @@ const _LJ_KEYWORDS = ['lava','lavagem','lavajato','polimento','higieniza','crist
 
 function _isLavaJato(o) {
   if (o.tipoEstabelecimento === 'lavajato') return true;
+  if ((o.categorias||[]).some(c => ['lavajato','lava_jato'].includes(c))) return true;
   return (o.servicos||[]).some(s => {
-    const n = s.nome.toLowerCase();
+    const n = (typeof s === 'string' ? s : s?.nome || '').toLowerCase();
     return _LJ_KEYWORDS.some(k => n.includes(k));
   });
 }
@@ -10208,9 +10127,9 @@ function renderOficinas() {
   list.innerHTML = ofs.map((of, _i) => {
     const svcMatch = q ? (of.servicos||[]).find(s => s.nome.toLowerCase().includes(q) && s.ativo) : null;
     const preco = svcMatch ? `R$ ${svcMatch.min} – ${svcMatch.max}` :
-      (of.servicos&&of.servicos.length ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
+      (of.servicos&&of.servicos.length&&of.servicos[0].min ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta');
     const svcs = (of.servicos||[]).slice(0, 4).map(s =>
-      `<span class="svc-tag${q&&s.nome.toLowerCase().includes(q)?' match':''}">${esc(s.nome)}</span>`).join('');
+      `<span class="svc-tag${q&&(typeof s==="string"?s:s.nome||"").toLowerCase().includes(q)?' match':''}">${esc(typeof s==="string"?s:s.nome||"")}</span>`).join('');
     const ini = esc((of.nome||'OF').slice(0, 2).toUpperCase());
     const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
     const statusTxt = esc(of.aberto ? '● Aberto · ' + (of.horario||'') : '● Fechado · ' + (of.horario||''));
@@ -10321,7 +10240,7 @@ function renderMotoShops() {
     return;
   }
   list.innerHTML = shops.map((of, _i) => {
-    const svcs = (of.servicos||[]).slice(0,4).map(s => `<span class="svc-tag">${esc(s.nome)}</span>`).join('');
+    const svcs = (of.servicos||[]).slice(0,4).map(s => `<span class="svc-tag">${esc(typeof s==="string"?s:s.nome||"")}</span>`).join('');
     const preco = of.servicos?.[0] ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta';
     const statusTxt = esc(of.aberto ? '● Aberto · '+(of.horario||'') : '● Fechado · '+(of.horario||''));
     const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
@@ -10388,7 +10307,7 @@ function renderBikeShops() {
     return;
   }
   list.innerHTML = shops.map((of, _i) => {
-    const svcs = (of.servicos||[]).slice(0,4).map(s => `<span class="svc-tag">${esc(s.nome)}</span>`).join('');
+    const svcs = (of.servicos||[]).slice(0,4).map(s => `<span class="svc-tag">${esc(typeof s==="string"?s:s.nome||"")}</span>`).join('');
     const preco = of.servicos?.[0] ? `R$ ${of.servicos[0].min} – ${of.servicos[0].max}` : 'Sob consulta';
     const statusTxt = esc(of.aberto ? '● Aberto · '+(of.horario||'') : '● Fechado · '+(of.horario||''));
     const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
@@ -10466,7 +10385,7 @@ function renderCardEstabelecimento(of) {
   const preco = (of.servicos||[]).length
     ? (() => { const m = of.servicos[0]; return m.min ? `R$ ${m.min} – ${m.max}` : esc(m.nome); })()
     : 'Sob consulta';
-  const svcs = (of.servicos||[]).slice(0,3).map(s => `<span class="svc-tag">${esc(s.nome)}</span>`).join('');
+  const svcs = (of.servicos||[]).slice(0,3).map(s => `<span class="svc-tag">${esc(typeof s==="string"?s:s.nome||"")}</span>`).join('');
   const ini = esc((of.nome||'ES').slice(0,2).toUpperCase());
   const statusClass = of.aberto ? 'of-status-open' : 'of-status-closed';
   const statusTxt = of.aberto ? '● Aberto' : '● Fechado';
@@ -10966,7 +10885,7 @@ async function enviarLead(ofId) {
   setBtnLoading('btnEnviarLead', 'enviarLeadText', 'enviarLeadSpin', true);
   const of = getOficina(resolvedOfId);
   const q = STATE.filtroChip;
-  const svc = q ? (of?.servicos||[]).find(s => s.nome.toLowerCase().includes(q.toLowerCase()) && s.ativo) : null;
+  const svc = q ? (of?.servicos||[]).find(s=>(typeof s==="string"?s:s.nome||"").toLowerCase().includes(q.toLowerCase())&&s.ativo!==false) : null;
   const valor = svc ? Math.round((svc.min+svc.max)/2) : 0;
 
   try {
@@ -16277,7 +16196,7 @@ Ao precisar escalar → [ESCALAR]`;
       txt += `\n\n${i+1}. **${o.nome}**${plano}  ${aval}${dist}\n${bairro}`;
       // Adicionar serviços em destaque
       const svcsRelev = (o.servicos||[])
-        .filter(s => s.ativo && s.nome.toLowerCase().includes(servico.toLowerCase().slice(0,5)))
+        .filter(s=>s.ativo!==false&&(typeof s==="string"?s:s.nome||"").toLowerCase().includes(servico.toLowerCase().slice(0,5)))
         .slice(0,2).map(s => s.nome).join(', ');
       if (svcsRelev) txt += `\n🔧 ${svcsRelev}`;
     });
