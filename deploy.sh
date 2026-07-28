@@ -113,6 +113,13 @@ if ! firebase functions:secrets:access ANTHROPIC_API_KEY &>/dev/null 2>&1; then
   WARNINGS=$((WARNINGS + 1))
 fi
 
+if ! firebase functions:secrets:access CNPJA_API_KEY &>/dev/null 2>&1; then
+  echo "   ⚠️  CNPJA_API_KEY não configurada — busca/enriquecimento via CNPJá desativado"
+  echo "   (Receita Federal/IBGE/OSM continuam funcionando; painel só não conseguirá"
+  echo "   revalidar dados oficiais nem o script rodará descoberta automática por cidade)."
+  WARNINGS=$((WARNINGS + 1))
+fi
+
 if ! firebase functions:secrets:access ZAPI_INSTANCE_ID &>/dev/null 2>&1; then
   echo "   ⚠️  ZAPI_INSTANCE_ID não configurada — verificação por WhatsApp desativada."
   WARNINGS=$((WARNINGS + 1))

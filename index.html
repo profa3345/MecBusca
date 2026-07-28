@@ -4192,6 +4192,10 @@ button,a,[role=button]{min-height:44px;}
         <span class="nav-badge" id="promoNavBadge" style="display:none;background:var(--re);" aria-label="promoções ativas">0</span>
       </div>
       <div class="nav-label" aria-hidden="true">Gestão</div>
+      <div class="nav-item" onclick="painelPage('dados',this)" role="button" tabindex="0">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="9" x2="17" y2="9"/><line x1="7" y1="13" x2="17" y2="13"/><line x1="7" y1="17" x2="12" y2="17"/></svg>
+        Dados da Oficina
+      </div>
       <div class="nav-item" onclick="painelPage('horarios',this)" role="button" tabindex="0">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         Horários
@@ -11605,7 +11609,8 @@ function painelPage(name, navEl) {
   const titles = {
     dashboard:'Dashboard', leads:'Leads & Contatos',
     servicos:'Serviços & Preços', horarios:'Horários de Funcionamento',
-    metricas:'Métricas de Negócio', promocoes:'🔥 Promoções & Ofertas'
+    metricas:'Métricas de Negócio', promocoes:'🔥 Promoções & Ofertas',
+    dados:'Dados da Oficina'
   };
   document.getElementById('painelTitle').textContent = titles[name] || name;
   document.querySelectorAll('#scPainel .nav-item').forEach(n => n.classList.remove('active'));
@@ -11618,6 +11623,7 @@ function painelPage(name, navEl) {
   else if (name === 'horarios') renderHorariosPainel(c);
   else if (name === 'metricas') renderMetricas(c);
   else if (name === 'promocoes') renderPromocoesPainel(c);
+  else if (name === 'dados') renderDadosOficina(c);
   // Ask for push permission after painel loads (once per session)
   if (!sessionStorage.getItem('_pushAsked') && STATE.oficinaAtual?.id) {
     sessionStorage.setItem('_pushAsked','1');
@@ -12071,6 +12077,131 @@ async function salvarHorarios() {
     toast('Erro ao salvar: ' + (e.message||''), 'error');
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Salvar horários'; }
+  }
+}
+
+// ── DADOS DA OFICINA (cadastrais + oficiais via Receita Federal) ──
+function renderDadosOficina(c) {
+  const of = STATE.oficinaAtual || {};
+  const situacaoCor = of.situacaoCadastral === 'ATIVA' ? 'var(--g)' : 'var(--t3)';
+
+  c.innerHTML = `
+  <div class="card" style="max-width:560px;margin-bottom:16px;">
+    <div class="card-header">
+      <div><div class="card-title">Contato & Endereço</div><div class="card-sub">Como os clientes vão te encontrar</div></div>
+    </div>
+    <div class="form-row" style="display:flex;flex-direction:column;gap:12px;">
+      <label style="font-size:12.5px;color:var(--t2);">Telefone / WhatsApp
+        <input id="dofTelefone" type="tel" value="${esc(of.telefone || '')}" placeholder="27999999999"
+          style="width:100%;margin-top:4px;padding:10px 12px;border-radius:8px;border:1px solid var(--b2);background:var(--bg3);color:var(--t);">
+      </label>
+      <label style="font-size:12.5px;color:var(--t2);">Website (opcional)
+        <input id="dofWebsite" type="url" value="${esc(of.website || '')}" placeholder="https://..."
+          style="width:100%;margin-top:4px;padding:10px 12px;border-radius:8px;border:1px solid var(--b2);background:var(--bg3);color:var(--t);">
+      </label>
+      <label style="font-size:12.5px;color:var(--t2);">Complemento do endereço (opcional)
+        <input id="dofComplemento" type="text" value="${esc(of.complemento || '')}" placeholder="Ex: galpão nos fundos, sala 2"
+          style="width:100%;margin-top:4px;padding:10px 12px;border-radius:8px;border:1px solid var(--b2);background:var(--bg3);color:var(--t);">
+      </label>
+      <label style="font-size:12.5px;color:var(--t2);">Sobre a oficina
+        <textarea id="dofDescricao" rows="3" placeholder="Conte em poucas linhas o que sua oficina faz de melhor"
+          style="width:100%;margin-top:4px;padding:10px 12px;border-radius:8px;border:1px solid var(--b2);background:var(--bg3);color:var(--t);resize:vertical;">${esc(of.descricao || '')}</textarea>
+      </label>
+    </div>
+    <button class="btn btn-primary" style="margin-top:16px;" onclick="salvarDadosContato()">Salvar contato & endereço</button>
+  </div>
+
+  <div class="card" style="max-width:560px;">
+    <div class="card-header">
+      <div><div class="card-title">Dados Oficiais (Receita Federal)</div>
+        <div class="card-sub">Usados para verificar sua oficina no MecBusca</div></div>
+    </div>
+    ${of.cnpj ? `
+      <div style="font-size:13px;color:var(--t2);line-height:1.8;">
+        <div><strong style="color:var(--t);">CNPJ:</strong> ${esc(formatCNPJ(of.cnpj))}</div>
+        <div><strong style="color:var(--t);">Razão social:</strong> ${esc(of.razaoSocial || '—')}</div>
+        <div><strong style="color:var(--t);">Situação cadastral:</strong>
+          <span style="color:${situacaoCor};font-weight:600;">${esc(of.situacaoCadastral || '—')}</span></div>
+        <div><strong style="color:var(--t);">Endereço (RFB):</strong> ${esc(of.enderecoCompleto || '—')}</div>
+        ${of.dadosOficiaisAtualizadosEm ? `<div style="font-size:11.5px;color:var(--t3);margin-top:4px;">Última verificação: ${esc(timeAgo(of.dadosOficiaisAtualizadosEm.seconds||0))}</div>` : ''}
+      </div>
+      <button class="btn" style="margin-top:14px;background:var(--bg3);border:1px solid var(--b2);color:var(--t);" onclick="atualizarDadosOficiaisPainel()" id="btnAtualizarCNPJ">
+        🔄 Revalidar com a Receita Federal
+      </button>
+    ` : `
+      <p style="font-size:13px;color:var(--t2);margin-bottom:12px;">
+        Seu perfil ainda não tem um CNPJ vinculado. Informe abaixo para validarmos seus dados
+        automaticamente com a Receita Federal, CNPJá, IBGE e OpenStreetMap.
+      </p>
+      <label style="font-size:12.5px;color:var(--t2);">CNPJ
+        <input id="dofCnpjNovo" type="text" placeholder="00.000.000/0001-00" maxlength="18"
+          style="width:100%;margin-top:4px;padding:10px 12px;border-radius:8px;border:1px solid var(--b2);background:var(--bg3);color:var(--t);">
+      </label>
+      <button class="btn btn-primary" style="margin-top:14px;" onclick="atualizarDadosOficiaisPainel()" id="btnAtualizarCNPJ">
+        Validar CNPJ
+      </button>
+    `}
+  </div>`;
+}
+
+function formatCNPJ(v) {
+  const d = String(v || '').replace(/\D/g, '');
+  if (d.length !== 14) return v || '';
+  return `${d.slice(0,2)}.${d.slice(2,5)}.${d.slice(5,8)}/${d.slice(8,12)}-${d.slice(12,14)}`;
+}
+
+async function salvarDadosContato() {
+  const id = STATE.oficinaAtual?.id;
+  const payload = {
+    telefone:    document.getElementById('dofTelefone').value.replace(/\D/g,''),
+    website:     document.getElementById('dofWebsite').value.trim() || null,
+    complemento: document.getElementById('dofComplemento').value.trim() || null,
+    descricao:   document.getElementById('dofDescricao').value.trim() || null,
+  };
+  const btn = document.querySelector('[onclick="salvarDadosContato()"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+  try {
+    if (id && window.FB?.ready() && !STATE.user?.isDemo) {
+      await window.FB.atualizarOficina(id, payload);
+    }
+    Object.assign(STATE.oficinaAtual, payload);
+    toast('✅ Contato e endereço salvos!', 'success');
+  } catch (e) {
+    toast('Erro ao salvar: ' + (e.message || ''), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Salvar contato & endereço'; }
+  }
+}
+
+/** Chama a Cloud Function atualizarDadosOficiais (Receita Federal + CNPJá + IBGE + OSM). */
+async function atualizarDadosOficiaisPainel() {
+  const id = STATE.oficinaAtual?.id;
+  if (!id) return;
+  if (!window.FB?.ready() || STATE.user?.isDemo) {
+    toast('Faça login com sua conta real para validar o CNPJ.', 'warning');
+    return;
+  }
+  const cnpjNovoEl = document.getElementById('dofCnpjNovo');
+  const cnpj = cnpjNovoEl ? cnpjNovoEl.value.replace(/\D/g, '') : '';
+  if (cnpjNovoEl && cnpj.length !== 14) {
+    toast('Informe um CNPJ válido (14 dígitos).', 'warning');
+    return;
+  }
+
+  const btn = document.getElementById('btnAtualizarCNPJ');
+  if (btn) { btn.disabled = true; btn.textContent = 'Consultando Receita Federal...'; }
+  try {
+    const { getFunctions, httpsCallable } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-functions.js');
+    const fns = getFunctions(undefined, 'southamerica-east1');
+    const fn = httpsCallable(fns, 'atualizarDadosOficiais');
+    const res = await fn({ oficinaId: id, cnpj: cnpj || undefined });
+    Object.assign(STATE.oficinaAtual, res.data?.dados || {});
+    toast('✅ Dados oficiais atualizados!', 'success');
+    painelPage('dados', document.querySelector('.nav-item[onclick*="dados"]'));
+  } catch (e) {
+    toast('Erro ao validar CNPJ: ' + (e.message || ''), 'error');
+  } finally {
+    if (btn) { btn.disabled = false; }
   }
 }
 

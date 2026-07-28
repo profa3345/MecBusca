@@ -1,278 +1,201 @@
 #!/usr/bin/env node
 /**
- * MecBusca — scripts/capture-oficinas.js
+ * MecBusca — scripts/capture-oficinas.js  (v4 — pipeline oficial de dados)
  *
- * Captura automática de oficinas mecânicas via Google Places API
- * e salva no Firestore com status "pendente_confirmacao".
+ * ANTES: captura 100% via Google Places (Text Search + Details).
+ * AGORA: pipeline com fonte de verdade em dados públicos oficiais.
+ *
+ *   Receita Federal  → registro oficial do CNPJ (via BrasilAPI, espelho
+ *                       público do CNPJ da RFB — sem custo, sem chave)
+ *        │
+ *        ├── CNPJá     → descoberta (busca por CNAE + município) e
+ *        │               enriquecimento (telefone/e-mail quando a RFB
+ *        │               não tiver). Requer CNPJA_API_KEY (plano pago).
+ *        │
+ *        ├── IBGE      → normaliza nome do município/UF e resolve o
+ *        │               código IBGE (sem custo, sem chave)
+ *        │
+ *        └── OpenStreetMap (Nominatim) → geocodifica o endereço para
+ *                        lat/lng (sem custo, sem chave — respeitar
+ *                        política de uso: 1 req/s + User-Agent próprio)
+ *
+ *   Google Places      → USADO SOMENTE para buscar 1 foto de capa.
+ *                        Nada de Text Search/Details completo — custo
+ *                        cai de ~$0,05/oficina para ~$0,007/oficina
+ *                        (Find Place + 1 Photo).
+ *                              ↓
+ *                     Banco do MecBusca (Firestore)
  *
  * USO:
- *   GOOGLE_PLACES_KEY=AIza... FIREBASE_PROJECT=mecbusca node capture-oficinas.js
- *   node capture-oficinas.js --cidade "Vitória, ES" --categoria "oficina mecânica"
- *   node capture-oficinas.js --all-es     # percorre todas as cidades do ES
- *   node capture-oficinas.js --all-br     # percorre todas as cidades do Brasil
- *   node capture-oficinas.js --estado SP  # percorre todas as cidades de SP
- *   node capture-oficinas.js --dry-run    # simula sem salvar
+ *   # descoberta automática por estado/cidade (usa CNPJá — precisa de chave)
+ *   CNPJA_API_KEY=... FIREBASE_PROJECT=mecbusca node capture-oficinas.js --estado ES
+ *   node capture-oficinas.js --cidade "Vitória" --estado ES --tipo oficinas
+ *   node capture-oficinas.js --all-es
+ *   node capture-oficinas.js --all-br
+ *
+ *   # importação manual de uma lista de CNPJs (não precisa de CNPJá)
+ *   node capture-oficinas.js --cnpjs cnpjs.txt
+ *
+ *   # simula sem gravar no Firestore / sem gastar cota do Google
+ *   node capture-oficinas.js --estado ES --dry-run
+ *   node capture-oficinas.js --estado ES --sem-foto     # pula Google inteiramente
  *
  * REQUISITOS:
- *   npm install node-fetch firebase-admin
- *   Variáveis de ambiente:
- *     GOOGLE_PLACES_KEY  — chave da Google Places API (com Places API ativa)
- *     GOOGLE_SA_KEY_FILE — path para service account JSON do Firebase (opcional)
- *     FIREBASE_PROJECT   — project ID (padrão: mecbusca)
+ *   npm install firebase-admin
+ *   (fetch nativo do Node 18+ — sem node-fetch)
  *
- * CUSTO ESTIMADO GOOGLE PLACES API:
- *   Text Search: $0,032 por request (1000 = $32)
- *   Place Details: $0,017 por request (1000 = $17)
- *   Para cobrir ES inteiro (~50 cidades, 10 queries cada): ~$25
+ * VARIÁVEIS DE AMBIENTE:
+ *   FIREBASE_PROJECT     — project ID (padrão: mecbusca)
+ *   GOOGLE_SA_KEY_FILE    — path para service account JSON (opcional)
+ *   CNPJA_API_KEY         — chave da CNPJá (necessária só para --estado/--cidade/--all-*;
+ *                            dispensável no modo --cnpjs)
+ *   GOOGLE_PLACES_KEY     — chave da Google Places API (opcional; só para foto de capa)
+ *   NOMINATIM_USER_AGENT  — identificação exigida pela política de uso do
+ *                           OpenStreetMap (padrão: "MecBusca/1.0 (contato@mecbusca.com.br)")
+ *
+ * CUSTO ESTIMADO POR OFICINA CAPTURADA:
+ *   Receita Federal (BrasilAPI): grátis
+ *   IBGE:                        grátis
+ *   OpenStreetMap (Nominatim):   grátis (respeitar rate limit)
+ *   CNPJá (descoberta):          conforme plano contratado (cobrada por consulta)
+ *   Google (1 foto):             ~$0,007 (Find Place $0,00 a $0,017 + Photo ~$0,007)
  */
 
 'use strict';
 
-const https = require('https');
-const path  = require('path');
-const fs    = require('fs');
+const fs   = require('fs');
+const path = require('path');
 
 // ── CLI args ──────────────────────────────────────────────────────────────────
-const args = process.argv.slice(2);
-const DRY_RUN  = args.includes('--dry-run');
-const ALL_ES   = args.includes('--all-es');
-const ALL_BR   = args.includes('--all-br');
-const VERBOSE  = args.includes('--verbose');
+const args      = process.argv.slice(2);
+const DRY_RUN   = args.includes('--dry-run');
+const ALL_ES    = args.includes('--all-es');
+const ALL_BR    = args.includes('--all-br');
+const VERBOSE   = args.includes('--verbose');
+const SEM_FOTO  = args.includes('--sem-foto');
 
 function getArg(name) {
   const i = args.indexOf(name);
   return i !== -1 ? args[i + 1] : null;
 }
 
-const cidadeArg = getArg('--cidade');
-const catArg    = getArg('--categoria');
-const estadoArg = getArg('--estado');
-const tipoArg   = getArg('--tipo');
+const cidadeArg  = getArg('--cidade');
+const estadoArg  = getArg('--estado');
+const tipoArg    = getArg('--tipo');       // oficinas | pecas | lavajato | tudo
+const cnpjsFile  = getArg('--cnpjs');       // modo manual: arquivo com 1 CNPJ por linha
 
 // ── Configuração ──────────────────────────────────────────────────────────────
-const GOOGLE_KEY      = process.env.GOOGLE_PLACES_KEY;
-const PROJECT_ID      = process.env.FIREBASE_PROJECT || 'mecbusca';
-const SA_KEY_FILE     = process.env.GOOGLE_SA_KEY_FILE || null;
+const PROJECT_ID       = process.env.FIREBASE_PROJECT || 'mecbusca';
+const SA_KEY_FILE       = process.env.GOOGLE_SA_KEY_FILE || null;
+const CNPJA_KEY          = process.env.CNPJA_API_KEY || null;
+const GOOGLE_KEY         = process.env.GOOGLE_PLACES_KEY || null;
+const NOMINATIM_UA       = process.env.NOMINATIM_USER_AGENT || 'MecBusca/1.0 (contato@mecbusca.com.br)';
 
-const DELAY_MS        = 200;   // delay entre requests (respeitar rate limit Google)
-const RESULTS_PER_QUERY = 20;  // Google Places retorna até 20 por página
-const MAX_PAGES       = 3;     // até 3 páginas = até 60 resultados por query
-const DEDUP_KEY       = 'place_id'; // campo para deduplicação
+const DELAY_NOMINATIM_MS = 1100; // política de uso do OSM: máx. 1 req/s
+const DELAY_CNPJA_MS     = 350;
+const DELAY_RFB_MS       = 350;
+const RESULTS_PER_PAGE   = 20;
+const MAX_PAGES          = 5;
 
-// ── Cidades por estado ────────────────────────────────────────────────────────
+// ── Cidades por estado (reaproveitado da versão anterior) ─────────────────────
 const CIDADES_BR = {
-  AC: ['Rio Branco, AC', 'Cruzeiro do Sul, AC', 'Sena Madureira, AC', 'Tarauacá, AC'],
-  AL: ['Maceió, AL', 'Arapiraca, AL', 'Palmeira dos Índios, AL', 'União dos Palmares, AL', 'Penedo, AL'],
-  AM: ['Manaus, AM', 'Parintins, AM', 'Itacoatiara, AM', 'Manacapuru, AM', 'Coari, AM', 'Tefé, AM'],
-  AP: ['Macapá, AP', 'Santana, AP', 'Laranjal do Jari, AP', 'Oiapoque, AP'],
-  BA: ['Salvador, BA', 'Feira de Santana, BA', 'Vitória da Conquista, BA', 'Camaçari, BA',
-       'Itabuna, BA', 'Juazeiro, BA', 'Lauro de Freitas, BA', 'Ilhéus, BA', 'Jequié, BA',
-       'Teixeira de Freitas, BA', 'Barreiras, BA', 'Porto Seguro, BA', 'Alagoinhas, BA',
-       'Paulo Afonso, BA', 'Simões Filho, BA', 'Eunápolis, BA', 'Santo Antônio de Jesus, BA'],
-  CE: ['Fortaleza, CE', 'Caucaia, CE', 'Juazeiro do Norte, CE', 'Maracanaú, CE',
-       'Sobral, CE', 'Crato, CE', 'Itapipoca, CE', 'Maranguape, CE', 'Iguatu, CE',
-       'Quixadá, CE', 'Pacatuba, CE', 'Aquiraz, CE'],
-  DF: ['Brasília, DF', 'Ceilândia, DF', 'Taguatinga, DF', 'Samambaia, DF',
-       'Planaltina, DF', 'Gama, DF', 'Sobradinho, DF', 'Recanto das Emas, DF'],
-  ES: ['Vitória, ES', 'Vila Velha, ES', 'Cariacica, ES', 'Serra, ES',
-       'Cachoeiro de Itapemirim, ES', 'Linhares, ES', 'São Mateus, ES',
-       'Colatina, ES', 'Guarapari, ES', 'Aracruz, ES', 'Viana, ES',
-       'Nova Venécia, ES', 'Barra de São Francisco, ES', 'Piúma, ES', 'Anchieta, ES'],
-  GO: ['Goiânia, GO', 'Aparecida de Goiânia, GO', 'Anápolis, GO', 'Rio Verde, GO',
-       'Luziânia, GO', 'Águas Lindas de Goiás, GO', 'Valparaíso de Goiás, GO',
-       'Trindade, GO', 'Formosa, GO', 'Novo Gama, GO', 'Itumbiara, GO', 'Senador Canedo, GO'],
-  MA: ['São Luís, MA', 'Imperatriz, MA', 'Timon, MA', 'Caxias, MA', 'Codó, MA',
-       'Paço do Lumiar, MA', 'Açailândia, MA', 'Bacabal, MA', 'Balsas, MA', 'Santa Inês, MA'],
-  MG: ['Belo Horizonte, MG', 'Uberlândia, MG', 'Contagem, MG', 'Juiz de Fora, MG',
-       'Betim, MG', 'Montes Claros, MG', 'Ribeirão das Neves, MG', 'Uberaba, MG',
-       'Governador Valadares, MG', 'Ipatinga, MG', 'Sete Lagoas, MG', 'Divinópolis, MG',
-       'Santa Luzia, MG', 'Ibirité, MG', 'Poços de Caldas, MG', 'Patos de Minas, MG',
-       'Pouso Alegre, MG', 'Teófilo Otoni, MG', 'Barbacena, MG', 'Sabará, MG',
-       'Varginha, MG', 'Conselheiro Lafaiete, MG', 'Muriaé, MG', 'Araguari, MG'],
-  MS: ['Campo Grande, MS', 'Dourados, MS', 'Três Lagoas, MS', 'Corumbá, MS',
-       'Ponta Porã, MS', 'Naviraí, MS', 'Nova Andradina, MS', 'Aquidauana, MS'],
-  MT: ['Cuiabá, MT', 'Várzea Grande, MT', 'Rondonópolis, MT', 'Sinop, MT',
-       'Tangará da Serra, MT', 'Cáceres, MT', 'Sorriso, MT', 'Lucas do Rio Verde, MT'],
-  PA: ['Belém, PA', 'Ananindeua, PA', 'Santarém, PA', 'Marabá, PA', 'Castanhal, PA',
-       'Parauapebas, PA', 'Cameta, PA', 'Itaituba, PA', 'Abaetetuba, PA', 'Tucuruí, PA',
-       'Marituba, PA', 'Altamira, PA'],
-  PB: ['João Pessoa, PB', 'Campina Grande, PB', 'Santa Rita, PB', 'Patos, PB',
-       'Bayeux, PB', 'Sousa, PB', 'Cajazeiras, PB', 'Cabedelo, PB'],
-  PE: ['Recife, PE', 'Caruaru, PE', 'Olinda, PE', 'Petrolina, PE', 'Paulista, PE',
-       'Caboatã de São Agostinho, PE', 'Jaboatão dos Guararapes, PE', 'Garanhuns, PE',
-       'Vitória de Santo Antão, PE', 'Surubim, PE', 'Cabo de Santo Agostinho, PE'],
-  PI: ['Teresina, PI', 'Parnaíba, PI', 'Picos, PI', 'Piripiri, PI', 'Floriano, PI', 'Campo Maior, PI'],
-  PR: ['Curitiba, PR', 'Londrina, PR', 'Maringá, PR', 'Ponta Grossa, PR', 'Cascavel, PR',
-       'São José dos Pinhais, PR', 'Foz do Iguaçu, PR', 'Colombo, PR', 'Guarapuava, PR',
-       'Paranaguá, PR', 'Araucária, PR', 'Toledo, PR', 'Apucarana, PR', 'Pinhais, PR',
-       'Campo Largo, PR', 'Almirante Tamandaré, PR', 'Umuarama, PR', 'Piraquara, PR'],
-  RJ: ['Rio de Janeiro, RJ', 'São Gonçalo, RJ', 'Duque de Caxias, RJ', 'Nova Iguaçu, RJ',
-       'Niterói, RJ', 'Belford Roxo, RJ', 'São João de Meriti, RJ', 'Campos dos Goytacazes, RJ',
-       'Petrópolis, RJ', 'Volta Redonda, RJ', 'Magé, RJ', 'Itaboraí, RJ',
-       'Macaé, RJ', 'Cabo Frio, RJ', 'Mesquita, RJ', 'Nova Friburgo, RJ',
-       'Barra Mansa, RJ', 'Angra dos Reis, RJ', 'Nilópolis, RJ', 'Queimados, RJ'],
-  RN: ['Natal, RN', 'Mossoró, RN', 'Parnamirim, RN', 'São Gonçalo do Amarante, RN',
-       'Macaíba, RN', 'Ceará-Mirim, RN', 'Caicó, RN', 'Açu, RN'],
-  RO: ['Porto Velho, RO', 'Ji-Paraná, RO', 'Ariquemes, RO', 'Vilhena, RO',
-       'Cacoal, RO', 'Rolim de Moura, RO', 'Guajará-Mirim, RO'],
-  RR: ['Boa Vista, RR', 'Rorainópolis, RR', 'Caracaraí, RR'],
-  RS: ['Porto Alegre, RS', 'Caxias do Sul, RS', 'Canoas, RS', 'Pelotas, RS',
-       'Santa Maria, RS', 'Gravataí, RS', 'Viamão, RS', 'Novo Hamburgo, RS',
-       'São Leopoldo, RS', 'Rio Grande, RS', 'Alvorada, RS', 'Passo Fundo, RS',
-       'Sapucaia do Sul, RS', 'Uruguaiana, RS', 'Santa Cruz do Sul, RS',
-       'Cachoeirinha, RS', 'Bagé, RS', 'Bento Gonçalves, RS', 'Erechim, RS'],
-  SC: ['Florianópolis, SC', 'Joinville, SC', 'Blumenau, SC', 'São José, SC',
-       'Criciúma, SC', 'Chapecó, SC', 'Itajaí, SC', 'Lages, SC', 'Jaraguá do Sul, SC',
-       'Palhoça, SC', 'Balneário Camboriú, SC', 'Biguaçu, SC', 'São Bento do Sul, SC',
-       'Caçador, SC', 'Tubarão, SC', 'Concórdia, SC'],
-  SE: ['Aracaju, SE', 'Nossa Senhora do Socorro, SE', 'Lagarto, SE', 'Itabaiana, SE',
-       'São Cristóvão, SE', 'Estância, SE'],
-  SP: ['São Paulo, SP', 'Guarulhos, SP', 'Campinas, SP', 'São Bernardo do Campo, SP',
-       'Santo André, SP', 'Osasco, SP', 'São José dos Campos, SP', 'Ribeirão Preto, SP',
-       'Sorocaba, SP', 'Mauá, SP', 'Santos, SP', 'São José do Rio Preto, SP',
-       'Mogi das Cruzes, SP', 'Diadema, SP', 'Jundiaí, SP', 'Carapicuíba, SP',
-       'Piracicaba, SP', 'Bauru, SP', 'São Vicente, SP', 'Franca, SP',
-       'Guarujá, SP', 'Taubaté, SP', 'Limeira, SP', 'Suzano, SP',
-       'Praia Grande, SP', 'Taboão da Serra, SP', 'Barueri, SP', 'Sumaré, SP',
-       'Embu das Artes, SP', 'São Carlos, SP', 'Indaiatuba, SP', 'Cotia, SP',
-       'Americana, SP', 'Marília, SP', 'Araraquara, SP', 'Presidente Prudente, SP',
-       'Jacareí, SP', 'Hortolândia, SP', 'Itaquaquecetuba, SP', 'Botucatu, SP'],
-  TO: ['Palmas, TO', 'Araguaína, TO', 'Gurupi, TO', 'Porto Nacional, TO', 'Paraíso do Tocantins, TO'],
+  AC: ['Rio Branco', 'Cruzeiro do Sul', 'Sena Madureira', 'Tarauacá'],
+  AL: ['Maceió', 'Arapiraca', 'Palmeira dos Índios', 'União dos Palmares', 'Penedo'],
+  AM: ['Manaus', 'Parintins', 'Itacoatiara', 'Manacapuru', 'Coari', 'Tefé'],
+  AP: ['Macapá', 'Santana', 'Laranjal do Jari', 'Oiapoque'],
+  BA: ['Salvador', 'Feira de Santana', 'Vitória da Conquista', 'Camaçari', 'Itabuna',
+       'Juazeiro', 'Lauro de Freitas', 'Ilhéus', 'Jequié', 'Teixeira de Freitas'],
+  CE: ['Fortaleza', 'Caucaia', 'Juazeiro do Norte', 'Maracanaú', 'Sobral', 'Crato'],
+  DF: ['Brasília', 'Ceilândia', 'Taguatinga', 'Samambaia', 'Planaltina', 'Gama'],
+  ES: ['Vitória', 'Vila Velha', 'Cariacica', 'Serra', 'Cachoeiro de Itapemirim',
+       'Linhares', 'São Mateus', 'Colatina', 'Guarapari', 'Aracruz', 'Viana',
+       'Nova Venécia', 'Barra de São Francisco', 'Piúma', 'Anchieta'],
+  GO: ['Goiânia', 'Aparecida de Goiânia', 'Anápolis', 'Rio Verde', 'Luziânia'],
+  MA: ['São Luís', 'Imperatriz', 'Timon', 'Caxias', 'Codó'],
+  MG: ['Belo Horizonte', 'Uberlândia', 'Contagem', 'Juiz de Fora', 'Betim',
+       'Montes Claros', 'Ribeirão das Neves', 'Uberaba', 'Governador Valadares'],
+  MS: ['Campo Grande', 'Dourados', 'Três Lagoas', 'Corumbá', 'Ponta Porã'],
+  MT: ['Cuiabá', 'Várzea Grande', 'Rondonópolis', 'Sinop', 'Tangará da Serra'],
+  PA: ['Belém', 'Ananindeua', 'Santarém', 'Marabá', 'Castanhal', 'Parauapebas'],
+  PB: ['João Pessoa', 'Campina Grande', 'Santa Rita', 'Patos', 'Bayeux'],
+  PE: ['Recife', 'Caruaru', 'Olinda', 'Petrolina', 'Paulista', 'Jaboatão dos Guararapes'],
+  PI: ['Teresina', 'Parnaíba', 'Picos', 'Piripiri', 'Floriano'],
+  PR: ['Curitiba', 'Londrina', 'Maringá', 'Ponta Grossa', 'Cascavel', 'São José dos Pinhais'],
+  RJ: ['Rio de Janeiro', 'São Gonçalo', 'Duque de Caxias', 'Nova Iguaçu', 'Niterói',
+       'Belford Roxo', 'São João de Meriti', 'Campos dos Goytacazes', 'Petrópolis'],
+  RN: ['Natal', 'Mossoró', 'Parnamirim', 'São Gonçalo do Amarante', 'Macaíba'],
+  RO: ['Porto Velho', 'Ji-Paraná', 'Ariquemes', 'Vilhena', 'Cacoal'],
+  RR: ['Boa Vista', 'Rorainópolis', 'Caracaraí'],
+  RS: ['Porto Alegre', 'Caxias do Sul', 'Canoas', 'Pelotas', 'Santa Maria', 'Gravataí'],
+  SC: ['Florianópolis', 'Joinville', 'Blumenau', 'São José', 'Criciúma', 'Chapecó'],
+  SE: ['Aracaju', 'Nossa Senhora do Socorro', 'Lagarto', 'Itabaiana'],
+  SP: ['São Paulo', 'Guarulhos', 'Campinas', 'São Bernardo do Campo', 'Santo André',
+       'Osasco', 'São José dos Campos', 'Ribeirão Preto', 'Sorocaba', 'Mauá', 'Santos'],
+  TO: ['Palmas', 'Araguaína', 'Gurupi', 'Porto Nacional', 'Paraíso do Tocantins'],
+};
+const TODAS_CIDADES_BR = Object.entries(CIDADES_BR)
+  .flatMap(([uf, cidades]) => cidades.map(c => ({ cidade: c, uf })));
+
+// ── CNAEs oficiais por tipo de negócio ─────────────────────────────────────────
+// Fonte: Classificação Nacional de Atividades Econômicas (CONCLA/IBGE).
+// ⚠️ Confira sempre a tabela vigente em https://concla.ibge.gov.br/ antes de
+//    rodar em produção — a CNAE pode ser revisada pelo IBGE.
+const CNAE_OFICINAS = [
+  '4520001', // Serviços de manutenção e reparação mecânica de veículos automotores
+  '4520003', // Serviços de manutenção e reparação elétrica de veículos automotores
+  '4520004', // Serviços de alinhamento e balanceamento de veículos automotores
+  '4520005', // Serviços de lanternagem ou funilaria de veículos automotores
+  '4520006', // Serviços de pintura de veículos automotores
+  '4520007', // Serviços de instalação, manutenção e reparação de acessórios para veículos automotores
+  '4520008', // Serviços de capotaria
+  '4520002', // Serviços de borracharia para veículos automotores
+];
+const CNAE_PECAS = [
+  '4530701', // Comércio a varejo de peças e acessórios novos para veículos automotores
+  '4530703', // Comércio a varejo de peças e acessórios usados para veículos automotores
+  '4541206', // Comércio a varejo de peças e acessórios para motocicletas e motonetas
+  '4530702', // Comércio por atacado de peças e acessórios novos para veículos automotores
+];
+const CNAE_LAVAJATO = [
+  '9601701', // Lavanderias (usado às vezes por lava-rápidos formais)
+  '4520009', // Serviços de lavagem, lubrificação e polimento de veículos automotores
+];
+const CNAE_TODAS = [...CNAE_OFICINAS, ...CNAE_PECAS, ...CNAE_LAVAJATO];
+
+const CATEGORIA_POR_CNAE = {
+  '4520001': 'mecanica_geral',
+  '4520002': 'borracharia',
+  '4520003': 'auto_eletrica',
+  '4520004': 'suspensao_freios',
+  '4520005': 'funilaria_pintura',
+  '4520006': 'funilaria_pintura',
+  '4520007': 'acessorios',
+  '4520008': 'acessorios',
+  '4530701': 'autopecas',
+  '4530702': 'autopecas',
+  '4530703': 'pecas_usadas',
+  '4541206': 'pecas_moto',
+  '9601701': 'lavajato',
+  '4520009': 'lavajato',
 };
 
-// Lista plana de todas as cidades do Brasil
-const TODAS_CIDADES_BR = Object.values(CIDADES_BR).flat();
-
-// Cidades do ES (mantido para compatibilidade com --all-es)
-const CIDADES_ES = CIDADES_BR.ES;
-
-// ── Categorias de busca — OFICINAS ───────────────────────────────────────────
-const CATEGORIAS_OFICINAS = [
-  'oficina mecânica',
-  'auto elétrica',
-  'borracharia',
-  'funilaria e pintura',
-  'troca de óleo',
-  'ar condicionado automotivo',
-  'retífica de motor',
-  'suspensão e freios',
-];
-
-// ── Categorias de busca — FORNECEDORES DE PEÇAS ──────────────────────────────
-const CATEGORIAS_PECAS = [
-  // Peças gerais
-  'autopeças',
-  'distribuidora de peças automotivas',
-  'peças usadas para carros',
-  'sucata de carros peças',
-
-  // Veículos pesados
-  'peças para caminhão',
-  'distribuidora de peças para caminhão',
-  'peças para ônibus',
-  'peças para trator',
-  'implementos agrícolas peças',
-
-  // Motos e scooters
-  'peças para moto',
-  'distribuidora de peças para moto',
-  'peças para scooter',
-
-  // Vans e utilitários
-  'peças para van',
-  'peças para utilitários',
-
-  // Especialidades
-  'pneus e rodas',
-  'baterias automotivas',
-  'distribuidora de filtros automotivos',
-  'escapamentos automotivos',
-  'vidros automotivos',
-  'som automotivo e acessórios',
-];
-
-// ── Categorias de busca — LAVA-JATOS ─────────────────────────────────────────
-const CATEGORIAS_LAVAJATO = [
-  'lava jato',
-  'lava rápido automotivo',
-  'higienização automotiva',
-  'polimento automotivo',
-  'detailing automotivo',
-  'lavagem a vapor automotiva',
-  'estética automotiva',
-];
-
-// Todas as categorias juntas
-const CATEGORIAS_TODAS = [...CATEGORIAS_OFICINAS, ...CATEGORIAS_PECAS, ...CATEGORIAS_LAVAJATO];
-
-// Seleção padrão (oficinas) — pode ser alterada via --tipo
-const CATEGORIAS = CATEGORIAS_OFICINAS;
-
-// ── Mapa de normalização de categoria ─────────────────────────────────────────
-const CATEGORIA_MAP = {
-  // Oficinas
-  'oficina mecânica':        'mecanica_geral',
-  'auto elétrica':           'auto_eletrica',
-  'borracharia':             'borracharia',
-  'funilaria e pintura':     'funilaria_pintura',
-  'troca de óleo':           'troca_oleo',
-  'ar condicionado':         'ar_condicionado',
-  'retífica':                'retica_motor',
-  'suspensão':               'suspensao_freios',
-  'freios':                  'suspensao_freios',
-
-  // Fornecedores de peças
-  'autopeças':               'autopecas',
-  'distribuidora de peças':  'autopecas',
-  'peças usadas':            'pecas_usadas',
-  'sucata':                  'pecas_usadas',
-  'peças para caminhão':     'pecas_caminhao',
-  'peças para ônibus':       'pecas_onibus',
-  'peças para trator':       'pecas_trator',
-  'implementos':             'pecas_trator',
-  'peças para moto':         'pecas_moto',
-  'peças para scooter':      'pecas_moto',
-  'peças para van':          'pecas_van',
-  'pneus':                   'pneus_rodas',
-  'baterias':                'baterias',
-  'filtros':                 'filtros',
-  'escapamentos':            'escapamentos',
-  'vidros automotivos':      'vidros_automotivos',
-  'som automotivo':          'acessorios',
-
-  // Lava-jatos
-  'lava jato':               'lavajato',
-  'lava rápido':             'lavajato',
-  'higienização automotiva': 'lavajato',
-  'polimento automotivo':    'lavajato',
-  'detailing':               'lavajato',
-  'lavagem a vapor':         'lavajato',
-  'estética automotiva':     'lavajato',
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Helpers gerais ──────────────────────────────────────────────────────────
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+function log(...a)  { console.log('[capture]', ...a); }
+function warn(...a) { console.warn('[capture] ⚠️ ', ...a); }
+function err(...a)  { console.error('[capture] ❌', ...a); }
 
-function log(...args)  { console.log('[capture]', ...args); }
-function warn(...args) { console.warn('[capture] ⚠️ ', ...args); }
-function err(...args)  { console.error('[capture] ❌', ...args); }
-
-function httpsGet(url) {
-  return new Promise((resolve, reject) => {
-    https.get(url, res => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        try { resolve(JSON.parse(data)); }
-        catch (e) { reject(new Error('JSON parse error: ' + data.slice(0, 200))); }
-      });
-    }).on('error', reject);
-  });
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const text = await res.text();
+  let data;
+  try { data = text ? JSON.parse(text) : {}; }
+  catch { throw new Error(`Resposta não-JSON (${res.status}): ${text.slice(0, 200)}`); }
+  return { ok: res.ok, status: res.status, data };
 }
 
-/** Slug seguro para Firestore doc ID */
 function toSlug(str) {
-  return str
+  return String(str || '')
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -281,348 +204,436 @@ function toSlug(str) {
     .slice(0, 80);
 }
 
-/** Extrai telefone formatado */
-function parseTelefone(raw) {
-  if (!raw) return null;
-  const digits = raw.replace(/\D/g, '');
-  // Remove DDI +55
-  const national = digits.startsWith('55') && digits.length > 11
-    ? digits.slice(2)
-    : digits;
-  return national.length >= 10 ? national : null;
+function onlyDigits(v) { return String(v || '').replace(/\D/g, ''); }
+
+function parseTelefone(ddd, numero) {
+  const d = onlyDigits(ddd);
+  const n = onlyDigits(numero);
+  if (!d || !n) return null;
+  const full = `${d}${n}`;
+  return full.length >= 10 ? full : null;
 }
 
-/** Detecta se o telefone parece ser WhatsApp (celular: 9 dígitos após DDD) */
 function isWhatsApp(tel) {
   if (!tel) return false;
-  const local = tel.replace(/^\d{2}/, ''); // remove DDD
+  const local = tel.replace(/^\d{2}/, '');
   return local.startsWith('9') && local.length === 9;
 }
 
-/** Normaliza categorias de tipos do Google para categorias MecBusca */
-function normalizarCategorias(types = [], queryCategory = '') {
-  const cats = new Set();
+// ═══════════════════════════════════════════════════════════════════════════
+// 1) RECEITA FEDERAL — fonte de verdade do cadastro (via BrasilAPI)
+//    Espelho público, gratuito, dos dados abertos do CNPJ da RFB.
+//    Docs: https://brasilapi.com.br/docs#tag/CNPJ
+// ═══════════════════════════════════════════════════════════════════════════
+const BRASILAPI_CNPJ = 'https://brasilapi.com.br/api/cnpj/v1';
 
-  const lowerQuery = queryCategory.toLowerCase();
-  for (const [key, val] of Object.entries(CATEGORIA_MAP)) {
-    if (lowerQuery.includes(key)) cats.add(val);
-  }
+async function consultarReceitaFederal(cnpj) {
+  const cnpjLimpo = onlyDigits(cnpj);
+  if (cnpjLimpo.length !== 14) throw new Error(`CNPJ inválido: ${cnpj}`);
 
-  // Tipos do Google
-  if (types.includes('car_repair'))       cats.add('mecanica_geral');
-  if (types.includes('car_dealer'))       cats.add('concessionaria');
-  if (types.includes('gas_station'))      cats.add('posto_combustivel');
-  if (types.includes('storage'))          cats.add('estacionamento');
-
-  return Array.from(cats.size ? cats : ['mecanica_geral']);
-}
-
-// ── Google Places API ─────────────────────────────────────────────────────────
-const PLACES_BASE = 'https://maps.googleapis.com/maps/api/place';
-
-/** Text Search — retorna lista de lugares */
-async function textSearch(query, pageToken = null) {
-  const params = new URLSearchParams({
-    query,
-    key: GOOGLE_KEY,
-    language: 'pt-BR',
-    region: 'br',
-    type: 'car_repair',
-  });
-  if (pageToken) params.set('pagetoken', pageToken);
-
-  const url = `${PLACES_BASE}/textsearch/json?${params}`;
-  const data = await httpsGet(url);
-
-  if (data.status === 'REQUEST_DENIED') {
-    throw new Error(`Places API negou request: ${data.error_message}`);
-  }
-  if (!['OK', 'ZERO_RESULTS', 'INVALID_REQUEST'].includes(data.status)) {
-    warn(`textSearch status=${data.status} query="${query}"`);
+  const { ok, status, data } = await fetchJson(`${BRASILAPI_CNPJ}/${cnpjLimpo}`);
+  if (!ok) {
+    throw new Error(`Receita Federal (BrasilAPI) ${status}: ${data?.message || 'erro desconhecido'}`);
   }
   return data;
 }
 
-/** Place Details — retorna detalhes de um lugar pelo place_id */
-async function placeDetails(placeId) {
-  const fields = [
-    'place_id', 'name', 'formatted_address', 'formatted_phone_number',
-    'international_phone_number', 'geometry', 'opening_hours',
-    'rating', 'user_ratings_total', 'website', 'url',
-    'address_components', 'types', 'business_status',
-  ].join(',');
+// ═══════════════════════════════════════════════════════════════════════════
+// 2) CNPJá — descoberta (busca por CNAE + município) e enriquecimento
+//    Docs: https://cnpja.com/docs  (ajustar parâmetros conforme plano contratado)
+// ═══════════════════════════════════════════════════════════════════════════
+const CNPJA_BASE = 'https://api.cnpja.com';
 
-  const url = `${PLACES_BASE}/details/json?place_id=${placeId}&fields=${fields}&language=pt-BR&key=${GOOGLE_KEY}`;
-  const data = await httpsGet(url);
-  return data.result || null;
+async function cnpjaBuscarPorMunicipio({ uf, cidade, cnaes, page = 1 }) {
+  if (!CNPJA_KEY) throw new Error('CNPJA_API_KEY não configurada — descoberta automática indisponível.');
+
+  const params = new URLSearchParams({
+    'address.state': uf,
+    'address.city': cidade,
+    'status.id': '2', // 2 = ATIVA na tabela de situação cadastral da RFB
+    'mainActivity.id': cnaes.join(','),
+    page: String(page),
+    limit: String(RESULTS_PER_PAGE),
+  });
+
+  const { ok, status, data } = await fetchJson(`${CNPJA_BASE}/office?${params}`, {
+    headers: { Authorization: CNPJA_KEY },
+  });
+  if (!ok) throw new Error(`CNPJá ${status}: ${JSON.stringify(data).slice(0, 200)}`);
+
+  // Formato de resposta pode variar conforme plano — normaliza para um array simples.
+  return Array.isArray(data) ? data : (data.records || data.data || []);
 }
 
-// ── Firestore (Admin SDK via Service Account ou Application Default) ──────────
-let db = null;
-
-function initFirestore() {
-  if (DRY_RUN) {
-    log('DRY RUN — Firestore não será acessado.');
-    return;
+/** Enriquece com telefone/e-mail quando a Receita Federal não tiver esses dados. */
+async function cnpjaEnriquecer(cnpj) {
+  if (!CNPJA_KEY) return null;
+  try {
+    const { ok, data } = await fetchJson(`${CNPJA_BASE}/office/${onlyDigits(cnpj)}`, {
+      headers: { Authorization: CNPJA_KEY },
+    });
+    return ok ? data : null;
+  } catch (e) {
+    warn(`CNPJá enriquecimento falhou para ${cnpj}: ${e.message}`);
+    return null;
   }
+}
 
+// ═══════════════════════════════════════════════════════════════════════════
+// 3) IBGE — normaliza município/UF e resolve código IBGE
+//    Docs: https://servicodados.ibge.gov.br/api/docs/localidades
+// ═══════════════════════════════════════════════════════════════════════════
+const IBGE_BASE = 'https://servicodados.ibge.gov.br/api/v1/localidades';
+const _ibgeCache = new Map(); // uf -> [{id, nome}]
+
+async function ibgeMunicipiosDoEstado(uf) {
+  const key = uf.toUpperCase();
+  if (_ibgeCache.has(key)) return _ibgeCache.get(key);
+  const { ok, data } = await fetchJson(`${IBGE_BASE}/estados/${key}/municipios`);
+  const lista = ok && Array.isArray(data) ? data.map(m => ({ id: m.id, nome: m.nome })) : [];
+  _ibgeCache.set(key, lista);
+  return lista;
+}
+
+/** Normaliza o nome do município digitado/vindo da RFB para o nome oficial + código IBGE. */
+async function normalizarMunicipio(nomeBruto, uf) {
+  const lista = await ibgeMunicipiosDoEstado(uf);
+  const alvo = toSlug(nomeBruto);
+  const match = lista.find(m => toSlug(m.nome) === alvo)
+    || lista.find(m => toSlug(m.nome).startsWith(alvo) || alvo.startsWith(toSlug(m.nome)));
+  if (!match) {
+    warn(`Município "${nomeBruto}/${uf}" não encontrado no IBGE — mantendo nome original.`);
+    return { nome: nomeBruto, codigoIBGE: null };
+  }
+  return { nome: match.nome, codigoIBGE: match.id };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4) OpenStreetMap (Nominatim) — geocodificação do endereço
+//    Política de uso: https://operations.osmfoundation.org/policies/nominatim/
+//    Máx. 1 req/s, sempre com User-Agent identificável, sem uso comercial em
+//    massa sem hospedagem própria — para volume alto, considerar rodar uma
+//    instância própria do Nominatim.
+// ═══════════════════════════════════════════════════════════════════════════
+async function geocodificarOSM(enderecoCompleto) {
+  const params = new URLSearchParams({
+    format: 'jsonv2',
+    q: enderecoCompleto,
+    countrycodes: 'br',
+    limit: '1',
+  });
+  const { ok, data } = await fetchJson(`https://nominatim.openstreetmap.org/search?${params}`, {
+    headers: { 'User-Agent': NOMINATIM_UA, 'Accept-Language': 'pt-BR' },
+  });
+  await sleep(DELAY_NOMINATIM_MS);
+  if (!ok || !Array.isArray(data) || !data.length) return null;
+  const { lat, lon } = data[0];
+  return { lat: parseFloat(lat), lng: parseFloat(lon) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5) Google — USADO SOMENTE PARA FOTO. Sem Text Search, sem Details completo.
+// ═══════════════════════════════════════════════════════════════════════════
+const PLACES_BASE = 'https://maps.googleapis.com/maps/api/place';
+
+async function buscarFotoGoogle(nome, enderecoCompleto) {
+  if (!GOOGLE_KEY || SEM_FOTO) return null;
+  try {
+    // Find Place from Text — mais barato que Text Search completo,
+    // usado só para achar o place_id e a 1ª foto.
+    const fpParams = new URLSearchParams({
+      input: `${nome}, ${enderecoCompleto}`,
+      inputtype: 'textquery',
+      fields: 'place_id,photos',
+      language: 'pt-BR',
+      key: GOOGLE_KEY,
+    });
+    const { ok, data } = await fetchJson(`${PLACES_BASE}/findplacefromtext/json?${fpParams}`);
+    if (!ok || data.status !== 'OK' || !data.candidates?.length) return null;
+
+    const candidate = data.candidates[0];
+    const photoRef = candidate.photos?.[0]?.photo_reference;
+    if (!photoRef) return null;
+
+    // URL direta da foto (não baixa o binário aqui — o front-end/CDN resolve on-demand)
+    const photoUrl = `${PLACES_BASE}/photo?maxwidth=800&photo_reference=${photoRef}&key=${GOOGLE_KEY}`;
+    return { photoUrl, googlePlaceId: candidate.place_id };
+  } catch (e) {
+    warn(`Google (foto) falhou para "${nome}": ${e.message}`);
+    return null;
+  }
+}
+
+// ── Firestore (Banco do MecBusca) ──────────────────────────────────────────
+let db = null;
+function initFirestore() {
+  if (DRY_RUN) { log('DRY RUN — Firestore não será acessado.'); return; }
   const admin = require('firebase-admin');
   if (admin.apps.length) { db = admin.firestore(); return; }
 
   let credential;
   if (SA_KEY_FILE && fs.existsSync(SA_KEY_FILE)) {
-    const sa = require(path.resolve(SA_KEY_FILE));
-    credential = admin.credential.cert(sa);
+    credential = admin.credential.cert(require(path.resolve(SA_KEY_FILE)));
     log(`Usando service account: ${SA_KEY_FILE}`);
   } else {
     credential = admin.credential.applicationDefault();
     log('Usando Application Default Credentials.');
   }
-
   admin.initializeApp({ credential, projectId: PROJECT_ID });
   db = admin.firestore();
   log(`Firestore conectado ao projeto: ${PROJECT_ID}`);
 }
 
-// ── Processamento de oficina ──────────────────────────────────────────────────
-const processedPlaceIds = new Set(); // deduplicação em memória
-let savedCount   = 0;
-let skippedCount = 0;
-let errorCount   = 0;
+// ── Processamento de uma oficina (a partir do CNPJ) ────────────────────────
+let savedCount = 0, skippedCount = 0, errorCount = 0;
+const processedCNPJs = new Set();
 
-/**
- * Processa um place_id: busca detalhes, normaliza e salva no Firestore.
- * Retorna true se salvou, false se pulou (duplicado/fechado).
- */
-async function processarOficina(placeId, cidade, queryCategory) {
-  if (processedPlaceIds.has(placeId)) {
-    if (VERBOSE) log(`  ↩ Duplicado em memória: ${placeId}`);
-    skippedCount++;
-    return false;
-  }
-  processedPlaceIds.add(placeId);
+async function processarCNPJ(cnpj) {
+  const cnpjLimpo = onlyDigits(cnpj);
+  if (processedCNPJs.has(cnpjLimpo)) { skippedCount++; return false; }
+  processedCNPJs.add(cnpjLimpo);
 
-  let details;
+  // 1) Receita Federal — fonte de verdade
+  let rf;
   try {
-    details = await placeDetails(placeId);
-    await sleep(DELAY_MS);
+    rf = await consultarReceitaFederal(cnpjLimpo);
+    await sleep(DELAY_RFB_MS);
   } catch (e) {
-    warn(`placeDetails falhou para ${placeId}: ${e.message}`);
+    warn(`Receita Federal falhou para ${cnpjLimpo}: ${e.message}`);
     errorCount++;
     return false;
   }
 
-  if (!details) { skippedCount++; return false; }
-
-  // Ignora estabelecimentos permanentemente fechados
-  if (details.business_status === 'PERMANENTLY_CLOSED') {
-    if (VERBOSE) log(`  ✕ Fechado permanentemente: ${details.name}`);
+  if (String(rf.descricao_situacao_cadastral || '').toUpperCase() !== 'ATIVA') {
+    if (VERBOSE) log(`  ✕ Situação cadastral não ativa: ${rf.razao_social} (${rf.descricao_situacao_cadastral})`);
     skippedCount++;
     return false;
   }
 
-  // Extrai componentes de endereço
-  const comps = details.address_components || [];
-  const getComp = type => comps.find(c => c.types.includes(type))?.long_name || '';
+  // 2) CNPJá — enriquecimento (telefone/e-mail quando a RFB não trouxer)
+  let enriquecido = null;
+  if (CNPJA_KEY) {
+    enriquecido = await cnpjaEnriquecer(cnpjLimpo);
+    await sleep(DELAY_CNPJA_MS);
+  }
 
-  const logradouro = getComp('route');
-  const numero     = getComp('street_number');
-  const bairro     = getComp('sublocality_level_1') || getComp('sublocality');
-  const municipio  = getComp('administrative_area_level_2') || cidade.split(',')[0].trim();
-  const estado     = getComp('administrative_area_level_1') || 'ES';
-  const cep        = getComp('postal_code');
+  const nome = rf.nome_fantasia?.trim() || rf.razao_social?.trim();
+  const telefone =
+    parseTelefone(rf.ddd_telefone_1?.slice(0, 2), rf.ddd_telefone_1?.slice(2)) ||
+    parseTelefone(enriquecido?.phones?.[0]?.area, enriquecido?.phones?.[0]?.number);
+  const email = rf.email || enriquecido?.emails?.[0]?.address || null;
 
-  const enderecoCompleto = details.formatted_address || '';
-  const telefone    = parseTelefone(details.formatted_phone_number || details.international_phone_number);
-  const hasWhatsApp = isWhatsApp(telefone);
-  const categorias  = normalizarCategorias(details.types, queryCategory);
+  // 3) IBGE — normaliza município/UF
+  const { nome: municipioNorm, codigoIBGE } = await normalizarMunicipio(rf.municipio, rf.uf);
 
-  const slug = `${toSlug(details.name)}-${toSlug(municipio)}-${placeId.slice(-6)}`;
+  const enderecoCompleto =
+    `${rf.logradouro || ''}, ${rf.numero || 'S/N'} - ${rf.bairro || ''}, ` +
+    `${municipioNorm} - ${rf.uf}, ${rf.cep || ''}`.replace(/\s+/g, ' ').trim();
+
+  // 4) OpenStreetMap — geocodifica
+  let geo = null;
+  try { geo = await geocodificarOSM(enderecoCompleto); }
+  catch (e) { warn(`Geocodificação OSM falhou para "${nome}": ${e.message}`); }
+
+  // 5) Google — só a foto de capa (opcional)
+  const foto = await buscarFotoGoogle(nome, enderecoCompleto);
+
+  const categorias = [...new Set(
+    [rf.cnae_fiscal, ...(rf.cnaes_secundarios || []).map(c => c.codigo)]
+      .map(c => CATEGORIA_POR_CNAE[String(c)])
+      .filter(Boolean)
+  )];
+  if (!categorias.length) categorias.push('mecanica_geral');
+
+  const slug = `${toSlug(nome)}-${toSlug(municipioNorm)}-${cnpjLimpo.slice(-6)}`;
 
   const oficina = {
-    // Identificação
-    place_id:      placeId,
-    nome:          details.name,
+    // Identificação oficial (Receita Federal)
+    cnpj:               cnpjLimpo,
+    razaoSocial:         rf.razao_social || null,
+    nomeFantasia:         rf.nome_fantasia || null,
+    nome,
     slug,
+    situacaoCadastral:    rf.descricao_situacao_cadastral || null,
+    dataAbertura:         rf.data_inicio_atividade || null,
+    porte:                rf.porte || null,
+    capitalSocial:        rf.capital_social ?? null,
+    cnaePrincipal:        rf.cnae_fiscal || null,
+    cnaePrincipalDescricao: rf.cnae_fiscal_descricao || null,
 
     // Contato
-    telefone:      telefone || null,
-    whatsapp:      hasWhatsApp ? telefone : null,
-    whatsappDetectado: hasWhatsApp,
-    website:       details.website || null,
-    googleMapsUrl: details.url || null,
+    telefone: telefone || null,
+    whatsapp: isWhatsApp(telefone) ? telefone : null,
+    whatsappDetectado: isWhatsApp(telefone),
+    email,
+    website: null, // RFB não traz site — a própria oficina preenche depois no painel
 
     // Endereço
     enderecoCompleto,
-    logradouro:    logradouro || null,
-    numero:        numero || null,
-    bairro:        bairro || null,
-    cidade:        municipio,
-    estado:        estado.slice(0, 2).toUpperCase(),
-    cep:           cep || null,
+    logradouro: rf.logradouro || null,
+    numero:     rf.numero || null,
+    bairro:     rf.bairro || null,
+    cidade:     municipioNorm,
+    estado:     (rf.uf || '').toUpperCase(),
+    cep:        rf.cep || null,
+    codigoIBGE,
 
-    // Localização GeoPoint (salvo como objeto para converter no import)
-    lat:           details.geometry?.location?.lat || null,
-    lng:           details.geometry?.location?.lng || null,
+    // Localização (convertida para GeoPoint no momento de salvar)
+    lat: geo?.lat ?? null,
+    lng: geo?.lng ?? null,
 
     // Classificação
     categorias,
+    servicos: categorias,
 
-    // Avaliações Google
-    avaliacaoGoogle:      details.rating || null,
-    totalAvaliacoesGoogle: details.user_ratings_total || 0,
-
-    // Horários (serializado)
-    horarios: details.opening_hours?.weekday_text?.join(' | ') || null,
+    // Foto (opcional, só Google)
+    fotoCapa: foto?.photoUrl || null,
+    googlePlaceId: foto?.googlePlaceId || null,
 
     // Metadados MecBusca
-    origem:      'google_places',
-    status:      'pendente_confirmacao',
+    origem: 'receita_federal',
+    fontesDados: ['receita_federal', ...(CNPJA_KEY ? ['cnpja'] : []), 'ibge', 'openstreetmap', ...(foto ? ['google_foto'] : [])],
+    status: 'pendente_confirmacao',
     reivindicado: false,
-    ativo:        false,            // NÃO aparece na busca principal até confirmar
+    ativo: false,
 
     // Timestamps
-    capturedAt:   new Date().toISOString(),
-    updatedAt:    null,
+    capturedAt: new Date().toISOString(),
+    updatedAt: null,
     confirmadoAt: null,
 
     // Painel (vazio até reivindicação)
-    uid:          null,
-    descricao:    null,
-    fotos:        [],
-    servicos:     categorias,
-    avaliacaoMedia: details.rating || 0,
+    uid: null,
+    descricao: null,
+    fotos: [],
+    avaliacaoMedia: 0,
     totalAvaliacoes: 0,
   };
 
   if (DRY_RUN) {
-    log(`  [DRY] Salvaria: ${oficina.nome} | ${oficina.cidade} | ${oficina.telefone || 'sem tel'}`);
+    log(`  [DRY] Salvaria: ${oficina.nome} | CNPJ ${cnpjLimpo} | ${oficina.cidade}/${oficina.estado} | ${oficina.telefone || 'sem tel'}`);
     savedCount++;
     return true;
   }
 
-  // Salva no Firestore (upsert por place_id)
   try {
     const colRef = db.collection('oficinas');
-
-    // Verifica se já existe por place_id
-    const existing = await colRef.where('place_id', '==', placeId).limit(1).get();
+    const existing = await colRef.where('cnpj', '==', cnpjLimpo).limit(1).get();
     if (!existing.empty) {
-      if (VERBOSE) log(`  ↩ Já existe no Firestore: ${details.name}`);
+      if (VERBOSE) log(`  ↩ Já existe no Firestore (CNPJ ${cnpjLimpo}): ${nome}`);
       skippedCount++;
       return false;
     }
 
-    // Converte lat/lng para GeoPoint
     const admin = require('firebase-admin');
-    if (oficina.lat && oficina.lng) {
+    if (oficina.lat != null && oficina.lng != null) {
       oficina.geopoint = new admin.firestore.GeoPoint(oficina.lat, oficina.lng);
     }
     delete oficina.lat;
     delete oficina.lng;
 
     await colRef.doc(slug).set(oficina, { merge: false });
-    log(`  ✅ Salvo: ${oficina.nome} (${oficina.cidade}) ${oficina.telefone || ''}`);
+    log(`  ✅ Salvo: ${nome} (${oficina.cidade}/${oficina.estado}) CNPJ ${cnpjLimpo}`);
     savedCount++;
     return true;
   } catch (e) {
-    err(`Erro ao salvar ${details.name}: ${e.message}`);
+    err(`Erro ao salvar ${nome} (${cnpjLimpo}): ${e.message}`);
     errorCount++;
     return false;
   }
 }
 
-// ── Loop principal ────────────────────────────────────────────────────────────
-async function capturarCidade(cidade, categoria) {
-  const query = `${categoria} ${cidade}`;
-  log(`\n🔍 Buscando: "${query}"`);
-
-  let pageToken = null;
-  let page = 0;
+// ── Descoberta via CNPJá por cidade/CNAE ────────────────────────────────────
+async function capturarCidade(cidade, uf, cnaes) {
+  log(`\n🔍 Buscando via CNPJá: "${cidade}/${uf}" — CNAEs: ${cnaes.length}`);
+  let page = 1;
   let totalEncontrados = 0;
 
-  do {
-    if (pageToken) await sleep(2000); // Google exige 2s entre páginas com pageToken
-
-    let result;
+  while (page <= MAX_PAGES) {
+    let registros;
     try {
-      result = await textSearch(query, pageToken);
-      await sleep(DELAY_MS);
+      registros = await cnpjaBuscarPorMunicipio({ uf, cidade, cnaes, page });
+      await sleep(DELAY_CNPJA_MS);
     } catch (e) {
-      err(`textSearch falhou: ${e.message}`);
+      err(`Busca CNPJá falhou: ${e.message}`);
       break;
     }
+    if (!registros.length) break;
 
-    const places = result.results || [];
-    totalEncontrados += places.length;
-    if (VERBOSE) log(`  Página ${page + 1}: ${places.length} resultados`);
+    totalEncontrados += registros.length;
+    if (VERBOSE) log(`  Página ${page}: ${registros.length} resultados`);
 
-    for (const place of places) {
-      await processarOficina(place.place_id, cidade, categoria);
-      await sleep(DELAY_MS);
+    for (const reg of registros) {
+      const cnpj = reg.taxId || reg.cnpj || reg.tax_id;
+      if (!cnpj) continue;
+      await processarCNPJ(cnpj);
     }
 
-    pageToken = result.next_page_token || null;
+    if (registros.length < RESULTS_PER_PAGE) break;
     page++;
-  } while (pageToken && page < MAX_PAGES);
+  }
 
-  log(`  → ${totalEncontrados} encontrados em "${cidade}" para "${categoria}"`);
+  log(`  → ${totalEncontrados} candidatos em "${cidade}/${uf}"`);
 }
 
+// ── Modo manual: lista de CNPJs em arquivo ──────────────────────────────────
+async function capturarDeArquivo(filePath) {
+  const conteudo = fs.readFileSync(path.resolve(filePath), 'utf-8');
+  const cnpjs = conteudo.split('\n').map(l => onlyDigits(l)).filter(l => l.length === 14);
+  log(`📄 ${cnpjs.length} CNPJs carregados de ${filePath}`);
+  for (const cnpj of cnpjs) {
+    await processarCNPJ(cnpj);
+  }
+}
+
+// ── Loop principal ────────────────────────────────────────────────────────
 async function main() {
   log('════════════════════════════════════════════');
-  log('  MecBusca — Captura Automática de Oficinas');
+  log('  MecBusca — Captura de Oficinas (dados oficiais)');
   log('════════════════════════════════════════════');
   log(`  Modo: ${DRY_RUN ? 'DRY RUN (sem salvar)' : 'PRODUÇÃO'}`);
   log(`  Projeto: ${PROJECT_ID}`);
+  log(`  Foto (Google): ${GOOGLE_KEY && !SEM_FOTO ? 'ativada' : 'desativada'}`);
   log('');
-
-  if (!GOOGLE_KEY) {
-    err('GOOGLE_PLACES_KEY não definida!');
-    err('Exporte a variável antes de rodar:');
-    err('  export GOOGLE_PLACES_KEY=AIza...');
-    process.exit(1);
-  }
 
   initFirestore();
 
-  // Define escopo da busca
-  let cidades;
-  if (ALL_BR) {
-    cidades = TODAS_CIDADES_BR;
-  } else if (estadoArg) {
-    const uf = estadoArg.toUpperCase();
-    cidades = CIDADES_BR[uf] || [];
-    if (!cidades.length) { err(`Estado não encontrado: ${uf}`); process.exit(1); }
-  } else if (ALL_ES) {
-    cidades = CIDADES_ES;
+  if (cnpjsFile) {
+    await capturarDeArquivo(cnpjsFile);
   } else {
-    cidades = [cidadeArg || 'Vitória, ES'];
-  }
-  const categorias = catArg ? [catArg]
-    : tipoArg === 'pecas'    ? CATEGORIAS_PECAS
-    : tipoArg === 'lavajato' ? CATEGORIAS_LAVAJATO
-    : tipoArg === 'tudo'     ? CATEGORIAS_TODAS
-    : CATEGORIAS_OFICINAS;
-
-  log(`  Cidades (${cidades.length}): ${cidades.slice(0, 5).join(', ')}${cidades.length > 5 ? '...' : ''}`);
-  log(`  Categorias (${categorias.length}): ${categorias.join(', ')}`);
-  log('');
-
-  const startTime = Date.now();
-
-  for (const cidade of cidades) {
-    for (const categoria of categorias) {
-      await capturarCidade(cidade, categoria);
+    if (!CNPJA_KEY) {
+      err('CNPJA_API_KEY não definida — necessária para descoberta automática por cidade/estado.');
+      err('Use --cnpjs arquivo.txt para importar uma lista de CNPJs sem CNPJá,');
+      err('ou exporte: export CNPJA_API_KEY=...');
+      process.exit(1);
     }
-  }
 
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    let alvos;
+    if (ALL_BR) alvos = TODAS_CIDADES_BR;
+    else if (estadoArg && !cidadeArg) alvos = (CIDADES_BR[estadoArg.toUpperCase()] || []).map(c => ({ cidade: c, uf: estadoArg.toUpperCase() }));
+    else if (ALL_ES) alvos = CIDADES_BR.ES.map(c => ({ cidade: c, uf: 'ES' }));
+    else alvos = [{ cidade: cidadeArg || 'Vitória', uf: (estadoArg || 'ES').toUpperCase() }];
+
+    const cnaes = tipoArg === 'pecas' ? CNAE_PECAS
+      : tipoArg === 'lavajato' ? CNAE_LAVAJATO
+      : tipoArg === 'tudo'     ? CNAE_TODAS
+      : CNAE_OFICINAS;
+
+    log(`  Cidades (${alvos.length}): ${alvos.slice(0, 5).map(a => `${a.cidade}/${a.uf}`).join(', ')}${alvos.length > 5 ? '...' : ''}`);
+    log(`  CNAEs (${cnaes.length}): ${cnaes.join(', ')}`);
+    log('');
+
+    const startTime = Date.now();
+    for (const { cidade, uf } of alvos) {
+      await capturarCidade(cidade, uf, cnaes);
+    }
+    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+    log(`\n  ⏱  Concluído em ${elapsed}s`);
+  }
 
   log('\n════════════════════════════════════════════');
-  log(`  ✅ Captura concluída em ${elapsed}s`);
   log(`  Salvos:   ${savedCount}`);
-  log(`  Pulados:  ${skippedCount} (duplicados / fechados)`);
+  log(`  Pulados:  ${skippedCount} (duplicados / inativos)`);
   log(`  Erros:    ${errorCount}`);
   log('════════════════════════════════════════════\n');
 
@@ -630,7 +641,7 @@ async function main() {
     log('🚀 Próximos passos:');
     log('  1. Abra o Painel Admin do MecBusca');
     log('  2. Revise as oficinas com status "pendente_confirmacao"');
-    log('  3. Dispare o WhatsApp automático: node send-whatsapp.js');
+    log('  3. Dispare a verificação por WhatsApp: node reivindicar-solicitar (fluxo já existente)');
     log('');
   }
 }

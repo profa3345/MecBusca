@@ -19,6 +19,7 @@ const { onRequest, onCall, HttpsError } = require('firebase-functions/v2/https')
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
 const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { beforeUserCreated } = require('firebase-functions/v2/identity');
+const { defineSecret } = require('firebase-functions/params');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
@@ -856,6 +857,166 @@ exports.buscarOficinas = onCall(
   }
 );
 
+// ════════════════════════════════════════════════════════════════
+// DADOS OFICIAIS DA OFICINA — Receita Federal + CNPJá + IBGE + OSM
+// ════════════════════════════════════════════════════════════════
+// Espelha o pipeline usado pelo scripts/capture-oficinas.js, mas sob
+// demanda e restrito ao dono do perfil, para a própria oficina poder
+// corrigir/atualizar seus dados cadastrais (ex: mudou de endereço,
+// CNPJ foi reenquadrado, telefone mudou) direto pelo painel.
+//
+//   Receita Federal (BrasilAPI, grátis) → CNPJá (enriquecimento,
+//   opcional) → IBGE (normaliza cidade/UF) → OpenStreetMap (geocodifica)
+//
+// Campos "de negócio" (descrição, serviços, horários, fotos de serviço,
+// promoções) continuam sendo salvos direto pelo cliente via
+// window.FB.atualizarOficina — não passam por aqui. Esta função cobre
+// só os campos que dependem de fonte oficial/externa.
+const cnpjaSecret = defineSecret('CNPJA_API_KEY');
+
+function onlyDigitsFn(v) { return String(v || '').replace(/\D/g, ''); }
+
+async function _consultarReceitaFederal(cnpj) {
+  const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new HttpsError('unavailable', data?.message || 'Erro ao consultar Receita Federal.');
+  return data;
+}
+
+async function _consultarIBGE(uf) {
+  const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => []);
+  return Array.isArray(data) ? data.map(m => ({ id: m.id, nome: m.nome })) : [];
+}
+
+function _slugCidade(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
+async function _geocodificarOSM(endereco) {
+  const params = new URLSearchParams({ format: 'jsonv2', q: endereco, countrycodes: 'br', limit: '1' });
+  const res = await fetch(`https://nominatim.openstreetmap.org/search?${params}`, {
+    headers: { 'User-Agent': 'MecBusca/1.0 (contato@mecbusca.com.br)', 'Accept-Language': 'pt-BR' },
+  });
+  if (!res.ok) return null;
+  const data = await res.json().catch(() => []);
+  if (!Array.isArray(data) || !data.length) return null;
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+}
+
+/** Callable: a oficina revalida/atualiza seus dados oficiais a partir do CNPJ. */
+exports.atualizarDadosOficiais = onCall(
+  { region: REGION, memory: '256MiB', secrets: [cnpjaSecret], timeoutSeconds: 30 },
+  async ({ data, auth: callAuth }) => {
+    if (!callAuth) throw new HttpsError('unauthenticated', 'Login necessário.');
+
+    const oficinaId = sanitizeStr(data?.oficinaId || '', 60);
+    const cnpjInput = onlyDigitsFn(data?.cnpj || '');
+    if (!oficinaId) throw new HttpsError('invalid-argument', 'ID de oficina obrigatório.');
+
+    const ofRef = db.collection('oficinas').doc(oficinaId);
+    const ofDoc = await ofRef.get();
+    if (!ofDoc.exists) throw new HttpsError('not-found', 'Oficina não encontrada.');
+
+    const oficina = ofDoc.data();
+    // Só o dono do perfil pode disparar a revalidação
+    if (oficina.uid !== callAuth.uid) {
+      throw new HttpsError('permission-denied', 'Você não tem permissão para editar esta oficina.');
+    }
+
+    const cnpj = cnpjInput || onlyDigitsFn(oficina.cnpj || '');
+    if (!cnpj || cnpj.length !== 14) {
+      throw new HttpsError('invalid-argument', 'Informe um CNPJ válido (14 dígitos) para revalidar os dados.');
+    }
+
+    // Rate limit: 5 revalidações por oficina por dia
+    const rlKey = `ratelimit_cnpj_${oficinaId}`;
+    const rlRef = db.collection('_ratelimits').doc(rlKey);
+    const now = Date.now();
+    const rlOk = await db.runTransaction(async tx => {
+      const d = await tx.get(rlRef);
+      const v = d.exists ? d.data() : { count: 0, windowStart: now };
+      if (now - v.windowStart > 86400000) { tx.set(rlRef, { count: 1, windowStart: now }); return true; }
+      if (v.count >= 5) return false;
+      tx.update(rlRef, { count: admin.firestore.FieldValue.increment(1) });
+      return true;
+    });
+    if (!rlOk) throw new HttpsError('resource-exhausted', 'Limite diário de revalidações atingido. Tente amanhã.');
+
+    // 1) Receita Federal — fonte de verdade
+    const rf = await _consultarReceitaFederal(cnpj);
+    if (String(rf.descricao_situacao_cadastral || '').toUpperCase() !== 'ATIVA') {
+      throw new HttpsError('failed-precondition',
+        `CNPJ com situação cadastral "${rf.descricao_situacao_cadastral || 'desconhecida'}" na Receita Federal.`);
+    }
+
+    // 2) CNPJá — enriquecimento opcional de telefone/e-mail
+    let enriquecido = null;
+    const cnpjaKey = cnpjaSecret.value();
+    if (cnpjaKey) {
+      try {
+        const r = await fetch(`https://api.cnpja.com/office/${cnpj}`, { headers: { Authorization: cnpjaKey } });
+        if (r.ok) enriquecido = await r.json();
+      } catch (e) {
+        console.warn('[atualizarDadosOficiais] CNPJá falhou:', e.message);
+      }
+    }
+
+    // 3) IBGE — normaliza município/UF
+    const uf = (rf.uf || '').toUpperCase();
+    const municipios = await _consultarIBGE(uf);
+    const alvo = _slugCidade(rf.municipio);
+    const match = municipios.find(m => _slugCidade(m.nome) === alvo) || null;
+    const cidadeNorm = match?.nome || rf.municipio;
+
+    // 4) OpenStreetMap — geocodifica o novo endereço
+    const enderecoCompleto =
+      `${rf.logradouro || ''}, ${rf.numero || 'S/N'} - ${rf.bairro || ''}, ${cidadeNorm} - ${uf}, ${rf.cep || ''}`
+        .replace(/\s+/g, ' ').trim();
+    const geo = await _geocodificarOSM(enderecoCompleto).catch(() => null);
+
+    const telefoneRF = (rf.ddd_telefone_1 || '').replace(/\D/g, '') || null;
+    const telefoneCNPJA = enriquecido?.phones?.[0]
+      ? `${enriquecido.phones[0].area || ''}${enriquecido.phones[0].number || ''}`.replace(/\D/g, '')
+      : null;
+
+    const atualizacao = {
+      cnpj,
+      razaoSocial: rf.razao_social || null,
+      nomeFantasia: rf.nome_fantasia || null,
+      situacaoCadastral: rf.descricao_situacao_cadastral || null,
+      dataAbertura: rf.data_inicio_atividade || null,
+      porte: rf.porte || null,
+      cnaePrincipal: rf.cnae_fiscal || null,
+      cnaePrincipalDescricao: rf.cnae_fiscal_descricao || null,
+      telefone: telefoneRF || telefoneCNPJA || oficina.telefone || null,
+      email: rf.email || enriquecido?.emails?.[0]?.address || oficina.email || null,
+      logradouro: rf.logradouro || null,
+      numero: rf.numero || null,
+      bairro: rf.bairro || null,
+      cidade: cidadeNorm,
+      estado: uf,
+      cep: rf.cep || null,
+      enderecoCompleto,
+      dadosOficiaisAtualizadosEm: admin.firestore.FieldValue.serverTimestamp(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+    if (geo) {
+      atualizacao.geopoint = new admin.firestore.GeoPoint(geo.lat, geo.lng);
+    }
+
+    await ofRef.update(atualizacao);
+
+    return {
+      success: true,
+      message: 'Dados oficiais atualizados a partir da Receita Federal.',
+      dados: { ...atualizacao, dadosOficiaisAtualizadosEm: undefined, updatedAt: undefined },
+    };
+  }
+);
+
 // ── Ana AI Chat Proxy (FN-10) ─────────────────────────────────────────────────
 /**
  * Proxy seguro para a API da Anthropic.
@@ -864,7 +1025,6 @@ exports.buscarOficinas = onCall(
  * - Valida e sanitiza mensagens antes de encaminhar
  * - Registra uso no Firestore para auditoria/controle de custo
  */
-const { defineSecret } = require('firebase-functions/params');
 const anthropicKey = defineSecret('ANTHROPIC_API_KEY');
 
 exports.anaChatProxy = onCall(
